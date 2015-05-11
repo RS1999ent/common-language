@@ -16,6 +16,14 @@ public class Node {
 		m_supportedClasses = supportedClases;
 	}
 	
+	public Node(ProtoNode protoNode){
+		m_ASNum = protoNode.getNodeNum();
+		for(int i = 0; i < protoNode.getSupportedClassesCount(); i++)
+		{
+			m_supportedClasses.add(new Class(protoNode.getSupportedClasses(i)));
+		}
+	}
+	
 	public long getASNum() {
 		return m_ASNum;
 	}
@@ -61,6 +69,13 @@ public class Node {
 		protoNodeBuilder.setNodeNum(m_ASNum);
 		return protoNodeBuilder.build();
 	}
-	
+
+	public void fromProtoNode(ProtoNode protoNode) {
+		m_ASNum = protoNode.getNodeNum();
+		m_supportedClasses = new ArrayList<Class>();
+		for (int i = 0; i < protoNode.getSupportedClassesCount(); i++) {
+			m_supportedClasses.add(new Class(protoNode.getSupportedClasses(i)));
+		}
+	}
 	
 }

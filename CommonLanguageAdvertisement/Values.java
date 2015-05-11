@@ -18,6 +18,15 @@ public class Values {
 		
 	}
 	
+	public Values(ProtoValues protoValues)
+	{
+		for(int i = 0; i < protoValues.getClassValuesCount(); i++)
+		{
+			valueFieldEntry entry = protoValues.getClassValues(i);
+			classValues.put(entry.getClassID(), entry.getClassInfo().toByteArray());
+		}
+	}
+	
 	//returns null if no associated info with classID
 	public byte[] getValue(Class associatedClass){
 		return 	classValues.get(associatedClass.getUniqueID());
@@ -31,7 +40,6 @@ public class Values {
 	public Set<Long> getKeySet(){
 		return classValues.keySet();
 	}
-	
 	
 	public ProtoValues toProtoValues()
 	{
@@ -49,6 +57,14 @@ public class Values {
 		}
 		return values.build();
 		
+	}
+	
+	public void fromProtoValues(ProtoValues protoValues) {
+		for (int i = 0; i < protoValues.getClassValuesCount(); i++) {
+			valueFieldEntry entry = protoValues.getClassValues(i);
+			classValues.put(entry.getClassID(), entry.getClassInfo()
+					.toByteArray());
+		}
 	}
 	
 	

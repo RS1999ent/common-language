@@ -41,9 +41,48 @@ public class NetworkGraph {
 		
 	}
 	
+	public NetworkGraph(ProtoNetworkGraph protoNetworkGraph)
+	{
+		for(int i = 0; i < protoNetworkGraph.getAdjacencyListCount(); i++)
+		{
+			ProtoAdjacentNodes headAndNeighbor = protoNetworkGraph.getAdjacencyList(i);
+			ArrayList<Node> neighborList = new ArrayList<Node>();
+			for(int j = 0; j < headAndNeighbor.getNeighborsCount(); j++)
+			{
+				neighborList.add(new Node(headAndNeighbor.getNeighbors(j)));
+			}
+			adjacencyList.put(new Node(headAndNeighbor.getReferenceNode()), neighborList );
+		}
+		
+		for(int i = 0; i < protoNetworkGraph.getKeyValuePairsCount(); i++)
+		{
+			keyValuePairsFieldEntry entry = protoNetworkGraph.getKeyValuePairs(i);
+			keyValues.put(entry.getKey(), new Values(entry.getValues()));
+		}
+		
+		for(int i = 0; i < protoNetworkGraph.getAnnotatedEdgesCount(); i++)
+		{
+			annotatedEdgesFieldEntry entry = protoNetworkGraph.getAnnotatedEdges(i);
+			EdgePair pair = new EdgePair(entry.getEdgePair());
+			edgeAnnotation.put(pair, new Values(entry.getAnnotations()));
+		}
+		
+	}
+	
 	public class EdgePair{
 		public Node node1;
 		public Node node2;
+		
+		public EdgePair()
+		{
+			
+		}
+		
+		public EdgePair(ProtoEdgeNodes protoEdgeNodes)
+		{
+			node1 = new Node(protoEdgeNodes.getNode1());
+			node2 = new Node(protoEdgeNodes.getNode2());
+		}
 		
 		public ProtoEdgeNodes toProtoEdgeNodes()
 		{

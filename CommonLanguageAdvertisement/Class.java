@@ -1,5 +1,7 @@
 package CommonLanguageAdvertisement;
 
+import protobuf.AdvertisementProtos.ProtoClass;
+
 public class Class {
 
 	private long m_uniqueID;
@@ -7,6 +9,12 @@ public class Class {
 	public Class(long uniqueID){
 		m_uniqueID = uniqueID;
 	}
+	
+	public Class(ProtoClass protoClass)
+	{
+		m_uniqueID = protoClass.getUniqueID();
+	}
+	
 	
 	public long getUniqueID(){
 		return m_uniqueID;
@@ -16,4 +24,10 @@ public class Class {
 	{
 		m_uniqueID = newUniqueID;
 	}
+	
+	public ProtoClass toProtoClass()
+	{
+		return ProtoClass.newBuilder().setUniqueID(m_uniqueID).build();
+	}
+	
 }
