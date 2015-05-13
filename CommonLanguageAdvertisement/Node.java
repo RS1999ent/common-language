@@ -9,7 +9,8 @@ import protobuf.AdvertisementProtos.ProtoNode.Builder;
 
 public class Node {
 	private long m_ASNum;
-	private ArrayList<Class> m_supportedClasses;
+	private ArrayList<Class> m_supportedClasses = 
+			new ArrayList<Class>();
 	
 	public Node(long asNum, ArrayList<Class> supportedClases){
 		m_ASNum = asNum;
@@ -59,11 +60,14 @@ public class Node {
 	public ProtoNode toProtoNode()
 	{
 		Builder protoNodeBuilder = ProtoNode.newBuilder();
-		int i = 0;
+//		int i = 0;
 		for(Class supportedClass : m_supportedClasses)
 		{
-			protoNodeBuilder.setSupportedClasses(i, ProtoClass.newBuilder().setUniqueID(supportedClass.getUniqueID()).build());
-			i++;
+			protoNodeBuilder.addSupportedClasses(
+					ProtoClass.newBuilder()
+						.setUniqueID(supportedClass.getUniqueID())
+						.build());
+//			i++;
 		}
 		
 		protoNodeBuilder.setNodeNum(m_ASNum);
@@ -72,7 +76,7 @@ public class Node {
 
 	public void fromProtoNode(ProtoNode protoNode) {
 		m_ASNum = protoNode.getNodeNum();
-		m_supportedClasses = new ArrayList<Class>();
+		m_supportedClasses.clear();
 		for (int i = 0; i < protoNode.getSupportedClassesCount(); i++) {
 			m_supportedClasses.add(new Class(protoNode.getSupportedClasses(i)));
 		}

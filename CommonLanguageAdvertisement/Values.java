@@ -1,11 +1,9 @@
 package CommonLanguageAdvertisement;
 
-import protobuf.AdvertisementProtos;
 import protobuf.AdvertisementProtos.ProtoValues;
 import protobuf.AdvertisementProtos.ProtoValues.Builder;
 import protobuf.AdvertisementProtos.ProtoValues.valueFieldEntry;
 
-import java.util.Arrays;
 import java.util.Hashtable;
 import java.util.Set;
 
@@ -52,7 +50,7 @@ public class Values {
 					.setClassID(key.intValue())
 					.setClassInfo(ByteString.copyFrom(classValues.get(key)))
 					.build();
-			values.setClassValues(i, keyValueEntry);
+			values.addClassValues(keyValueEntry);
 			i++;
 		}
 		return values.build();
