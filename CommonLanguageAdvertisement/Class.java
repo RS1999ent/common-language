@@ -30,4 +30,9 @@ public class Class {
 		return ProtoClass.newBuilder().setUniqueID(m_uniqueID).build();
 	}
 	
+	public String toString()
+	{
+		return String.valueOf(m_uniqueID);
+	}
+	
 }

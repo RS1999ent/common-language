@@ -5,7 +5,6 @@ import java.util.Hashtable;
 import java.util.Set;
 
 import protobuf.AdvertisementProtos.ProtoAdjacentNodes;
-import protobuf.AdvertisementProtos.ProtoEdgeNodes;
 import protobuf.AdvertisementProtos.ProtoNetworkGraph;
 import protobuf.AdvertisementProtos.ProtoNetworkGraph.Builder;
 import protobuf.AdvertisementProtos.ProtoNetworkGraph.annotatedEdgesFieldEntry;
@@ -69,29 +68,7 @@ public class NetworkGraph {
 		
 	}
 	
-	public class EdgePair{
-		public Node node1;
-		public Node node2;
-		
-		public EdgePair()
-		{
-			
-		}
-		
-		public EdgePair(ProtoEdgeNodes protoEdgeNodes)
-		{
-			node1 = new Node(protoEdgeNodes.getNode1());
-			node2 = new Node(protoEdgeNodes.getNode2());
-		}
-		
-		public ProtoEdgeNodes toProtoEdgeNodes()
-		{
-			return ProtoEdgeNodes.newBuilder()
-					.setNode1(node1.toProtoNode())
-					.setNode2(node2.toProtoNode()).build();
-					
-		}
-	}
+	
 	
 	
 	public void addConnection(Node toConnect, Node connectTo)
@@ -141,6 +118,21 @@ public class NetworkGraph {
 		}
 	}
 	
+	public void addEdgeAnnotation(EdgePair edge, Class associatedClass, byte[] value)
+	{
+		Values values = edgeAnnotation.get(edge);
+		if(values != null)
+		{
+			values.putValue(associatedClass, value);
+		}
+		else
+		{
+			values = new Values();
+			values.putValue(associatedClass, value);
+			edgeAnnotation.put(edge, values);
+		}
+	}
+	
 	public ProtoNetworkGraph toProtoNetworkGraph()
 	{
 		Builder protoNetworkGraphBuilder = ProtoNetworkGraph.newBuilder();
@@ -150,6 +142,17 @@ public class NetworkGraph {
 		
 		return protoNetworkGraphBuilder.build();
 	}
+	
+	public String toString()
+	{
+		String newString = adjacencyList.toString();
+		newString = newString.concat("\n");
+		newString = newString.concat(keyValues.toString());
+		newString = newString.concat("\n");
+		newString = newString.concat(edgeAnnotation.toString());
+		return newString;
+	}
+	
 	
 	private void makeProtoAdjacencyList(Builder protoNetworkGraphBuilder)
 	{
@@ -163,10 +166,10 @@ public class NetworkGraph {
 			
 			for(int j  = 0; j < neighborList.size(); j++)
 			{
-				adjacentNodesBuilder.setNeighbors(j, neighborList.get(j).toProtoNode());
+				adjacentNodesBuilder.addNeighbors(neighborList.get(j).toProtoNode());
 			}
 			
-			protoNetworkGraphBuilder.setAdjacencyList(i, adjacentNodesBuilder.build());
+			protoNetworkGraphBuilder.addAdjacencyList(adjacentNodesBuilder.build());
 			i++;
 		}
 	}
@@ -180,7 +183,7 @@ public class NetworkGraph {
 			protobuf.AdvertisementProtos.ProtoNetworkGraph.annotatedEdgesFieldEntry.Builder edgeEntryBuilder = annotatedEdgesFieldEntry.newBuilder();
 			edgeEntryBuilder.setEdgePair(key.toProtoEdgeNodes());
 			edgeEntryBuilder.setAnnotations(edgeAnnotation.get(key).toProtoValues());
-			protoNetworkGraphBuilder.setAnnotatedEdges(i, edgeEntryBuilder.build());
+			protoNetworkGraphBuilder.addAnnotatedEdges(edgeEntryBuilder.build());
 			i++;
 		}
 	}
@@ -194,10 +197,14 @@ public class NetworkGraph {
 			protobuf.AdvertisementProtos.ProtoNetworkGraph.keyValuePairsFieldEntry.Builder keyValuePairsBuilder = keyValuePairsFieldEntry.newBuilder()
 					.setKey(key)
 					.setValues(keyValues.get(key).toProtoValues());
-			protoNetworkGraphBuilder.setKeyValuePairs(i, keyValuePairsBuilder.build());		
+			protoNetworkGraphBuilder.addKeyValuePairs(keyValuePairsBuilder.build());		
 			i++;
 		}
 	}
+	
+	
+	
+	
 	
 	
 	

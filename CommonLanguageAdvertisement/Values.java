@@ -65,6 +65,11 @@ public class Values {
 		}
 	}
 	
+	public String toString()
+	{
+		return classValues.toString();
+	}
+	
 	
 }
 

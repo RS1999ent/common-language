@@ -25,6 +25,12 @@ public class Node {
 		}
 	}
 	
+	public Node(long asNum, Class supportedClass) {
+		m_ASNum = asNum;
+		m_supportedClasses.add(supportedClass);
+		
+	}
+
 	public long getASNum() {
 		return m_ASNum;
 	}
@@ -80,6 +86,17 @@ public class Node {
 		for (int i = 0; i < protoNode.getSupportedClassesCount(); i++) {
 			m_supportedClasses.add(new Class(protoNode.getSupportedClasses(i)));
 		}
+	}
+	
+	public String toString()
+	{
+		String newString = "<";
+		newString = newString.concat(String.valueOf(m_ASNum));
+		newString = newString.concat(", ");
+		newString = newString.concat(m_supportedClasses.toString());
+		newString = newString.concat(">");
+		return newString;
+		
 	}
 	
 }
