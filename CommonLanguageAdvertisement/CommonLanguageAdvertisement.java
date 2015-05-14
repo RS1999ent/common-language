@@ -7,7 +7,7 @@ import protobuf.AdvertisementProtos.ProtoAdvertisement.Builder;
 
 public class CommonLanguageAdvertisement {
 	private NetworkGraph graph = new NetworkGraph();
-	ArrayList<Class> taggedClasses = new ArrayList<Class>();
+	private ArrayList<Class> taggedClasses = new ArrayList<Class>();
 	
 	public NetworkGraph getGraph() {
 		return graph;
@@ -32,6 +32,7 @@ public class CommonLanguageAdvertisement {
 		return taggedClasses;
 	}
 
+	
 	public ProtoAdvertisement toProtoAdvertisement(){
 		Builder advertisementBuilder = ProtoAdvertisement.newBuilder();
 		for(int i = 0; i < taggedClasses.size(); i++)
