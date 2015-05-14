@@ -10,6 +10,9 @@ import protobuf.AdvertisementProtos.ProtoNetworkGraph.Builder;
 import protobuf.AdvertisementProtos.ProtoNetworkGraph.annotatedEdgesFieldEntry;
 import protobuf.AdvertisementProtos.ProtoNetworkGraph.keyValuePairsFieldEntry;
 
+//class that holds the network graph with all the annotations and
+//key value pairs for classes.
+
 public class NetworkGraph {
 	/*import java.util.Hashtable;
 	import java.util.Set;
@@ -33,15 +36,30 @@ public class NetworkGraph {
 	*/
 	
 	
-	private Hashtable<Node, ArrayList<Node>> adjacencyList = new Hashtable<Node, ArrayList<Node>>();
-	private Hashtable<String, Values> keyValues = new Hashtable<String, Values>();
-	private Hashtable<EdgePair, Values> edgeAnnotation = new Hashtable<EdgePair, Values>();
+	private Hashtable<Node, ArrayList<Node>> adjacencyList =
+			new Hashtable<Node, ArrayList<Node>>();//holds the structure
+												   //of the graph in
+	                                               //an adjacency list
+	private Hashtable<String, Values> keyValues =
+			new Hashtable<String, Values>();// holds key value pairs.
+	 								//uses the values class so that multiple
+									//protocols can key in on the same key
+								   //and see what others have put in that key
+	 							  //as well.
+	private Hashtable<EdgePair, Values> edgeAnnotation = 
+			new Hashtable<EdgePair, Values>(); //allows protocols to
+	                                           //put annotations on
+											   //edges if they want.
+					
 	public NetworkGraph(){
 		
 	}
 	
+	//takes in the protobuf format and extracts the relevent fields into
+	//the adjacency list and hash tables.
 	public NetworkGraph(ProtoNetworkGraph protoNetworkGraph)
 	{
+		//fill adjacency list
 		for(int i = 0; i < protoNetworkGraph.getAdjacencyListCount(); i++)
 		{
 			ProtoAdjacentNodes headAndNeighbor = protoNetworkGraph.getAdjacencyList(i);
@@ -53,12 +71,14 @@ public class NetworkGraph {
 			adjacencyList.put(new Node(headAndNeighbor.getReferenceNode()), neighborList );
 		}
 		
+		//fill key value pairs
 		for(int i = 0; i < protoNetworkGraph.getKeyValuePairsCount(); i++)
 		{
 			keyValuePairsFieldEntry entry = protoNetworkGraph.getKeyValuePairs(i);
 			keyValues.put(entry.getKey(), new Values(entry.getValues()));
 		}
 		
+		//fill annotated edges
 		for(int i = 0; i < protoNetworkGraph.getAnnotatedEdgesCount(); i++)
 		{
 			annotatedEdgesFieldEntry entry = protoNetworkGraph.getAnnotatedEdges(i);
@@ -69,8 +89,11 @@ public class NetworkGraph {
 	}
 	
 	
-	
-	
+	//method that connects a node in the adjency list to some other node
+	//toConnect - the node you want to connect to another node
+	//connectTo - the node you want to connect to.  
+	//Directed edge from toConnect to connectTo.  toConnect must already be
+	//a leading node in the adjacency list.
 	public void addConnection(Node toConnect, Node connectTo)
 	{
 		if(!adjacencyList.containsKey(toConnect))
@@ -96,7 +119,7 @@ public class NetworkGraph {
 		}
 	}
 
-
+	//adds a head node to the adjacency list
 	public void addNode(Node add){	
 		if(!adjacencyList.containsKey(add))
 		{
@@ -104,6 +127,8 @@ public class NetworkGraph {
 		}
 	}
 	
+	//adds values to the key value pairs with the value being associateed
+	//with a particualr class.
 	public void addKeyValue(String key, Class associatedClass,  byte[] value){
 		Values values = keyValues.get(key);
 		if(values != null)
@@ -118,6 +143,7 @@ public class NetworkGraph {
 		}
 	}
 	
+	//adds an edge annotation.  convention is the edge is directed.
 	public void addEdgeAnnotation(EdgePair edge, Class associatedClass, byte[] value)
 	{
 		Values values = edgeAnnotation.get(edge);
@@ -133,6 +159,7 @@ public class NetworkGraph {
 		}
 	}
 	
+	//converts this datastructure into protobuf format.
 	public ProtoNetworkGraph toProtoNetworkGraph()
 	{
 		Builder protoNetworkGraphBuilder = ProtoNetworkGraph.newBuilder();

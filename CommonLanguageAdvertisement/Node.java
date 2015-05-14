@@ -6,17 +6,20 @@ import protobuf.AdvertisementProtos.ProtoClass;
 import protobuf.AdvertisementProtos.ProtoNode;
 import protobuf.AdvertisementProtos.ProtoNode.Builder;
 
-
+//class that holds the information associated with a node
+//on the graph for the common langauge advertisement.
 public class Node {
-	private long m_ASNum;
+	private long m_ASNum; //unique node identifier number. (currently 
+						  //assumed to be asnumber.
 	private ArrayList<Class> m_supportedClasses = 
-			new ArrayList<Class>();
+			new ArrayList<Class>(); //list of classes the node supports
 	
 	public Node(long asNum, ArrayList<Class> supportedClases){
 		m_ASNum = asNum;
 		m_supportedClasses = supportedClases;
 	}
 	
+	//takes protobuf node format and converts extracts relevent fields
 	public Node(ProtoNode protoNode){
 		m_ASNum = protoNode.getNodeNum();
 		for(int i = 0; i < protoNode.getSupportedClassesCount(); i++)
@@ -25,6 +28,9 @@ public class Node {
 		}
 	}
 	
+	//constructs a node with the common case that they ony have one class
+	//more for convenience sake that you don't have to pass a list
+	//every time
 	public Node(long asNum, Class supportedClass) {
 		m_ASNum = asNum;
 		m_supportedClasses.add(supportedClass);
@@ -63,6 +69,7 @@ public class Node {
 		}
 	}
 	
+	//converts the node datastructure to the protobuf node type.
 	public ProtoNode toProtoNode()
 	{
 		Builder protoNodeBuilder = ProtoNode.newBuilder();
@@ -80,6 +87,8 @@ public class Node {
 		return protoNodeBuilder.build();
 	}
 
+	//used for an already existing node and extracting the protobuf
+	//data.  See advertisement.proto
 	public void fromProtoNode(ProtoNode protoNode) {
 		m_ASNum = protoNode.getNodeNum();
 		m_supportedClasses.clear();
@@ -88,6 +97,7 @@ public class Node {
 		}
 	}
 	
+	//format < asnum, [list of suported classes] >
 	public String toString()
 	{
 		String newString = "<";

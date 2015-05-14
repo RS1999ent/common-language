@@ -2,6 +2,9 @@ package CommonLanguageAdvertisement;
 
 import protobuf.AdvertisementProtos.ProtoEdgeNodes;
 
+//a class to used to specify edges between nodes.  Format is
+//node 1 -> node 2.  directed graph edge.  Used for edge annotations.
+
 public class EdgePair{
 		public Node node1;
 		public Node node2;
