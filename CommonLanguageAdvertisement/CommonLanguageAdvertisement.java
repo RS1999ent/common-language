@@ -59,5 +59,18 @@ public class CommonLanguageAdvertisement {
 		return advertisementBuilder.build();
 	}
 	
+	public String toString()
+	{
+		String returnString = "NetworkGraph:\n";
+		returnString = returnString.concat(graph.toString());
+		returnString = returnString.concat("\n");
+		returnString = returnString.concat("TaggedClasses:\n");
+		returnString = returnString.concat(taggedClasses.toString());
+		returnString = returnString.concat("\n");
+		return returnString;
+				
+		
+	}
+	
 	
 }

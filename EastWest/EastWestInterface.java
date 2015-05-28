@@ -1,4 +1,5 @@
 package EastWest;
+import java.util.EmptyStackException;
 import java.util.Stack;
 
 import CommonLanguageAdvertisement.CommonLanguageAdvertisement;
@@ -21,14 +22,18 @@ public class EastWestInterface implements Runnable {
 	
 	public synchronized CommonLanguageAdvertisement getNextAdvertisement()
 	{
-		CommonLanguageAdvertisement advert = advertisements.pop();
-		if(advert != null)
-		{
-			return advert;
-		}
-		else{
+		try {
+			return advertisements.pop();
+		} catch (EmptyStackException e) {
 			return null;
 		}
+//		if(advert != null)
+//		{
+//			return advert;
+//		}
+//		else{
+//			return null;
+//		}
 	}
 	
 	public void sendAdvertisement(int port, String host, CommonLanguageAdvertisement advert)
@@ -47,6 +52,7 @@ public class EastWestInterface implements Runnable {
 					advertisements.push(advert);
 				}
 			}
+			
 			try {
 				Thread.sleep(SLEEPTIME);
 			} catch (InterruptedException e) {

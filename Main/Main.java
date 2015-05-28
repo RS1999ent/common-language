@@ -16,8 +16,9 @@ public class Main {
 //	private Configuration config;
 
 	public static void main(String[] args) {
-		EastWestInterface ex_interface;
+		EastWestInterface ew_interface = null;
 		Configuration config = null;
+		Thread  ew_interfaceThread = null;
 		System.out.println(args[0]);
 		try {
 			config = new PropertiesConfiguration(args[0]);
@@ -27,10 +28,17 @@ public class Main {
 		}
 
 		int myPort = config.getInt("port");
+		System.out.println(myPort);
 		String myIP = config.getString("IP");
+		System.out.println(myIP);
 		long asNum = config.getLong("ASNum");
+		System.out.println(asNum);
 		long supportedClass = config.getLong("SupportedClass");
-		ex_interface = new EastWestInterface(myPort, myIP);
+		System.out.println(supportedClass);
+		ew_interface = new EastWestInterface(myPort, myIP);
+		ew_interfaceThread = new Thread(ew_interface);
+		ew_interfaceThread.start();
+		
 
 		String[] neighborIP = config.getStringArray("neighbor.IP");
 		String[] neighborPort = config.getStringArray("neighbor.port");
@@ -45,7 +53,7 @@ public class Main {
 
 			for (int j = 0; j < neighborIP.length; j++) {
 				System.out.println("here");
-				ex_interface.sendAdvertisement(
+				ew_interface.sendAdvertisement(
 						Integer.parseInt(neighborPort[j]), neighborIP[j],
 						advert);
 			}
@@ -53,7 +61,7 @@ public class Main {
 		}
 		
 		while (true) {
-			CommonLanguageAdvertisement advert = ex_interface
+			CommonLanguageAdvertisement advert = ew_interface
 					.getNextAdvertisement();
 			System.out.println(advert.toString());
 		}

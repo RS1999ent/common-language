@@ -61,14 +61,18 @@ public class RPCServer implements Runnable {
   }
 	
 	public synchronized CommonLanguageAdvertisement popAdvertisement(){
-		CommonLanguageAdvertisement advert = receivedAdverts.pop();
-		if(advert != null){
+		try {
+			return receivedAdverts.pop();
+		} catch (EmptyStackException e) {
+			return null;
+		}
+	/*	if(advert != null){
 			return advert;			
 		}
 		else 
 		{
 			return null;
-		}
+		}*/
 	}
 	
 	
@@ -115,14 +119,16 @@ public class RPCServer implements Runnable {
 			CommonLanguageAdvertisement deProtodAdvert = 
 					new CommonLanguageAdvertisement(adver);
 			
-			receivedAdverts.add(deProtodAdvert);
-			responseObserver.onValue(reply);
-			responseObserver.onCompleted();
+			synchronized (receivedAdverts) {
+				receivedAdverts.add(deProtodAdvert);
+				responseObserver.onValue(reply);
+				responseObserver.onCompleted();
+			}
 		}
 		
 		//grabs an advertisement from the arraylist.  returns null if
 		// there is none;
-		public CommonLanguageAdvertisement popAdvertisement() {
+		public synchronized CommonLanguageAdvertisement popAdvertisement() {
 			try {
 				return receivedAdverts.pop();
 			} catch (EmptyStackException e) {
