@@ -12,7 +12,7 @@ public class CommonLanguageAdvertisement {
 	private NetworkGraph graph = new NetworkGraph();
 	private ArrayList<Class> taggedClasses = new ArrayList<Class>();
 	
-	
+	public CommonLanguageAdvertisement(){}
 	
 	public CommonLanguageAdvertisement(ProtoAdvertisement advertisement)
 	{
