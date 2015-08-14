@@ -1,6 +1,12 @@
 import java.util.*;
 import java.io.*;
 
+import jdk.nashorn.internal.runtime.regexp.joni.constants.Arguments;
+import net.sourceforge.argparse4j.ArgumentParsers;
+import net.sourceforge.argparse4j.inf.ArgumentParser;
+import net.sourceforge.argparse4j.inf.ArgumentParserException;
+import net.sourceforge.argparse4j.inf.Namespace;
+
 /**
  * file: Simulator.java
  * @author John
@@ -513,6 +519,7 @@ public class Simulator {
 	    case 1:
 	    case 5:
 	    case 6:
+	    case 7: //CHANGED
 		changedPathLoopCheck(as, dst, oldPath, newPath);
 		break;
 
@@ -956,19 +963,40 @@ public class Simulator {
 	 * @param args
 	 */
 	public static void main(String[] args) throws Exception {
-		if( args.length != 5 ) {
+		/*if( args.length != 5 ) {
 			System.err.println("Usage:\n\t java Simulator <topology-file> <link-failure-file> <single-homed-parents-file> <seed-value> <mode>\n");
 			System.exit(-1);
+		}*/
+		
+		ArgumentParser parser = ArgumentParsers.newArgumentParser("Simulator")
+				.defaultHelp(true)
+				.description("Simulator to simulate integrated advertisements and passthroughs");
+		parser.addArgument("ASRelationships").metavar("ASRel").type(String.class);
+		parser.addArgument("failLinksFile").metavar("FailLinks").type(String.class);
+		parser.addArgument("--parentsFile").metavar("ParentsFile").type(String.class);
+		parser.addArgument("--seed").required(true).metavar("seed").type(Long.class);
+		parser.addArgument("--sim").required(true).metavar("sim").type(Integer.class);
+		Namespace arguments = null;
+		try{
+			System.out.println(parser.parseArgs(args));
+			arguments = parser.parseArgs(args);				
 		}
+		catch(ArgumentParserException e){
+			parser.handleError(e);
+			System.exit(1);
+		}
+			
+		
+		
 		out = new BufferedWriter(new FileWriter("output.log"));
-		seedVal = Long.parseLong(args[3]);
-		String topologyFile = args[0];
-		String linkFile = args[1];
-		String parentsFile = args[2];
-		simMode = Integer.parseInt(args[4]);
+		seedVal = arguments.getLong("seed");
+		String topologyFile = arguments.getString("ASRelationships");
+		String linkFile = arguments.getString("failLinksFile");
+		String parentsFile = arguments.getString("--parentsFile");
+		simMode = arguments.getInt("sim");
 		readTopology(topologyFile);
 		readLinks(linkFile);
-		readParents(parentsFile);
+		//readParents(parentsFile);
 		
 		r = new Random(seedVal);
 		numAses = asMap.size();
@@ -1000,6 +1028,11 @@ public class Simulator {
 		case 6:
 		    runTAASASSimulations();
 		    break;
+		  
+		case 7:
+			System.out.println("Number of connected components: " + numConnectedComponents() + "\n");
+			IASimulation();
+			break;
 
 		default:
 		    System.err.println("Invalid simulation mode!");
@@ -1008,6 +1041,112 @@ public class Simulator {
 		out.close();
 	}
 
+	public static int numConnectedComponents()
+	{
+		int numConnectedComponents = 0;
+		HashSet<Integer> verticesSeenSoFar = new HashSet<Integer>();
+		for(Integer asMapKey: asMap.keySet()){
+			//perform breadth first search
+			if(!verticesSeenSoFar.contains(asMapKey))
+			{
+				numConnectedComponents++;
+				int ccSize = 0;
+	//			System.out.println("DEBUG CCs: " + numConnectedComponents );
+				ArrayDeque<Integer> searchQueue = new ArrayDeque<Integer>();
+				searchQueue.add(asMapKey);
+				verticesSeenSoFar.add(asMapKey);
+				while(!searchQueue.isEmpty())
+				{
+	//				System.out.print("searchqueuesize: " + searchQueue.size() + "\r");
+					Integer searchEntry = searchQueue.pop();
+					AS searchAS = asMap.get(searchEntry);
+					verticesSeenSoFar.add(searchEntry);
+					ccSize++;
+					for(Integer customer : searchAS.customers)
+					{
+						if(!verticesSeenSoFar.contains(customer))
+						{
+							searchQueue.add(customer);
+						}
+					}
+					for(Integer peer : searchAS.peers)
+					{
+						if(!verticesSeenSoFar.contains(peer))
+						{
+							searchQueue.add(peer);
+						}
+					}
+					for(Integer provider : searchAS.providers)
+					{
+						if(!verticesSeenSoFar.contains(provider))
+						{
+							searchQueue.add(provider);
+						}
+					}
+				}
+				System.out.println("DEBUG ccsize: " + ccSize);
+			}
+		}
+		return numConnectedComponents;
+		
+	}
+	
+	public static void IASimulation(){
+		
+		// the set of ASes whose paths are affected by this failure
+		HashSet<Integer> relevantASes = new HashSet<Integer>();
+		HashSet<Integer> validASes = new HashSet<Integer>();
+		tier1ASes = computeTier1();
+
+		/* Obtaining tier-1 paths */
+
+		// We first announce all the tier-1 ASes and save 
+		// the paths from each of our failure-provider to the tier1
+		simTime = 0;
+		upstreamASes.clear();
+		r = new Random(seedVal);
+		ArrayList<Integer> announcedASes = new ArrayList<Integer>();
+		
+		for( Integer asMapKey : asMap.keySet())
+		{
+			int rVal = r.nextInt() % 1600;
+			if(rVal == 0){
+				asMap.get(asMapKey).announceSelf();
+				announcedASes.add(asMapKey);
+
+			}
+		}
+		System.out.println("Number of announced ASes: " + announcedASes.size());
+		instrumented = false;
+		run();
+		
+		for( Integer upstreamASKey : upstreamASes.keySet())
+		{
+			int numUpstreamAses = upstreamASes.get(upstreamASKey).size();
+			if (announcedASes.contains(upstreamASKey) && (numUpstreamAses-1) != numAses)
+			{
+				System.out.println("not fully connect graph for " + upstreamASKey);
+				System.out.println("num upstream ases: " + numUpstreamAses);
+				System.out.println("total num of ases: " + numAses);
+			}
+		/*	else if(numUpstreamAses != numAses)
+			{
+				System.out.println("not fully connect graph for " + upstreamASKey);
+				System.out.println("num upstream ases: " + numUpstreamAses);
+				System.out.println("total num of ases: " + numAses);
+				
+			}*/
+		}
+		//for(Iterator<Integer>it = tier1ASes.iterator(); it.hasNext();) {
+//			int tier1 = it.next();
+			//asMap.get(tier1).announceSelf();
+		//}
+		
+		
+		
+		
+	}
+	
 	public static void runBGPOverheadSimulations() {
 		int numLinks = failureCustomer.size();
 		for(int i=0; i<numLinks; i++) {

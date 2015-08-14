@@ -20,13 +20,12 @@ def preProcessCAIDA():
         relationship = int(split[2])
         key = split[0] + ' ' + split[1];
         if key not in CAIDAHash:
-            CAIDAHash[key] = relationship
+            CAIDAHash[key] = [relationship]
             
         if relationship == 0:
             peerKey = split[1] + ' ' + split[0]
             if peerKey not in CAIDAHash:
-                CAIDAHash[peerKey] = relationship
-
+                CAIDAHash[peerKey] = [relationship]
 
 
 preProcessCAIDA()        
@@ -42,14 +41,19 @@ for line in interASFile:
     key2 = AS2 + ' ' + AS1
 
     if key1 in CAIDAHash:
-        outFile.write(AS1 + ' ' + AS2 + ' ' + str(CAIDAHash[key1]) + ' ' + latency + ' ' + pop1 + ' ' + pop2 + '\n')
+        outFile.write(AS1 + ' ' + AS2 + ' ' + str(CAIDAHash[key1][0]) + ' ' + latency + ' ' + pop1 + ' ' + pop2 + '\n')
+        if not len(CAIDAHash[key1]) > 1:
+                   CAIDAHash[key1] = (CAIDAHash[key1][0], True)
 #        print AS1, AS2, CAIDAHash[key1], latency, pop1, pop2
     elif key2 in CAIDAHash and key1 not in CAIDAHash:
-        outFile.write(AS2 + ' ' + AS1 + ' ' + str(CAIDAHash[key2]) + ' ' + latency + ' ' + pop2 + ' ' + pop1 + '\n')
+        outFile.write(AS2 + ' ' + AS1 + ' ' + str(CAIDAHash[key2][0]) + ' ' + latency + ' ' + pop2 + ' ' + pop1 + '\n')
+        if not len(CAIDAHash[key2]) > 1:
+                   CAIDAHash[key2] = (CAIDAHash[key2][0], True)
  #       print AS2, AS1, CAIDAHash[key2], latency, pop2, pop1
     else:
-        noMatchFile.write('no matching val in CAIDA: ' +  line)
+        noMatchFile.write('caida > iplane missing: ' +  line)
 
-
-
+for element in CAIDAHash:
+    if not len(CAIDAHash[element]) > 1:
+        noMatchFile.write('iplane > caida missing' + element + ' ' + str(CAIDAHash[element])+ '\n')
     
