@@ -4,29 +4,38 @@ parser = argparse.ArgumentParser(description="Annotate iplane data with AS relat
 parser.add_argument('interAS', metavar='interAS', nargs=1, help = "interAS file")
 parser.add_argument('convertedCAIDA', metavar='CAIDA', nargs=1, help = "converted CAIDA file")
 parser.add_argument('outFile', metavar = 'outputFile', nargs=1, help = 'file to output annotated data')
-parser.add_argument('logFile', metavar = 'logfile', nargs=1, help = 'log file holding unmatched data')
+parser.add_argument('caidaNiplane', metavar = 'caidaNiplane', nargs=1, help = 'log file for holding caida data not in iplane')
+parser.add_argument('iplaneNcaida', metavar = 'iplaneNcaida', nargs = 1, help = 'log file for holding iplane data not in ciada')
 
 args = parser.parse_args()
 interASFile = open(args.interAS[0], 'r')
 convertedCAIDAFile = open(args.convertedCAIDA[0], 'r')
 outFile = open(args.outFile[0], 'w')
-noMatchFile = open(args.logFile[0], 'w')
+caidaNiplaneFile = open(args.caidaNiplane[0], 'w')
+iplaneNcaidaFile = open(args.iplaneNcaida[0], 'w')
 
 CAIDAHash = {}
-
+CAIDAASes = []
 
 def preProcessCAIDA():
     for line in convertedCAIDAFile:
         split = line.split()
         relationship = int(split[2])
+        AS1 = split[0]
+        AS2 = split[1]
         key = split[0] + ' ' + split[1];
         if key not in CAIDAHash:
             CAIDAHash[key] = [relationship]
-            
+
+        if AS1 not in CAIDAASes:
+            CAIDAASes.append(AS1)
+        if AS2 not in CAIDAASes:
+            CAIDAASes.append(AS2)
 #        if relationship == 0:
 #            peerKey = split[1] + ' ' + split[0]
 #            if peerKey not in CAIDAHash:
 #                CAIDAHash[peerKey] = [relationship]
+
 
 
 preProcessCAIDA()
@@ -74,12 +83,12 @@ for line in interASFile:
                    CAIDAHash[key2] = (CAIDAHash[key2][0], True)
  #       print AS2, AS1, CAIDAHash[key2], latency, pop2, pop1
     else:
-        noMatchFile.write('caida > iplane missing: ' +  line)
+        iplaneNcaidaFile.write(AS1 + ' ' + AS2 + ' ' + latency + ' ' + pop1 + ' ' + pop2 + ' ' + '\n')
 
 unMatched = 0        
 for element in CAIDAHash:
     if not len(CAIDAHash[element]) > 1:
-        noMatchFile.write('iplane > caida missing' + element + ' ' + str(CAIDAHash[element])+ '\n')
+        caidaNiplaneFile.write(element + ' ' + str(CAIDAHash[element])+ '\n')
         unMatched += 1
     
 print "Links matched: ", linksMatched
@@ -88,3 +97,4 @@ print "NodesMatched: ", len(nodesMatched)
 print "NodesTotal: ", len(nodesSeen), '\n'
 print "link in caida not in iplane: ", unMatched
 print "total caida links: ", len(CAIDAHash)
+print "total caida ASes: ", len(CAIDAASes)
