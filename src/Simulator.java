@@ -1031,7 +1031,7 @@ public class Simulator {
 		  
 		case 7:
 			System.out.println("Number of connected components: " + numConnectedComponents() + "\n");
-			IASimulation();
+			//IASimulation();
 			break;
 
 		default:
@@ -1045,6 +1045,8 @@ public class Simulator {
 	{
 		int numConnectedComponents = 0;
 		HashSet<Integer> verticesSeenSoFar = new HashSet<Integer>();
+		System.out.println("[DEBUG] total ASes: " + asMap.size());
+		int ccSizeAggregateSum = 0;
 		for(Integer asMapKey: asMap.keySet()){
 			//perform breadth first search
 			if(!verticesSeenSoFar.contains(asMapKey))
@@ -1060,13 +1062,14 @@ public class Simulator {
 	//				System.out.print("searchqueuesize: " + searchQueue.size() + "\r");
 					Integer searchEntry = searchQueue.pop();
 					AS searchAS = asMap.get(searchEntry);
-					verticesSeenSoFar.add(searchEntry);
+//					verticesSeenSoFar.add(searchEntry);
 					ccSize++;
 					for(Integer customer : searchAS.customers)
 					{
 						if(!verticesSeenSoFar.contains(customer))
 						{
 							searchQueue.add(customer);
+							verticesSeenSoFar.add(customer);
 						}
 					}
 					for(Integer peer : searchAS.peers)
@@ -1074,6 +1077,7 @@ public class Simulator {
 						if(!verticesSeenSoFar.contains(peer))
 						{
 							searchQueue.add(peer);
+							verticesSeenSoFar.add(peer);
 						}
 					}
 					for(Integer provider : searchAS.providers)
@@ -1081,12 +1085,15 @@ public class Simulator {
 						if(!verticesSeenSoFar.contains(provider))
 						{
 							searchQueue.add(provider);
+							verticesSeenSoFar.add(provider);
 						}
 					}
 				}
 				System.out.println("DEBUG ccsize: " + ccSize);
+				ccSizeAggregateSum += ccSize;
 			}
 		}
+		System.out.println("[DEBUG] ccSizeAggregateSum: " + ccSizeAggregateSum);
 		return numConnectedComponents;
 		
 	}
