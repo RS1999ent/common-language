@@ -343,7 +343,9 @@ public class BGP_AS extends AS {
 		if(temp == null) {
 			return false;
 		}
-		temp.remove(nextHop);
+		IA path = temp.get(nextHop);
+		passThrough.removeFromDatabase(IA.pathToKey(path.getPath())); //[COMMENT] added, if removing path from RIB, remove it from passthrough database
+		temp.remove(nextHop);		
 		return true;
 	}
 
@@ -413,11 +415,12 @@ public class BGP_AS extends AS {
 		if(type == ControlMessage.ANNOUNCE) { // need to announce current best path
 			IA copy = new IA(p.getPath(), p.getRootCause());
 			// need to always send a copy!
-			copy.prepend(asn);
+			passThrough.attachPassthrough(copy); //[ADDED]
+			copy.prepend(asn);		
 			uwMsg = new UpdateMessage(asn, prefix, copy); // TODO: Do we need to change root cause?
 		}
 		else { // WITHDRAW
-			uwMsg = new WithdrawMessage(asn, prefix, new RootCause(asn, currentUpdate++, dst));
+			uwMsg = new WithdrawMessage(asn, prefix, new RootCause(asn, currentUpdate++, dst)); //[COMMENT] need to change?
 		}
 		
 		Simulator.addEvent( new Event(Simulator.getTime() + LINK_DELAY,
@@ -661,6 +664,7 @@ public class BGP_AS extends AS {
 			// to all our peers
 		    Simulator.debug("BGP_AS" + asn + ": Added best path to dst BGP_AS" + dst + ": " + p.getPath());
 			bestPath.put(dst, p);
+			p = passThrough.attachPassthrough(p); //[COMMENT] added
 			addPathToUpdates(p, Simulator.otherTimers);
 
 			dstRIBHistMap.get(dst).addUpdateToHistory(p, nextHop);
@@ -672,6 +676,7 @@ public class BGP_AS extends AS {
 			// we need to find the new best path
 			if(p.getPath()==null) { // this is a withdrawal of our active path .. so we are temporarily disconnected
 				Simulator.addAffected(asn);
+				passThrough.removeFromDatabase(IA.pathToKey(p.getPath())); //[COMMENT] added if our best path is being withdrawn, remove it from passthroughdatabase
 			}
 			
 			ArrayList<IA> allPathsToDst = new ArrayList<IA>(ribIn.get(dst).values());
@@ -702,6 +707,7 @@ public class BGP_AS extends AS {
 			dstRIBHistMap.get(dst).addUpdateToHistory(newBestPath, nextHop);
 
 			if(newBestPath.getPath() != null) {
+				newBestPath = passThrough.attachPassthrough(newBestPath);
 				addPathToUpdates(newBestPath, Simulator.otherTimers);
 				sendWithdrawalsIfNecessary(bp, newBestPath);
 				dstRIBHistMap.get(dst).addToSequence(newBestPath.getRootCause());

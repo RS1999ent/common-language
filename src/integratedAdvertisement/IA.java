@@ -42,7 +42,11 @@ public class IA {
 	 * @param as The AS that is to be added to the beginning of the path
 	 */
 	public void prepend(int as) {
+		Integer key = pathToKey(legacyPath);
 		getPath().addFirst(as);
+		paths.remove(key);
+		paths.put(pathToKey(legacyPath), legacyPath);
+		
 	}
 	
 	/**
@@ -104,6 +108,11 @@ public class IA {
 	public void setPath(LinkedList<Integer> path)
 	{
 		paths.put(pathToKey(path), path);
+	}
+	
+	public void removePath(Integer pathKey)
+	{
+		paths.remove(pathKey);
 	}
 	
 	public Set<Integer> getPathKeys()
