@@ -9,6 +9,7 @@ import java.util.HashMap;
 import java.util.Set;
 
 import integratedAdvertisement.IA;
+import integratedAdvertisement.PassThrough;
 import integratedAdvertisement.RootCause;
 
 /**
@@ -30,6 +31,8 @@ public abstract class AS {
 
 	/** Set of neighbors that are peers */
 	ArrayList<Integer> peers = new ArrayList<Integer>();
+	
+	PassThrough passThrough = new PassThrough(); //enable passthroughfunctionality for AS
 	
 	public Integer asn;
 	

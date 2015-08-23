@@ -14,6 +14,11 @@ public class PassThrough {
 	//keyed on pathTokey. links to aggregated values that were received. IA value contains info for a single path, multipath not used
 	HashMap<Integer, IA> passThroughDatabase = new HashMap<Integer, IA>();
 	
+	public PassThrough()
+	{
+		
+	}
+	
 	public IA attachPassthrough(IA advertisement )
 	{
 		//for each path, attach values from passthroughdatabase
@@ -64,7 +69,7 @@ public class PassThrough {
 	//only protocol information not contained in val1 will be merged from val2. Val1 has precedence
 	private Values mergeValues(Values val1, Values val2)
 	{
-		Values mergedValue = new Values();
+	//	Values mergedValue = new Values();
 		for(Long protocol : val2.getKeySet())
 		{
 			if(!val1.getKeySet().contains(protocol))
