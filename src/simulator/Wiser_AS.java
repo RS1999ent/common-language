@@ -1,28 +1,17 @@
 package simulator;
-/**
- * file: BGP_AS.java
- * @author John
- *
- */
 
 import integratedAdvertisement.IA;
 import integratedAdvertisement.RootCause;
 
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.Iterator;
+import java.util.List;
+import java.util.Set;
 
-/**
- * This class defines and Autonomous System or BGP_AS. Each BGP_AS has a unique
- * BGP_AS number, which is its sole identifier. The BGP_AS class is responsible
- * for handling events which are addressed to it. The BGP_AS also contains
- * the RIB-in and RIB-out and the Forwarding Table.
- * 
- * When an update is received, it runs the BGP decision algorithm, and
- * picks the best new best path. If it is different from the previous
- * one, it generates updates to be sent to each of its peers.
- */
-public class BGP_AS extends AS {
-
-	
+public class Wiser_AS extends AS {
 	private static final int LINK_DELAY = 100; // static link delay of 10 ms
 
 	/** The BGP_AS number of this BGP_AS */
@@ -108,7 +97,7 @@ public class BGP_AS extends AS {
 	 * 
 	 * @param asnum The BGP_AS number of this BGP_AS
 	 */
-	public BGP_AS(int asnum, int mrai) {
+	public Wiser_AS(int asnum, int mrai) {
 		asn = asnum;
 		mraiValue = mrai;
 
@@ -158,7 +147,7 @@ public class BGP_AS extends AS {
 		neighborLatency.put(as, latency);
 
 	}
-	
+
 	/**
 	 * This function is used to reset the state of the BGP_AS
 	 *
@@ -954,7 +943,7 @@ public class BGP_AS extends AS {
 		
 		int p1nhType = neighborMap.get(p1nh);
 		int p2nhType = neighborMap.get(p2nh);
-
+		
 		if( p1nhType < p2nhType ) { //
 			return true;
 		}
@@ -1155,6 +1144,4 @@ public class BGP_AS extends AS {
 		}
 		return table;
 	}
-
-
 }

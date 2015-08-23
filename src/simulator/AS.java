@@ -23,6 +23,9 @@ public abstract class AS {
 	static final int CUSTOMER = -1;
 	static final int SIBLING = 2;
 	
+	static final int BGP = 500;
+	static final int WISER = 501;
+	
 		/** Set of neighbors that are customers */
 	ArrayList<Integer> customers = new ArrayList<Integer>();
 
@@ -32,9 +35,13 @@ public abstract class AS {
 	/** Set of neighbors that are peers */
 	ArrayList<Integer> peers = new ArrayList<Integer>();
 	
+	HashMap<Integer, Integer> neighborLatency = new HashMap<Integer, Integer>();
+	
 	PassThrough passThrough = new PassThrough(); //enable passthroughfunctionality for AS
 	
 	public Integer asn;
+	
+	public Integer protocol;
 	
 	HashMap<Integer,IA> bestPath = new HashMap<Integer, IA>();
 
@@ -53,6 +60,9 @@ public abstract class AS {
 	public abstract void addPeer(int as2);
 
 	public abstract void addProvider(int as2);
+	
+	//adds latency between yourself and a neighboring as
+	public abstract void addLatency(int as, int latency);
 
 	//gets all the paths for a particular destination (in the ribIn)
 	public abstract Collection<IA> getAllPaths(int dst);

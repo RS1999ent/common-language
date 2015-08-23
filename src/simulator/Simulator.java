@@ -1049,7 +1049,7 @@ public class Simulator {
 	{
 		int numConnectedComponents = 0;
 		HashSet<Integer> verticesSeenSoFar = new HashSet<Integer>();
-		System.out.println("[DEBUG] total ASes: " + asMap.size());
+//		System.out.println("[DEBUG] total ASes: " + asMap.size());
 		int ccSizeAggregateSum = 0;
 		for(Integer asMapKey: asMap.keySet()){
 			//perform breadth first search
@@ -1093,11 +1093,11 @@ public class Simulator {
 						}
 					}
 				}
-				System.out.println("DEBUG ccsize: " + ccSize);
+//				System.out.println("DEBUG ccsize: " + ccSize);
 				ccSizeAggregateSum += ccSize;
 			}
 		}
-		System.out.println("[DEBUG] ccSizeAggregateSum: " + ccSizeAggregateSum);
+//		System.out.println("[DEBUG] ccSizeAggregateSum: " + ccSizeAggregateSum);
 		return numConnectedComponents;
 		
 	}
@@ -1984,13 +1984,22 @@ public class Simulator {
 			int as1 = Integer.parseInt(token[0]);
 			int as2 = Integer.parseInt(token[1]);
 			int relation = Integer.parseInt(token[2]);
+			int latency = Integer.parseInt(token[3]);
+			int as1Type = Integer.parseInt(token[4]);
+			int as2Type = Integer.parseInt(token[5]);
 			if(relation == AS.SIBLING) // we don't deal with this now
 				continue;
 			AS temp1, temp2;
 			if(!asMap.containsKey(as1)) {
 				int mraiVal = (int)(Math.round((r.nextFloat()*0.25 + 0.75)*MRAI_TIMER_VALUE/1000)*1000);
 //				System.err.println("AS" + as1 + " MRAI: " + mraiVal);
-				temp1 = new BGP_AS(as1, mraiVal); //CHANGE TO BE GENERIC
+				if(as1Type == AS.BGP)
+					temp1 = new BGP_AS(as1, mraiVal); //
+				else
+				{
+					temp1 = new Wiser_AS(as1, mraiVal);
+				}
+				temp1.protocol = as1Type;
 				asMap.put(as1, temp1);
 			}
 			temp1 = asMap.get(as1);
@@ -1998,7 +2007,13 @@ public class Simulator {
 			if(!asMap.containsKey(as2)) {
 				int mraiVal = (int)(Math.round((r.nextFloat()*0.25 + 0.75)*MRAI_TIMER_VALUE/1000)*1000);
 //				System.err.println("AS" + as2 + " MRAI: " + mraiVal);
-				temp2 = new BGP_AS(as2, mraiVal); //CHANGE TO BE GENERIC
+				if(as2Type == AS.WISER)
+					temp2 = new BGP_AS(as2, mraiVal); //CHANGE TO BE GENERIC
+				else
+				{
+					temp2 = new Wiser_AS(as2, mraiVal);
+				}
+				temp2.protocol = as2Type;
 				asMap.put(as2, temp2);
 			}
 			temp2 = asMap.get(as2);
@@ -2017,6 +2032,9 @@ public class Simulator {
 				temp1.addPeer(as2);
 				temp2.addPeer(as1);
 			}
+			
+			temp1.addLatency(temp2.asn, latency);
+			temp2.addLatency(temp1.asn, latency);
 //			else { // sibling?
 //			temp1.addCustomer(as2);
 //			temp2.addCustomer(as1);
