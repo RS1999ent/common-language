@@ -30,7 +30,7 @@ public class WithdrawMessage extends UWMessage{
 		asn = asnum;
 		messageType = WITHDRAW_MSG;
 		asPath = new IA(rc);
-		asPath.setPath(null);
+		asPath.setPath_Legacy(null);
 		prefixes = toArray(wp);
 	}
 	

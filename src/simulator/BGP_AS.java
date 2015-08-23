@@ -623,7 +623,7 @@ public class BGP_AS extends AS {
 		if(p.contains(asn)) { // path has loop, consider it a withdrawal from that neighbor!
 //			removePathFromRIBIn(dst, nextHop);
 //			return;
-			p.setPath(null);
+			p.setPath_Legacy(null);
 		}
 
 		// if withdrawal not for a path rcvd previously, ignore!

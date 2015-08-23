@@ -89,12 +89,29 @@ public class IA {
 		return legacyPath;
 	}
 
+	public LinkedList<Integer> getPath(Integer key)
+	{
+		return paths.get(key);
+	}
+
 	/**
 	 * @param path the path to set
 	 */
-	public void setPath(LinkedList<Integer> path) {
-		this.legacyPath = path;
+	public void setPath_Legacy(LinkedList<Integer> path) {
+		this.legacyPath = path;		
 	}
+	
+	public void setPath(LinkedList<Integer> path)
+	{
+		paths.put(pathToKey(path), path);
+	}
+	
+	public Set<Integer> getPathKeys()
+	{
+		return paths.keySet();
+	}
+	
+
 	
 	public static Integer pathToKey(LinkedList<Integer> p)
 	{
@@ -111,6 +128,11 @@ public class IA {
 	public Values getPathAttributes(LinkedList<Integer> path)
 	{
 		return pathValues.get(pathToKey(path));
+	}
+	
+	public Values getPathAttributes(Integer key)
+	{
+		return pathValues.get(key);
 	}
 	
 	public void setPathAttributes(Values value, LinkedList<Integer> path)
