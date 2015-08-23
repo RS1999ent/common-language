@@ -1,9 +1,9 @@
+/IA.class
 /AS.class
 /ControlMessage.class
 /Event.class
 /FloodMessage.class
 /Message.class
-/Path.class
 /RIBHist.class
 /RootCause.class
 /Simulator.class
@@ -12,4 +12,4 @@
 /UpdateDependency.class
 /UpdateMessage.class
 /WithdrawMessage.class
-/IA.class
+/BGP_AS.class

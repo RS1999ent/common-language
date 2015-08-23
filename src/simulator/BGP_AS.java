@@ -1,47 +1,38 @@
+package simulator;
 /**
- * file: AS.java
+ * file: BGP_AS.java
  * @author John
  *
  */
 
+import integratedAdvertisement.IA;
+import integratedAdvertisement.RootCause;
+
 import java.util.*;
 
 /**
- * This class defines and Autonomous System or AS. Each AS has a unique
- * AS number, which is its sole identifier. The AS class is responsible
- * for handling events which are addressed to it. The AS also contains
+ * This class defines and Autonomous System or BGP_AS. Each BGP_AS has a unique
+ * BGP_AS number, which is its sole identifier. The BGP_AS class is responsible
+ * for handling events which are addressed to it. The BGP_AS also contains
  * the RIB-in and RIB-out and the Forwarding Table.
  * 
  * When an update is received, it runs the BGP decision algorithm, and
  * picks the best new best path. If it is different from the previous
  * one, it generates updates to be sent to each of its peers.
  */
-public class AS {
+public class BGP_AS extends AS {
 
-	static final int PROVIDER = 1;
-	static final int PEER = 0;
-	static final int CUSTOMER = -1;
-	static final int SIBLING = 2;
 	
 	private static final int LINK_DELAY = 100; // static link delay of 10 ms
 
-	/** The AS number of this AS */
-	public int asn;
+	/** The BGP_AS number of this BGP_AS */
+	//public int asn;
 
 	/** The current epoch */
 	private int currentEpoch;
 
 	/** The current update number root-caused by me */
 	public int currentUpdate;
-
-	/** Set of neighbors that are customers */
-	ArrayList<Integer> customers = new ArrayList<Integer>();
-
-	/** Set of neighbors that are providers */
-	ArrayList<Integer> providers = new ArrayList<Integer>();
-
-	/** Set of neighbors that are peers */
-	ArrayList<Integer> peers = new ArrayList<Integer>();
 
 	/** The MRAI timer value */
 	int mraiValue;
@@ -52,18 +43,18 @@ public class AS {
 	// we also need to store all the paths received from neighbors for each
 	// destination. this would be our rib-in. the rib-in is implemented as
 	// a pair of nested hash tables: hashed on <prefix, neighbor>
-	HashMap<Integer, HashMap<Integer,Path>> ribIn = new HashMap<Integer, HashMap<Integer, Path>>();
+	HashMap<Integer, HashMap<Integer,IA>> ribIn = new HashMap<Integer, HashMap<Integer, IA>>();
 
 	/** Stores the current best path to each prefix 
 	 *	This is almost equivalent to the forwarding table :) 
 	 */
-	HashMap<Integer,Path> bestPath = new HashMap<Integer, Path>();
+	//HashMap<Integer,IA> bestPath = new HashMap<Integer, IA>();
 
 	/** Old/current Stable Forwarding Table */
-	HashMap<Integer,Path> SFT = new HashMap<Integer, Path>();
+	HashMap<Integer,IA> SFT = new HashMap<Integer, IA>();
 
 	/** New Stable Forwarding Table SFT' */
-	HashMap<Integer,Path> SFTp = new HashMap<Integer, Path>();
+	HashMap<Integer,IA> SFTp = new HashMap<Integer, IA>();
 
 	/** 
 	 * Stores the set of pending updates for a peer.
@@ -71,7 +62,7 @@ public class AS {
 	 * This is because when the MRAI timer expires for a peer, 
 	 * you want to get all the messages for that peer
 	 */
-	HashMap<Integer, HashMap<Integer,Path>> pendingUpdates = new HashMap<Integer, HashMap<Integer, Path>>();
+	HashMap<Integer, HashMap<Integer,IA>> pendingUpdates = new HashMap<Integer, HashMap<Integer, IA>>();
 
 	/**
 	 * Stores the RIBHist for each destination. The RIBHist contains the history of
@@ -113,11 +104,11 @@ public class AS {
 	HashSet<UpdateDependency> floodsConditional = new HashSet<UpdateDependency>();
 
 	/**
-	 * The constructor for an AS
+	 * The constructor for an BGP_AS
 	 * 
-	 * @param asnum The AS number of this AS
+	 * @param asnum The BGP_AS number of this BGP_AS
 	 */
-	public AS(int asnum, int mrai) {
+	public BGP_AS(int asnum, int mrai) {
 		asn = asnum;
 		mraiValue = mrai;
 
@@ -163,7 +154,7 @@ public class AS {
 	}
 
 	/**
-	 * This function is used to reset the state of the AS
+	 * This function is used to reset the state of the BGP_AS
 	 *
 	 */
 	public void RESET() {
@@ -192,24 +183,24 @@ public class AS {
 	}
 	
 	/**
-	 * This function is called when an AS is brought up, to announce its prefix to
+	 * This function is called when an BGP_AS is brought up, to announce its prefix to
 	 * all its neighbors.
 	 *
 	 */
 	public void announceSelf() {
-		addPathToUpdates(new Path(new RootCause(asn, currentUpdate++, asn)), Simulator.otherTimers);
+		addPathToUpdates(new IA(new RootCause(asn, currentUpdate++, asn)), Simulator.otherTimers);
 	}
 
 	/**
-	 * Adds a path to the RIB-In of this AS
+	 * Adds a path to the RIB-In of this BGP_AS
 	 * @param p The path to be added
 	 */
-	public void addPathToRib(Path p) {
+	public void addPathToRib(IA p) {
 		int dst = p.getDest();
 		int nextHop = p.getFirstHop();
-		HashMap<Integer, Path> temp;
+		HashMap<Integer, IA> temp;
 		if(!ribIn.containsKey(dst)) {
-			temp = new HashMap<Integer, Path>();
+			temp = new HashMap<Integer, IA>();
 			ribIn.put(dst, temp);
 		}
 		temp = ribIn.get(dst);
@@ -231,9 +222,9 @@ public class AS {
 	 * @param simulateTimers This variable specifies if we have to model
 	 * the behaviour of other destinations. Since timers are per-peer
 	 */
-	public void addPathToUpdates(Path p, boolean simulateTimers) {
+	public void addPathToUpdates(IA p, boolean simulateTimers) {
 		// TODO: might have to change the RootCause
-		Path newPath = new Path(p.path, p.rc);
+		IA newPath = new IA(p.getPath(), p.getRootCause());
 		newPath.prepend(asn);
 		int nhType = CUSTOMER; // paths to self should be announced to all
 		int nh = -1;
@@ -241,8 +232,8 @@ public class AS {
 		int pseudoMraiValue = Math.round(this.mraiValue*Simulator.r.nextFloat()/1000)*1000;
 //		int pseudoMraiValue = this.mraiValue;
 //		int pseudoMraiValue = Math.round(this.mraiValue*Simulator.r.nextFloat());
-		if(p.path.size() > 0) {
-			nh = p.getFirstHop(); // this is the AS that advertised the path to us
+		if(p.getPath().size() > 0) {
+			nh = p.getFirstHop(); // this is the BGP_AS that advertised the path to us
 			nhType = neighborMap.get(nh);
 		}
 
@@ -310,15 +301,15 @@ public class AS {
 	 * @param p The path that is being added.
 	 * @param peer The peer for whom this update is queued
 	 */
-	private void addPathToPendingUpdatesForPeer(Path p, int peer) {
-		HashMap<Integer,Path> dstPathMap = new HashMap<Integer,Path>();
+	private void addPathToPendingUpdatesForPeer(IA p, int peer) {
+		HashMap<Integer,IA> dstPathMap = new HashMap<Integer,IA>();
 		if(!pendingUpdates.containsKey(peer)) {
 			pendingUpdates.put(peer, dstPathMap);
 		}
 		dstPathMap = pendingUpdates.get(peer);
 		int dst = p.getDest();
 		if(dstPathMap.containsKey(dst)) { // we are replacing a pending update with another
-			Path replaced = dstPathMap.get(dst);
+			IA replaced = dstPathMap.get(dst);
 			removeFromRIBHistAndMakeConditional(replaced, p);
 		}
 		dstPathMap.put(dst, p);
@@ -330,12 +321,12 @@ public class AS {
 	 * @param replaced
 	 * @param newPath
 	 */
-	private void removeFromRIBHistAndMakeConditional(Path replaced, Path newPath) {
+	private void removeFromRIBHistAndMakeConditional(IA replaced, IA newPath) {
 		Integer dest = replaced.getDest();
 		RIBHist temp = dstRIBHistMap.get(dest);
 		temp.removePath(replaced);
 		if(temp.isHotNbr(replaced.getFirstHop())) {
-			temp.addCondIncomplete(replaced.rc, newPath.rc);
+			temp.addCondIncomplete(replaced.getRootCause(), newPath.getRootCause());
 		}
 	}
 
@@ -347,7 +338,7 @@ public class AS {
 	 * @param nextHop The neighbor that announced the withdrawal
 	 */
 	public boolean removePathFromRIBIn(Integer dst, Integer nextHop) {
-		HashMap<Integer, Path> temp = ribIn.get(dst);
+		HashMap<Integer, IA> temp = ribIn.get(dst);
 		// if there is no path, ignore
 		if(temp == null) {
 			return false;
@@ -395,7 +386,7 @@ public class AS {
 
 	/**
 	 * This function is called when a control message is received. It instructs
-	 * the AS to send out an update or a withdrawal for some destination to a
+	 * the BGP_AS to send out an update or a withdrawal for some destination to a
 	 * particular peer.
 	 * 
 	 * @param message The control message
@@ -411,16 +402,16 @@ public class AS {
 		UWMessage uwMsg;
 
 		// if no path, ignore -- since we store no path to self, need to check
-		Path p = bestPath.get(dst);
+		IA p = bestPath.get(dst);
 		if(dst == asn) { // if announcement/withdrawal of self
-			p = new Path(new RootCause(asn, currentUpdate++, asn));
+			p = new IA(new RootCause(asn, currentUpdate++, asn));
 		}
-		if(p == null || p.path == null) {
+		if(p == null || p.getPath() == null) {
 			return;
 		}
 		
 		if(type == ControlMessage.ANNOUNCE) { // need to announce current best path
-			Path copy = new Path(p.path, p.rc);
+			IA copy = new IA(p.getPath(), p.getRootCause());
 			// need to always send a copy!
 			copy.prepend(asn);
 			uwMsg = new UpdateMessage(asn, prefix, copy); // TODO: Do we need to change root cause?
@@ -437,7 +428,7 @@ public class AS {
 	/**
 	 * This function is called when a flood packet is received. A flood
 	 * packet contains the incomplete update information for a particular
-	 * AS. We add the information to our set, and forward the packet to
+	 * BGP_AS. We add the information to our set, and forward the packet to
 	 * all the neighbors except the one I received it from.
 	 * 
 	 * We also need to keep track of the flood history so that we don't
@@ -510,7 +501,7 @@ public class AS {
 			}
 			// send out the flood message ... 
 //			processFloodMsg(new FloodMessage(asn, inTransit, condIncomplete));
-			Simulator.debug("AS" + asn + ": nonFinished = " + nonFinishedUpdates );
+			Simulator.debug("BGP_AS" + asn + ": nonFinished = " + nonFinishedUpdates );
 			Simulator.recordFlood(asn, new FloodMessage(asn, inTransit, condIncomplete), nonFinishedUpdates);
 //			HashMap<Short,ArrayList<RootCause>> updateSequence = new HashMap<Short,ArrayList<RootCause>>();
 //			for(Iterator<RIBHist> it = dstRIBHistMap.values().iterator(); it.hasNext(); ) {
@@ -563,8 +554,8 @@ public class AS {
 	 * @param peer
 	 */
 	private void sendUpdatesToPeer(int peer) {
-		// the set of prefixes with the same AS Path
-		// right now, we have just the dest AS as the prefix
+		// the set of prefixes with the same BGP_AS Path
+		// right now, we have just the dest BGP_AS as the prefix
 		ArrayList<Integer> prefixList; 
 		if(mraiRunning.get(peer))
 			return;
@@ -573,11 +564,11 @@ public class AS {
 			// there are no updates for this peer
 			return;
 		}
-		HashMap<Integer, Path> dstPathMap = pendingUpdates.get(peer);
-		List<Path> updates = new ArrayList<Path>(dstPathMap.values());
+		HashMap<Integer, IA> dstPathMap = pendingUpdates.get(peer);
+		List<IA> updates = new ArrayList<IA>(dstPathMap.values());
 
-		for(Iterator<Path> it = updates.iterator(); it.hasNext(); ) {
-			Path p = it.next();
+		for(Iterator<IA> it = updates.iterator(); it.hasNext(); ) {
+			IA p = it.next();
 
 			prefixList = new ArrayList<Integer>();
 			prefixList.add(p.getDest());
@@ -597,7 +588,7 @@ public class AS {
 		mraiRunning.put(peer, true);
 	}
 
-	public Collection<Path> getAllPaths(int dst) {
+	public Collection<IA> getAllPaths(int dst) {
 		if(!ribIn.containsKey(dst)) {
 			System.err.println("No path from " + asn + " to " + dst);
 			return null;
@@ -624,19 +615,19 @@ public class AS {
 		if(m.asPath == null) { // invalid message!
 			return;
 		}
-		// The AS we received the message from
+		// The BGP_AS we received the message from
 		int nextHop = m.asn; 
-		Path p = m.asPath;
-		int dst = p.rc.dest;
+		IA p = m.asPath;
+		int dst = p.getRootCause().getDest();
 
 		if(p.contains(asn)) { // path has loop, consider it a withdrawal from that neighbor!
 //			removePathFromRIBIn(dst, nextHop);
 //			return;
-			p.path = null;
+			p.setPath(null);
 		}
 
 		// if withdrawal not for a path rcvd previously, ignore!
-		if(p.path==null) {
+		if(p.getPath()==null) {
 			// if i have no path to dst or no path through next hop, ignore this
 			if(!ribIn.containsKey(dst) || !ribIn.get(dst).containsKey(nextHop)) {
 				return;
@@ -645,12 +636,12 @@ public class AS {
 		if(recordingPeer.containsKey(nextHop) && recordingPeer.get(nextHop)) {
 			// since we are recording this peer, all updates are considered incomplete
 			// maybe we can optimize and consider only those updates which aren't loops :)
-			updatesInTransit.add(m.asPath.rc);
-//			Simulator.debug("AS" + asn + ": Recorded in transit " + m.asPath.rc);
+			updatesInTransit.add(m.asPath.getRootCause());
+//			Simulator.debug("BGP_AS" + asn + ": Recorded in transit " + m.asPath.rc);
 		}
 		
-		Path bp = bestPath.get(dst);
-		if(p.path!=null) { // advertisement
+		IA bp = bestPath.get(dst);
+		if(p.getPath()!=null) { // advertisement
 			addPathToRib(p);
 		} else { // withdrawal
 			removePathFromRIBIn(dst, nextHop);
@@ -660,15 +651,15 @@ public class AS {
 		}
 		// TOM
 		// Add the update to the sequence of unfinished updates for this dest
-		dstRIBHistMap.get(dst).addToSequence(p.rc);
-		nonFinishedUpdates.add(p.rc);
-		// Simulator.debug("AS" + asn + ": Adding to non-finished " + p.rc);
+		dstRIBHistMap.get(dst).addToSequence(p.getRootCause());
+		nonFinishedUpdates.add(p.getRootCause());
+		// Simulator.debug("BGP_AS" + asn + ": Adding to non-finished " + p.rc);
 
 		// check if the path is better than the current best path
 		if( bp==null || isBetter(p, bp) ) {
 			// we need to install this as our best path and send an update
 			// to all our peers
-		    Simulator.debug("AS" + asn + ": Added best path to dst AS" + dst + ": " + p.path);
+		    Simulator.debug("BGP_AS" + asn + ": Added best path to dst BGP_AS" + dst + ": " + p.getPath());
 			bestPath.put(dst, p);
 			addPathToUpdates(p, Simulator.otherTimers);
 
@@ -679,58 +670,58 @@ public class AS {
 		else if(bp.getFirstHop() == nextHop) { // the current best path has been replaced by this one
 			// this could also be a withdrawal of the current best path
 			// we need to find the new best path
-			if(p.path==null) { // this is a withdrawal of our active path .. so we are temporarily disconnected
+			if(p.getPath()==null) { // this is a withdrawal of our active path .. so we are temporarily disconnected
 				Simulator.addAffected(asn);
 			}
 			
-			ArrayList<Path> allPathsToDst = new ArrayList<Path>(ribIn.get(dst).values());
-			Path newBestPath = findBestPath(allPathsToDst);
+			ArrayList<IA> allPathsToDst = new ArrayList<IA>(ribIn.get(dst).values());
+			IA newBestPath = findBestPath(allPathsToDst);
 			// what if there is no path to destination? newBestPath.asPath = null
-			if(newBestPath == null || newBestPath.path == null) {
+			if(newBestPath == null || newBestPath.getPath() == null) {
 				newBestPath = p; // this ensures that we forward 'this' withdrawal and not re-root it
 			}
 			bestPath.put(dst, newBestPath);
 			Simulator.changedPath(asn, dst, bp, newBestPath);
-			Simulator.debug("AS" + asn + ": new Path = " + newBestPath.path);
+			Simulator.debug("BGP_AS" + asn + ": new Path = " + newBestPath.getPath());
 			
 			// if newBestPath is completed earlier, then re-root the update
-			if(!nonFinishedUpdates.contains(newBestPath.rc)) {
+			if(!nonFinishedUpdates.contains(newBestPath.getRootCause())) {
 				RootCause newRC = new RootCause(asn, currentUpdate++, dst);
 				nonFinishedUpdates.add(newRC);
-				// Simulator.debug("AS" + asn + ": Adding to non-finished " + newRC);
+				// Simulator.debug("BGP_AS" + asn + ": Adding to non-finished " + newRC);
 				newBestPath.setRootCause(newRC);
 			}
 			RIBHist temp = dstRIBHistMap.get(dst);
 			if(temp.hotNeighbors.contains(nextHop)) {
-				temp.addCondIncomplete(p.rc, newBestPath.rc); // if bp is complete, this can be ignored?
+				temp.addCondIncomplete(p.getRootCause(), newBestPath.getRootCause()); // if bp is complete, this can be ignored?
 			}
 			
 			// if newBestPath is conditionally incomplete, then remove it from that set
 			// since it is now actively forwarded.
-			dstRIBHistMap.get(dst).removeConditional(newBestPath.rc);
+			dstRIBHistMap.get(dst).removeConditional(newBestPath.getRootCause());
 			dstRIBHistMap.get(dst).addUpdateToHistory(newBestPath, nextHop);
 
-			if(newBestPath.path != null) {
+			if(newBestPath.getPath() != null) {
 				addPathToUpdates(newBestPath, Simulator.otherTimers);
 				sendWithdrawalsIfNecessary(bp, newBestPath);
-				dstRIBHistMap.get(dst).addToSequence(newBestPath.rc);
+				dstRIBHistMap.get(dst).addToSequence(newBestPath.getRootCause());
 				
 			}
 			else { // need to send withdrawals
-				sendWithdrawals(bp, p.rc);
+				sendWithdrawals(bp, p.getRootCause());
 			}
 		}
 		else { // this doesn't affect the current best path, so ignore
 			// however, if this update is from a 'hot' neighbor, mark it as conditionally incomplete
 			RIBHist temp = dstRIBHistMap.get(dst);
 			if(temp.hotNeighbors.contains(nextHop)) {
-				temp.addCondIncomplete(p.rc, bp.rc); // if bp is complete, this can be ignored?
+				temp.addCondIncomplete(p.getRootCause(), bp.getRootCause()); // if bp is complete, this can be ignored?
 			}
 		}
 	}
 	
 	public int getNextHop(int dst) {
-		if(bestPath.containsKey(dst) && bestPath.get(dst).path != null) {
+		if(bestPath.containsKey(dst) && bestPath.get(dst).getPath() != null) {
 			return bestPath.get(dst).getFirstHop();
 		}
 		return -1;
@@ -776,16 +767,16 @@ public class AS {
 	 * @param oldPath The old path which is getting replaced
 	 * @param newPath The new best path
 	 */
-	private void sendWithdrawalsIfNecessary(Path oldPath, Path newPath) {
-		if(oldPath == null || oldPath.path == null) { // didn't have a path before
+	private void sendWithdrawalsIfNecessary(IA oldPath, IA newPath) {
+		if(oldPath == null || oldPath.getPath() == null) { // didn't have a path before
 			return; // no need to send withdrawals
 		}
 
-		if(newPath.path == null) {
+		if(newPath.getPath() == null) {
 			return;
 		}
 
-		// System.out.println("AS" + asn + " might need to send: " + newPath.path);
+		// System.out.println("BGP_AS" + asn + " might need to send: " + newPath.path);
 
 		int oldType = neighborMap.get(oldPath.getFirstHop());
 		int newType = neighborMap.get(newPath.getFirstHop());
@@ -841,7 +832,7 @@ public class AS {
 
 	// this is useful for forwarding withdrawals
 	// in order to originate withdrawals, use the function withdrawSelf
-	private void sendWithdrawals(Path oldBestPath, RootCause cause) {
+	private void sendWithdrawals(IA oldBestPath, RootCause cause) {
 		
 		int nh = oldBestPath.getFirstHop();
 		int	nhType = neighborMap.get(nh);
@@ -912,13 +903,13 @@ public class AS {
 
 	}
 
-	private Path findBestPath(ArrayList<Path> allPathsToDst) {
+	private IA findBestPath(ArrayList<IA> allPathsToDst) {
 
 		if(allPathsToDst == null || allPathsToDst.size() == 0) { // no path to dst
 			return null;
 		}
 
-		Path best = allPathsToDst.get(0);
+		IA best = allPathsToDst.get(0);
 		for(int i=0; i<allPathsToDst.size(); i++) {
 			if( isBetter(allPathsToDst.get(i), best) ) {
 				best = allPathsToDst.get(i);
@@ -935,15 +926,15 @@ public class AS {
 	 * @return true 	if p1 is better than p2
 	 * 		   false 	otherwise 
 	 */
-	public boolean isBetter(Path p1, Path p2) {
+	public boolean isBetter(IA p1, IA p2) {
 		// this is where we can apply the policy
 		// for now, we just follow customer > peer > provider
 		// and in case of a tie, shortest path length
-		// and then break tie by lowest AS number for next hop
+		// and then break tie by lowest BGP_AS number for next hop
 
-		if(p2 == null || p2.path == null) 
+		if(p2 == null || p2.getPath() == null) 
 			return true;
-		if(p1 == null || p1.path == null)
+		if(p1 == null || p1.getPath() == null)
 			return false;
 
 		int p1nh = p1.getFirstHop();
@@ -959,13 +950,13 @@ public class AS {
 			return false;
 		}
 		else { // both are similar, so look at path length
-			if(p1.path.size() < p2.path.size()) {
+			if(p1.getPath().size() < p2.getPath().size()) {
 				return true;
 			}
-			else if( p1.path.size() > p2.path.size() ) {
+			else if( p1.getPath().size() > p2.getPath().size() ) {
 				return false;
 			}
-			// else .. break tie using AS number
+			// else .. break tie using BGP_AS number
 		}
 		return false;
 	}
@@ -1003,9 +994,9 @@ public class AS {
 		if(!pendingUpdates.containsKey(peer))
 			return updatesRC;
 
-		Collection<Path> dstPaths = pendingUpdates.get(peer).values();
-		for(Iterator<Path> it = dstPaths.iterator(); it.hasNext();) {
-			updatesRC.add(it.next().rc);
+		Collection<IA> dstPaths = pendingUpdates.get(peer).values();
+		for(Iterator<IA> it = dstPaths.iterator(); it.hasNext();) {
+			updatesRC.add(it.next().getRootCause());
 		}
 		return updatesRC;
 	}
@@ -1027,8 +1018,8 @@ public class AS {
 	 * @param incompleteUpdates
 	 * @return The new stable forwarding table SFT'
 	 */
-	private HashMap<Integer, Path> computeNewForwardingTable(HashMap<Integer, Path> oldTable, Set<RootCause> incompleteUpdates ) {
-		HashMap<Integer, Path> newTable = new HashMap<Integer, Path>(oldTable);
+	private HashMap<Integer, IA> computeNewForwardingTable(HashMap<Integer, IA> oldTable, Set<RootCause> incompleteUpdates ) {
+		HashMap<Integer, IA> newTable = new HashMap<Integer, IA>(oldTable);
 		// the set of destinations that have pending updates
 		Set<Integer> updatedDests = new HashSet<Integer>(dstRIBHistMap.keySet());
 		// for each destination, pick the last update that is not incomplete
@@ -1036,7 +1027,7 @@ public class AS {
 		// of incomplete updates.
 		for(Iterator<Integer> it = updatedDests.iterator(); it.hasNext();) {
 			int dst = it.next();
-			Path p = pickLastCompleteUpdate(dst, incompleteUpdates);
+			IA p = pickLastCompleteUpdate(dst, incompleteUpdates);
 			if(p!=null) { // we found an update that completed
 				newTable.put(dst, p);
 			}
@@ -1053,13 +1044,13 @@ public class AS {
 	 * @return The latest stable path
 	 * 		   null if none of the updates completed
 	 */
-	private Path pickLastCompleteUpdate(int dst, Set<RootCause> incompleteUpdates) {
+	private IA pickLastCompleteUpdate(int dst, Set<RootCause> incompleteUpdates) {
 		RIBHist temp = dstRIBHistMap.get(dst);
-		ArrayList<Path> history = temp.history;
+		ArrayList<IA> history = temp.history;
 		int size = history.size();
 		int latest = -1;
 		for(int i=size-1; i>=0; i--) {
-			RootCause rc = history.get(i).rc;
+			RootCause rc = history.get(i).getRootCause();
 			if(!incompleteUpdates.contains(rc)) { // this means rc is complete and can be applied :)
 				latest = i;
 				break;
@@ -1141,14 +1132,14 @@ public class AS {
 	}
 
 	public String showNeighbors() {
-		String nbrs = "Neighbors of AS" + asn + " Prov: " + providers + " Cust: " + customers + " Peer: " + peers;
+		String nbrs = "Neighbors of BGP_AS" + asn + " Prov: " + providers + " Cust: " + customers + " Peer: " + peers;
 		return nbrs;
 	}
 
 	public String showFwdTable() {
-		String table = "FWD_TABLE : AS" + asn + " #paths = " + bestPath.size() + "\n";
-		for(Iterator<Path> it = bestPath.values().iterator(); it.hasNext();) {
-			table += it.next().path + "\n";
+		String table = "FWD_TABLE : BGP_AS" + asn + " #paths = " + bestPath.size() + "\n";
+		for(Iterator<IA> it = bestPath.values().iterator(); it.hasNext();) {
+			table += it.next().getPath() + "\n";
 		}
 		return table;
 	}

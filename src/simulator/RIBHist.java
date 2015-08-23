@@ -1,3 +1,7 @@
+package simulator;
+import integratedAdvertisement.IA;
+import integratedAdvertisement.RootCause;
+
 import java.util.*;
 
 /**
@@ -23,7 +27,7 @@ public class RIBHist {
 	/** The destination AS */
 	int destAS; 
 	
-	ArrayList<Path> history = new ArrayList<Path>();
+	ArrayList<IA> history = new ArrayList<IA>();
 
 	ArrayList<UpdateDependency> condInUpdates = new ArrayList<UpdateDependency>();
 	
@@ -42,7 +46,7 @@ public class RIBHist {
 	}
 	
 	// this is called whenever we advertise a path
-	public void addUpdateToHistory(Path p, int nextHop) {
+	public void addUpdateToHistory(IA p, int nextHop) {
 		history.add(p);
 		// what if this is a withdrawal?
 		hotNeighbors.add(nextHop);
@@ -58,7 +62,7 @@ public class RIBHist {
 	 * Removes the update with Path p from the history
 	 * @param p
 	 */
-	public void removePath(Path p) {
+	public void removePath(IA p) {
 		//TODO Need to check this
 		history.remove(p);
 	}

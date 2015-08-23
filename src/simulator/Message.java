@@ -1,3 +1,4 @@
+package simulator;
 /**
  * file: Message.java
  * @author John

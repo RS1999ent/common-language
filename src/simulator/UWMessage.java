@@ -1,3 +1,6 @@
+package simulator;
+import integratedAdvertisement.IA;
+
 import java.util.ArrayList;
 
 /**
@@ -12,7 +15,7 @@ import java.util.ArrayList;
  */
 public class UWMessage extends Message {
 	Integer[] prefixes;
-	Path asPath = null;
+	IA asPath = null;
 	
 	public static Integer[] toArray( ArrayList<Integer> a ) {
 		int size = a.size();

@@ -1,3 +1,7 @@
+package simulator;
+import integratedAdvertisement.IA;
+import integratedAdvertisement.RootCause;
+
 import java.util.*;
 import java.io.*;
 
@@ -167,7 +171,7 @@ public class Simulator {
 
 	// we are adding code to measure duration of disconnectivity here because this is the most
 	// efficient place to add it.
-	public static void changedPathNoCheck(int as, int dst, Path oldPath, Path newPath) {
+	public static void changedPathNoCheck(int as, int dst, IA oldPath, IA newPath) {
 		boolean initiallyConnected = false;
 		if(instrumented) {
 			initiallyConnected = upstreamASes.get(currentCustomer).contains(as);
@@ -187,11 +191,11 @@ public class Simulator {
 		oldSet.clear();
 		int oldHop = -1;
 		int nextHop = -1;
-		if(oldPath != null && oldPath.path != null) {
+		if(oldPath != null && oldPath.getPath() != null) {
 			//			oldSet.addAll(oldPath.path);
 			oldHop = oldPath.getFirstHop();
 		}
-		if(newPath != null && newPath.path != null) {
+		if(newPath != null && newPath.getPath() != null) {
 			nextHop = newPath.getFirstHop();
 		}
 		seenHops.clear();
@@ -236,8 +240,8 @@ public class Simulator {
 			boolean finallyConnected = upstreamASes.get(currentCustomer).contains(as);
 			
 			if(upstreamSet.contains((int)2363)) {
-				System.out.print("AS2363 due to AS" + as + " @ " + simTime + ": " + (oldPath!=null?oldPath.path:oldPath) + 
-						initiallyConnected + " -> " + (newPath!=null?newPath.path:newPath) + finallyConnected);
+				System.out.print("AS2363 due to AS" + as + " @ " + simTime + ": " + (oldPath!=null?oldPath.getPath():oldPath) + 
+						initiallyConnected + " -> " + (newPath!=null?newPath.getPath():newPath) + finallyConnected);
 				seenHops.clear();
 				int testAS = (int)2363;
 				seenHops.add(testAS);
@@ -254,8 +258,8 @@ public class Simulator {
 				System.out.println();
 			}
 			if(upstreamSet.contains((int)197)) {
-				System.out.print("AS197 due to AS" + as + " @ " + simTime + ": " + (oldPath!=null?oldPath.path:oldPath) + 
-						initiallyConnected + " -> " + (newPath!=null?newPath.path:newPath) + finallyConnected);
+				System.out.print("AS197 due to AS" + as + " @ " + simTime + ": " + (oldPath!=null?oldPath.getPath():oldPath) + 
+						initiallyConnected + " -> " + (newPath!=null?newPath.getPath():newPath) + finallyConnected);
 				seenHops.clear();
 				int testAS = (int)197;
 				seenHops.add(testAS);
@@ -272,8 +276,8 @@ public class Simulator {
 				System.out.println();
 			}
 			if(upstreamSet.contains((int)4)) {
-				System.out.print("AS4 due to AS" + as + " @ " + simTime + ": " + (oldPath!=null?oldPath.path:oldPath) + 
-						initiallyConnected + " -> " + (newPath!=null?newPath.path:newPath) + finallyConnected);
+				System.out.print("AS4 due to AS" + as + " @ " + simTime + ": " + (oldPath!=null?oldPath.getPath():oldPath) + 
+						initiallyConnected + " -> " + (newPath!=null?newPath.getPath():newPath) + finallyConnected);
 				seenHops.clear();
 				int testAS = (int)4;
 				seenHops.add(testAS);
@@ -304,7 +308,7 @@ public class Simulator {
 	// Realised that maintaining loop info is required for correctness! If we do not account for loops,
 	// then the upstream set of each node in the loop would contain the other, and when the loop is
 	// broken, information is lost.
-	public static void changedPathCheck(int as, int dst, Path oldPath, Path newPath) {
+	public static void changedPathCheck(int as, int dst, IA oldPath, IA newPath) {
 		boolean initiallyConnected = false;
 		if(instrumented) {
 			initiallyConnected = upstreamASes.get(currentCustomer).contains(as);
@@ -324,10 +328,10 @@ public class Simulator {
 		oldSet.clear();
 		int oldHop = -1;
 		int nextHop = -1;
-		if(oldPath != null && oldPath.path != null) {
+		if(oldPath != null && oldPath.getPath() != null) {
 			oldHop = oldPath.getFirstHop();
 		}
-		if(newPath != null && newPath.path != null) {
+		if(newPath != null && newPath.getPath() != null) {
 			nextHop = newPath.getFirstHop();
 		}
 		seenHops.clear();
@@ -512,7 +516,7 @@ public class Simulator {
 
 	}
 	
-	public static void changedPath(int as, int dst, Path oldPath, Path newPath) {
+	public static void changedPath(int as, int dst, IA oldPath, IA newPath) {
 //		System.out.println(as + " " + dst);
 	    switch(simMode) {
 	    case 0:
@@ -529,7 +533,7 @@ public class Simulator {
 	    }
 	}
 
-	public static void changedPathLoopCheck(int as, int dst, Path oldPath, Path newPath) {
+	public static void changedPathLoopCheck(int as, int dst, IA oldPath, IA newPath) {
 //		debug("AS" + as + ": oldPath = " + (oldPath==null?oldPath:oldPath.path) + "; newPath = " + (newPath==null?newPath:newPath.path) );
 		HashSet <Integer> upstreamSet = upstreamASes.get(as);
 		if(upstreamSet == null) {
@@ -546,10 +550,10 @@ public class Simulator {
 		int nextHop = -1;
 		int oldHop = -1;
 
-		if(oldPath != null && oldPath.path != null) {
+		if(oldPath != null && oldPath.getPath() != null) {
 			oldHop = oldPath.getFirstHop();
 		}
-		if(newPath != null && newPath.path != null) {
+		if(newPath != null && newPath.getPath() != null) {
 			nextHop = newPath.getFirstHop();
 		}
 		seenHops.clear();
@@ -1031,7 +1035,7 @@ public class Simulator {
 		  
 		case 7:
 			System.out.println("Number of connected components: " + numConnectedComponents() + "\n");
-			//IASimulation();
+			IASimulation();
 			break;
 
 		default:
@@ -1265,14 +1269,14 @@ public class Simulator {
 		// now all nodes know paths to the tier-1 ASes
 		// we are interested in paths from the set of failure providers
 		HashSet<Integer> failureProviderSet = new HashSet<Integer>(failureProvider);
-		HashMap<Integer, HashMap<Integer,Path>> tier1Paths = new HashMap<Integer, HashMap<Integer,Path>>(failureProvider.size());  
+		HashMap<Integer, HashMap<Integer,IA>> tier1Paths = new HashMap<Integer, HashMap<Integer,IA>>(failureProvider.size());  
 		for(Iterator<Integer>provIt = failureProviderSet.iterator(); provIt.hasNext();) {
 			int fp = provIt.next(); 
-			HashMap<Integer, Path> temp = new HashMap<Integer, Path>(tier1ASes.size());
+			HashMap<Integer, IA> temp = new HashMap<Integer, IA>(tier1ASes.size());
 			for(Iterator<Integer>tierIt = tier1ASes.iterator(); tierIt.hasNext();) {
 				int t1 = tierIt.next();
 				// p is the path from fp to t1
-				Path p = asMap.get(fp).bestPath.get(t1);
+				IA p = asMap.get(fp).bestPath.get(t1);
 				temp.put(t1,p);
 			}
 			tier1Paths.put(fp, temp);
@@ -1309,12 +1313,12 @@ public class Simulator {
 			System.out.print("Path Length: ");
 			for(Iterator<Integer> it = tier1ASes.iterator(); it.hasNext();) {
 				int t1 = it.next();
-				Path p1 = tier1Paths.get(provider).get(t1);
+				IA p1 = tier1Paths.get(provider).get(t1);
 				int p1length;
-				if(p1 == null || p1.path == null)
+				if(p1 == null || p1.getPath() == null)
 					p1length = -1;
 				else
-					p1length = p1.path.size();
+					p1length = p1.getPath().size();
 
 				// now find the shortest path from t1 to dst
 				int p2length = findShortestPath(asMap.get(t1).getAllPaths(customer), provider, customer, t1);
@@ -1437,7 +1441,7 @@ public class Simulator {
 
 			System.out.println("Convergence time = " + lastSimTime);
 
-			HashMap<Integer, HashMap<Integer,Path>> tier1Paths = new HashMap<Integer, HashMap<Integer,Path>>();
+			HashMap<Integer, HashMap<Integer,IA>> tier1Paths = new HashMap<Integer, HashMap<Integer,IA>>();
 			for(Iterator<Integer>provIt = loopOrDisconnectedASes.iterator(); provIt.hasNext();) {
 			// for(Iterator<Short>provIt = failureProviderSet.iterator(); provIt.hasNext();) {
 			    int fp = provIt.next(); 
@@ -1450,20 +1454,20 @@ public class Simulator {
 				if(!tier1Paths.containsKey(fp) || !tier1Paths.get(fp).containsKey(t1)) {
 				    // Cache path from this AS to Tier 1
 				    // p is the path from fp to t1
-				    Path p = asMap.get(fp).bestPath.get(t1);
+				    IA p = asMap.get(fp).bestPath.get(t1);
 				    if(!tier1Paths.containsKey(fp)) {
-					tier1Paths.put(fp, new HashMap<Integer, Path>());
+					tier1Paths.put(fp, new HashMap<Integer, IA>());
 				    }
 				    tier1Paths.get(fp).put(t1, p);
 				}
-				Path p1 = tier1Paths.get(fp).get(t1);
+				IA p1 = tier1Paths.get(fp).get(t1);
 				int p1length;
 				if(fp == t1)
 				    p1length = 0;
-				else if(p1 == null || p1.path == null)
+				else if(p1 == null || p1.getPath() == null)
 				    p1length = -1;
 				else
-				    p1length = p1.path.size();
+				    p1length = p1.getPath().size();
 
 				// now find the shortest path from t1 to dst
 				int p2length = findShortestPath(asMap.get(t1).getAllPaths(customer), provider, customer, t1);
@@ -1594,7 +1598,7 @@ public class Simulator {
 
 			System.out.println("Convergence time = " + lastSimTime);
 
-			HashMap<Integer, HashMap<Integer,Path>> tier1Paths = new HashMap<Integer, HashMap<Integer,Path>>();
+			HashMap<Integer, HashMap<Integer,IA>> tier1Paths = new HashMap<Integer, HashMap<Integer,IA>>();
 			for(Iterator<Integer>provIt = loopOrDisconnectedASes.iterator(); provIt.hasNext();) {
 			// for(Iterator<Short>provIt = failureProviderSet.iterator(); provIt.hasNext();) {
 			    int fp = provIt.next(); 
@@ -1607,20 +1611,20 @@ public class Simulator {
 				if(!tier1Paths.containsKey(fp) || !tier1Paths.get(fp).containsKey(t1)) {
 				    // Cache path from this AS to Tier 1
 				    // p is the path from fp to t1
-				    Path p = asMap.get(fp).bestPath.get(t1);
+				    IA p = asMap.get(fp).bestPath.get(t1);
 				    if(!tier1Paths.containsKey(fp)) {
-					tier1Paths.put(fp, new HashMap<Integer, Path>());
+					tier1Paths.put(fp, new HashMap<Integer, IA>());
 				    }
 				    tier1Paths.get(fp).put(t1, p);
 				}
-				Path p1 = tier1Paths.get(fp).get(t1);
+				IA p1 = tier1Paths.get(fp).get(t1);
 				int p1length;
 				if(fp == t1)
 				    p1length = 0;
-				else if(p1 == null || p1.path == null)
+				else if(p1 == null || p1.getPath() == null)
 				    p1length = -1;
 				else
-				    p1length = p1.path.size();
+				    p1length = p1.getPath().size();
 
 				// now find the shortest path from t1 to dst
 				int p2length = findShortestPath(asMap.get(t1).getAllPaths(customer), provider, customer, t1);
@@ -1677,7 +1681,7 @@ public class Simulator {
 			relevantASes.addAll(upstreamASes.get(provider));
 //			System.out.println("Upstream of provider = " + relevantASes);
 			// first check if the provider has an alternate path .. if so everyone will use that!
-			Collection<Path> allPaths = asMap.get(provider).getAllPaths(customer);
+			Collection<IA> allPaths = asMap.get(provider).getAllPaths(customer);
 			// any path that doesn't traverse the customer-provider link is valid
 			// pick the shortest among the valid paths.
 			int pathLength = findShortestPath(allPaths, provider, customer, provider);
@@ -1695,13 +1699,13 @@ public class Simulator {
 				int as = it.next();
 				if(seenASes.contains(as) || noPathASes.contains(as)) // already accounted for this
 					continue;
-				Path p = asMap.get(as).bestPath.get(customer);
+				IA p = asMap.get(as).bestPath.get(customer);
 //				System.out.println(p.path);
 				// we know that p is a path which has the last link as provider-customer
-				for(int j=p.path.size()-2; j>=-1; j--) {
+				for(int j=p.getPath().size()-2; j>=-1; j--) {
 					int current = as;
 					if(j>=0)
-						current = p.path.get(j);
+						current = p.getPath().get(j);
 					if(noPathASes.contains(current) || seenASes.contains(current)) {
 						continue;
 					}
@@ -1715,7 +1719,7 @@ public class Simulator {
 					}
 					else {
 						// alternate path found! inflation = pathLength -1 + (size-2)-j
-						int backtrack = (p.path.size()-2) - j;
+						int backtrack = (p.getPath().size()-2) - j;
 						int inflation = pathLength-1 + backtrack;
 						int value = 0;
 						if(inflationMap.containsKey(inflation))
@@ -1775,21 +1779,21 @@ public class Simulator {
 	 * 		   or -1 if there is none
 	 * 
 	 */
-	public static int findShortestPath(Collection<Path> paths, int upstream, int downstream, int self) {
+	public static int findShortestPath(Collection<IA> paths, int upstream, int downstream, int self) {
 		if(paths == null)
 			return -1;
 		int pathLength = -1;
-		for(Iterator<Path> it = paths.iterator(); it.hasNext();) {
-			Path p = it.next();
-			if(p==null || p.path == null || p.path.size() == 0)
+		for(Iterator<IA> it = paths.iterator(); it.hasNext();) {
+			IA p = it.next();
+			if(p==null || p.getPath() == null || p.getPath().size() == 0)
 				continue;
-			if(self == upstream && p.path.get(0) == downstream) // if the path is upstream-downstream
+			if(self == upstream && p.getPath().get(0) == downstream) // if the path is upstream-downstream
 				continue;
-			int index = p.path.indexOf(upstream);
-			if( index == -1 || p.path.get(index+1) != downstream) { 
+			int index = p.getPath().indexOf(upstream);
+			if( index == -1 || p.getPath().get(index+1) != downstream) { 
 				// either upstream doesn't occur or if it does, then the link up-down doesn't appear
-				if(pathLength == -1 || pathLength > p.path.size()) {
-					pathLength = p.path.size();
+				if(pathLength == -1 || pathLength > p.getPath().size()) {
+					pathLength = p.getPath().size();
 				}
 			}
 		}
@@ -1986,7 +1990,7 @@ public class Simulator {
 			if(!asMap.containsKey(as1)) {
 				int mraiVal = (int)(Math.round((r.nextFloat()*0.25 + 0.75)*MRAI_TIMER_VALUE/1000)*1000);
 //				System.err.println("AS" + as1 + " MRAI: " + mraiVal);
-				temp1 = new AS(as1, mraiVal);
+				temp1 = new BGP_AS(as1, mraiVal); //CHANGE TO BE GENERIC
 				asMap.put(as1, temp1);
 			}
 			temp1 = asMap.get(as1);
@@ -1994,7 +1998,7 @@ public class Simulator {
 			if(!asMap.containsKey(as2)) {
 				int mraiVal = (int)(Math.round((r.nextFloat()*0.25 + 0.75)*MRAI_TIMER_VALUE/1000)*1000);
 //				System.err.println("AS" + as2 + " MRAI: " + mraiVal);
-				temp2 = new AS(as2, mraiVal);
+				temp2 = new BGP_AS(as2, mraiVal); //CHANGE TO BE GENERIC
 				asMap.put(as2, temp2);
 			}
 			temp2 = asMap.get(as2);
@@ -2053,9 +2057,9 @@ public class Simulator {
 				continue;
 			ArrayList<Integer> currentPath = new ArrayList<Integer>();
 			currentPath.add(currentAS);
-			Path p = asMap.get(currentAS).bestPath.get(dst);
+			IA p = asMap.get(currentAS).bestPath.get(dst);
 			while(true) {
-				if(p==null || p.path == null || disconnectedASes.contains(currentAS)) {
+				if(p==null || p.getPath() == null || disconnectedASes.contains(currentAS)) {
 					// currentAS has no path to the destination
 					disconnectedASes.addAll(currentPath);
 					break;

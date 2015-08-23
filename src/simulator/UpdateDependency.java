@@ -1,3 +1,6 @@
+package simulator;
+
+import integratedAdvertisement.RootCause;
 /**
  * file: UpdateDependency.java
  * @author John

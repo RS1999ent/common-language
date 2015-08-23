@@ -1,3 +1,4 @@
+package simulator;
 /**
  * file: Event.java
  * @author John

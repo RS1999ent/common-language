@@ -1,3 +1,4 @@
+package simulator;
 /**
  * file: ControlMessage.java
  * @author John

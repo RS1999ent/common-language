@@ -1,3 +1,6 @@
+package simulator;
+import integratedAdvertisement.IA;
+
 import java.util.*;
 
 /**
@@ -22,19 +25,19 @@ public class UpdateMessage extends UWMessage{
 	 * @param ap The set of prefixes announced
 	 * @param asp The AS-Path of the announced prefixes
 	 */
-	public UpdateMessage( int asnum, ArrayList<Integer> ap, Path asp ) {
+	public UpdateMessage( int asnum, ArrayList<Integer> ap, IA asp ) {
 		asn = asnum;
 		messageType = Message.UPDATE_MSG;
 		
 		prefixes = toArray(ap);
 		
-		asPath = new Path(asp.path, asp.rc);
+		asPath = new IA(asp.getPath(), asp.getRootCause());
 	}
 	
 	// bad programming practice!
 	public String toString() {
 		String msgStr = asn + ": ";
-		msgStr += asPath.rc + ": " + asPath.path;
+		msgStr += asPath.getRootCause() + ": " + asPath.getPath();
 //		msgStr += asPath.rc + ": " ;
 //		// this hack is required because a loopy update
 //		// message is to be treated as a withdrawal

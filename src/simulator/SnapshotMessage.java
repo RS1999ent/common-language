@@ -1,3 +1,4 @@
+package simulator;
 /**
  * file: SnapshotMessage.java
  * @author John

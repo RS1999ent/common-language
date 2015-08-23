@@ -1,3 +1,7 @@
+package simulator;
+import integratedAdvertisement.IA;
+import integratedAdvertisement.RootCause;
+
 import java.util.ArrayList;
 
 /**
@@ -25,14 +29,14 @@ public class WithdrawMessage extends UWMessage{
 	public WithdrawMessage(int asnum, ArrayList<Integer> wp, RootCause rc) {
 		asn = asnum;
 		messageType = WITHDRAW_MSG;
-		asPath = new Path(rc);
-		asPath.path = null;
+		asPath = new IA(rc);
+		asPath.setPath(null);
 		prefixes = toArray(wp);
 	}
 	
 	public String toString() {
 		String msgStr = asn + ": ";
-		msgStr += asPath.rc + ": -" + prefixes[0];
+		msgStr += asPath.getRootCause() + ": -" + prefixes[0];
 		return msgStr;
 	}
 
