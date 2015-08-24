@@ -69,6 +69,13 @@ public abstract class AS {
 
 	//resets the as
 	public abstract void RESET();
+	
+	public String showNeighbors() {
+		String nbrs = "Neighbors of BGP_AS" + asn + " Prov: " + providers + " Cust: " + customers + " Peer: " + peers;
+		return nbrs;
+	}
+	
+	public abstract String showFwdTable();
 
 
 }

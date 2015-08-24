@@ -1143,10 +1143,10 @@ public class BGP_AS extends AS {
 		}
 	}
 
-	public String showNeighbors() {
+	/*public String showNeighbors() {
 		String nbrs = "Neighbors of BGP_AS" + asn + " Prov: " + providers + " Cust: " + customers + " Peer: " + peers;
 		return nbrs;
-	}
+	}*/
 
 	public String showFwdTable() {
 		String table = "FWD_TABLE : BGP_AS" + asn + " #paths = " + bestPath.size() + "\n";

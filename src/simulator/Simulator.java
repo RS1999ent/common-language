@@ -1120,7 +1120,7 @@ public class Simulator {
 		
 		for( Integer asMapKey : asMap.keySet())
 		{
-			int rVal = r.nextInt() % 1600;
+			int rVal = 0;//r.nextInt() % 1600;
 			if(rVal == 0){
 				asMap.get(asMapKey).announceSelf();
 				announcedASes.add(asMapKey);
@@ -1131,23 +1131,31 @@ public class Simulator {
 		instrumented = false;
 		run();
 		
+		for(Integer asMapKey : asMap.keySet())
+		{
+			AS as = asMap.get(asMapKey);
+			System.out.println(as.showFwdTable());			
+		}
+		
+		/*
 		for( Integer upstreamASKey : upstreamASes.keySet())
 		{
 			int numUpstreamAses = upstreamASes.get(upstreamASKey).size();
-			if (announcedASes.contains(upstreamASKey) && (numUpstreamAses-1) != numAses)
+			if (announcedASes.contains(upstreamASKey) && (numUpstreamAses) != numAses)
 			{
 				System.out.println("not fully connect graph for " + upstreamASKey);
 				System.out.println("num upstream ases: " + numUpstreamAses);
 				System.out.println("total num of ases: " + numAses);
 			}
-		/*	else if(numUpstreamAses != numAses)
+			
+			else if(numUpstreamAses != numAses)
 			{
 				System.out.println("not fully connect graph for " + upstreamASKey);
 				System.out.println("num upstream ases: " + numUpstreamAses);
 				System.out.println("total num of ases: " + numAses);
 				
-			}*/
-		}
+			}
+		}*/
 		//for(Iterator<Integer>it = tier1ASes.iterator(); it.hasNext();) {
 //			int tier1 = it.next();
 			//asMap.get(tier1).announceSelf();
