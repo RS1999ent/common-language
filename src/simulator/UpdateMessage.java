@@ -31,7 +31,8 @@ public class UpdateMessage extends UWMessage{
 		
 		prefixes = toArray(ap);
 		
-		asPath = new IA(asp.getPath(), asp.getRootCause());
+		//asPath = new IA(asp.getPath(), asp.getRootCause());
+		asPath = new IA(asp);
 	}
 	
 	// bad programming practice!

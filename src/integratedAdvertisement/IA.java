@@ -13,9 +13,9 @@ public class IA {
 
 	private LinkedList<Integer> legacyPath = new LinkedList<Integer>(); //used for returning a default path for legacy support with the rest of sim 
 	
-	private HashMap<Integer, LinkedList<Integer>> paths = new HashMap<Integer, LinkedList<Integer>>(); //hash map of paths. should be keyed on the pathToKey method in this class
+	private HashMap<String, LinkedList<Integer>> paths = new HashMap<String, LinkedList<Integer>>(); //hash map of paths. should be keyed on the pathToKey method in this class
 	
-	private HashMap<Integer, Values> pathValues = new HashMap<Integer, Values>(); //stores path attributes. should be keyed on pathToKey method
+	private HashMap<String, Values> pathValues = new HashMap<String, Values>(); //stores path attributes. should be keyed on pathToKey method
 	
 	private RootCause rc;
 	
@@ -31,10 +31,18 @@ public class IA {
 	 * Constructor which creates a path from a collection of as numbers
 	 * @param p The collection of <short> that form the AS-Path
 	 */
-	public IA(Collection<Integer> p, RootCause rootCause) {
-		getPath().addAll(p);
-		setRootCause(rootCause);
-		paths.put(pathToKey(legacyPath), legacyPath);
+//	public IA(Collection<Integer> p, RootCause rootCause) {
+//		getPath().addAll(p);
+//		setRootCause(rootCause);
+//		paths.put(pathToKey(legacyPath), legacyPath);
+//	}
+	
+	public IA(IA toCopy)
+	{
+		legacyPath = (LinkedList<Integer>) toCopy.legacyPath.clone();
+		paths = (HashMap<String, LinkedList<Integer>>) toCopy.paths.clone();
+		pathValues = (HashMap<String, Values>) toCopy.pathValues.clone();
+		rc = new RootCause(toCopy.rc.rcAsn, toCopy.rc.updateNum, toCopy.rc.getDest());
 	}
 	
 	/** 
@@ -42,9 +50,10 @@ public class IA {
 	 * @param as The AS that is to be added to the beginning of the path
 	 */
 	public void prepend(int as) {
-		Integer key = pathToKey(legacyPath);
+		String key = pathToKey(legacyPath);
 		getPath().addFirst(as);
 		paths.remove(key);
+		pathValues.remove(key);
 		paths.put(pathToKey(legacyPath), legacyPath);
 		
 	}
@@ -93,7 +102,7 @@ public class IA {
 		return legacyPath;
 	}
 
-	public LinkedList<Integer> getPath(Integer key)
+	public LinkedList<Integer> getPath(String key)
 	{
 		return paths.get(key);
 	}
@@ -102,7 +111,10 @@ public class IA {
 	 * @param path the path to set
 	 */
 	public void setPath_Legacy(LinkedList<Integer> path) {
+		//remove old legacy path from hash table and its corresponding attributes
+		removePathAttributes(legacyPath);
 		this.legacyPath = path;		
+		
 	}
 	
 	public void setPath(LinkedList<Integer> path)
@@ -115,14 +127,14 @@ public class IA {
 		paths.remove(pathKey);
 	}
 	
-	public Set<Integer> getPathKeys()
+	public Set<String> getPathKeys()
 	{
 		return paths.keySet();
 	}
 	
 
 	
-	public static Integer pathToKey(LinkedList<Integer> p)
+	public static String pathToKey(LinkedList<Integer> p)
 	{
 		String key = "";
 		for(Iterator<Integer> iter = p.iterator();  iter.hasNext(); )
@@ -130,7 +142,7 @@ public class IA {
 			key += String.valueOf(iter.next());
 			key += " ";
 		}
-		return key.hashCode();
+		return key;//.hashCode();
 		
 	}
 	
@@ -139,7 +151,8 @@ public class IA {
 		return pathValues.get(pathToKey(path));
 	}
 	
-	public Values getPathAttributes(Integer key)
+	//returns null if a path has no path attributes yet
+	public Values getPathAttributes(String key)
 	{
 		return pathValues.get(key);
 	}
@@ -150,14 +163,35 @@ public class IA {
 	}
 	
 	public void setProtocolPathAttribute(byte[] setBytes, Protocol protocol, LinkedList<Integer> path){
-		Values pathAttributes = pathValues.get(pathToKey(path));
+		//get path attributes based on key of path, if null, create one for the protocol.
+		Values pathAttributes = pathValues.get(pathToKey(path)); 
+		if (pathAttributes == null)
+		{
+			pathAttributes = new Values();
+		}
 		pathAttributes.putValue(protocol, setBytes);
-		pathValues.put(pathToKey(path), pathAttributes); //is this necessary? Probably not since java passes back references, just to be safe
+		pathValues.put(pathToKey(path), pathAttributes);
+	}
+	
+	//removes the path attributes of the passed in path
+	public void removePathAttributes(LinkedList<Integer> path)
+	{
+		//remove pathValues entrie based on the corresponding key of the path (with pathToKey)
+		pathValues.remove(pathToKey(path));
 	}
 	
 	public byte[] getProtocolPathAttribute(Protocol protocol, LinkedList<Integer> path)
 	{
-		return pathValues.get(pathToKey(path)).getValue(protocol);
+		if (pathValues.containsKey(pathToKey(path)))
+			return pathValues.get(pathToKey(path)).getValue(protocol);
+		else
+		{
+			byte arr[] = new byte[1];
+			arr[0] =  (byte) 0xFF;
+			return  arr;
+		}
+			
+		
 	}
 	
 	

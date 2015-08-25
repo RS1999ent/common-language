@@ -2015,7 +2015,7 @@ public class Simulator {
 			if(!asMap.containsKey(as2)) {
 				int mraiVal = (int)(Math.round((r.nextFloat()*0.25 + 0.75)*MRAI_TIMER_VALUE/1000)*1000);
 //				System.err.println("AS" + as2 + " MRAI: " + mraiVal);
-				if(as2Type == AS.WISER)
+				if(as2Type == AS.BGP)
 					temp2 = new BGP_AS(as2, mraiVal); //CHANGE TO BE GENERIC
 				else
 				{

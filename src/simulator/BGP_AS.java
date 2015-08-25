@@ -211,6 +211,7 @@ public class BGP_AS extends AS {
 		}
 		temp = ribIn.get(dst);
 		temp.put(nextHop, p);
+		passThrough.addToDatabase(p); //add path and information to passthrough database
 	}
 
 	/**
@@ -230,7 +231,7 @@ public class BGP_AS extends AS {
 	 */
 	public void addPathToUpdates(IA p, boolean simulateTimers) {
 		// TODO: might have to change the RootCause
-		IA newPath = new IA(p.getPath(), p.getRootCause());
+		IA newPath = new IA(p); //new IA(p.getPath(), p.getRootCause());
 		newPath.prepend(asn);
 		int nhType = CUSTOMER; // paths to self should be announced to all
 		int nh = -1;
@@ -243,6 +244,7 @@ public class BGP_AS extends AS {
 			nhType = neighborMap.get(nh);
 		}
 
+		passThrough.attachPassthrough(newPath); //attach passthrough info before sending to neighbors
 		if(nhType == PROVIDER || nhType == PEER) { // announce it only to customers .. and to nextHop in the path 
 			for(int i=0; i<customers.size(); i++) {
 				addPathToPendingUpdatesForPeer(newPath, customers.get(i));
@@ -419,10 +421,10 @@ public class BGP_AS extends AS {
 		}
 		
 		if(type == ControlMessage.ANNOUNCE) { // need to announce current best path
-			IA copy = new IA(p.getPath(), p.getRootCause());
+			IA copy = new IA(p);//new IA(p.getPath(), p.getRootCause());
 			// need to always send a copy!
+			copy.prepend(asn);
 			passThrough.attachPassthrough(copy); //[ADDED]
-			copy.prepend(asn);		
 			uwMsg = new UpdateMessage(asn, prefix, copy); // TODO: Do we need to change root cause?
 		}
 		else { // WITHDRAW
@@ -670,7 +672,7 @@ public class BGP_AS extends AS {
 			// to all our peers
 		    Simulator.debug("BGP_AS" + asn + ": Added best path to dst BGP_AS" + dst + ": " + p.getPath());
 			bestPath.put(dst, p);
-			p = passThrough.attachPassthrough(p); //[COMMENT] added
+//			p = passThrough.attachPassthrough(p); //[COMMENT] added
 			addPathToUpdates(p, Simulator.otherTimers);
 
 			dstRIBHistMap.get(dst).addUpdateToHistory(p, nextHop);
@@ -713,7 +715,7 @@ public class BGP_AS extends AS {
 			dstRIBHistMap.get(dst).addUpdateToHistory(newBestPath, nextHop);
 
 			if(newBestPath.getPath() != null) {
-				newBestPath = passThrough.attachPassthrough(newBestPath);
+//				newBestPath = passThrough.attachPassthrough(newBestPath);
 				addPathToUpdates(newBestPath, Simulator.otherTimers);
 				sendWithdrawalsIfNecessary(bp, newBestPath);
 				dstRIBHistMap.get(dst).addToSequence(newBestPath.getRootCause());

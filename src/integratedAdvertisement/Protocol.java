@@ -6,7 +6,7 @@ package integratedAdvertisement;
 identifying a protocol
 */
 public class Protocol {
-
+	
 	private long m_uniqueID;  //globally unique id associated with class
 	
 	public Protocol(long uniqueID){

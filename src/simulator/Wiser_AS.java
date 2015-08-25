@@ -1,8 +1,10 @@
 package simulator;
 
 import integratedAdvertisement.IA;
+import integratedAdvertisement.Protocol;
 import integratedAdvertisement.RootCause;
 
+import java.io.UnsupportedEncodingException;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashMap;
@@ -200,8 +202,44 @@ public class Wiser_AS extends AS {
 		}
 		temp = ribIn.get(dst);
 		temp.put(nextHop, p);
+		passThrough.addToDatabase(p); //add path and information to passthrough database
 	}
 
+	//adds wiser path attributes to newPath based on what's in oldpath
+	void addWiserPathAttribute(IA newPath, IA oldPath, Integer advertisedToAS)
+	{
+		byte[] pWiserBytes = oldPath.getProtocolPathAttribute(new Protocol(AS.WISER), oldPath.getPath());
+		String pWiserProps = null;
+		int pWisercost = 0;
+		int pNormalization = 1;
+
+		if(pWiserBytes[0] != (byte) 0xFF)
+		{
+			try {
+				pWiserProps = new String(pWiserBytes, "UTF-8");
+				String[] pProps = pWiserProps.split("\\s+");
+
+				pWisercost = Integer.valueOf(pProps[0]);
+				pNormalization = Integer.valueOf(pProps[1]);
+			} catch (UnsupportedEncodingException e) {
+				// TODO Auto-generated catch block
+				e.printStackTrace();
+			}
+		}
+		//wiser cost is just the wisercost received so far (normalized) + the latency of the link we are advertising to
+		int wiserCost = pWisercost/pNormalization + neighborLatency.get(advertisedToAS);
+		//normalization is just the wiser cost that came in (normalized) or 1 if we are the first to advertise, since there will only be one advertised path with the same next hops.
+		pNormalization = pWisercost == 0 ? 1 : pWisercost/pNormalization;
+		//convert these two things to string (easier to work with) combine and add the bytes to the path attribute.
+		String pathAttribute = String.valueOf(wiserCost) + " " + String.valueOf(pNormalization);
+		try {
+			newPath.setProtocolPathAttribute(pathAttribute.getBytes("UTF-8"), new Protocol(AS.WISER), newPath.getPath());
+		} catch (UnsupportedEncodingException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}		
+	}
+	
 	/**
 	 * This function adds a path to the set of path
 	 * updates. Uses outbound filtering to decide which
@@ -219,7 +257,10 @@ public class Wiser_AS extends AS {
 	 */
 	public void addPathToUpdates(IA p, boolean simulateTimers) {
 		// TODO: might have to change the RootCause
-		IA newPath = new IA(p.getPath(), p.getRootCause());
+		IA newPath = new IA(p);//new IA(p.getPath(), p.getRootCause());
+
+		
+		
 		newPath.prepend(asn);
 		int nhType = CUSTOMER; // paths to self should be announced to all
 		int nh = -1;
@@ -232,8 +273,11 @@ public class Wiser_AS extends AS {
 			nhType = neighborMap.get(nh);
 		}
 
+		passThrough.attachPassthrough(newPath); //attach passthrough before sending to neighbors
 		if(nhType == PROVIDER || nhType == PEER) { // announce it only to customers .. and to nextHop in the path 
 			for(int i=0; i<customers.size(); i++) {
+				//add wiser path attributes
+				addWiserPathAttribute(newPath, p, customers.get(i));
 				addPathToPendingUpdatesForPeer(newPath, customers.get(i));
 				if(simulateTimers) {
 					if(!mraiRunning.get(customers.get(i))) {
@@ -244,6 +288,7 @@ public class Wiser_AS extends AS {
 				}
 				sendUpdatesToPeer(customers.get(i));
 			}
+			addWiserPathAttribute(newPath, p, nh); //add wiser path attribute.  this is to sending update to peer we received advert from.
 			addPathToPendingUpdatesForPeer(newPath, nh);
 			if(simulateTimers) {
 				if(!mraiRunning.get(nh)) {
@@ -256,6 +301,8 @@ public class Wiser_AS extends AS {
 		}
 		else { // customer path, so announce to all
 			for(int i=0; i<customers.size(); i++) {
+				//add wiser path attributes
+				addWiserPathAttribute(newPath, p, customers.get(i));
 				addPathToPendingUpdatesForPeer(newPath, customers.get(i));
 				if(simulateTimers) {
 					if(!mraiRunning.get(customers.get(i))) {
@@ -267,6 +314,7 @@ public class Wiser_AS extends AS {
 				sendUpdatesToPeer(customers.get(i));
 			}
 			for(int i=0; i<providers.size(); i++) {
+				addWiserPathAttribute(newPath, p, providers.get(i));
 				addPathToPendingUpdatesForPeer(newPath, providers.get(i));
 				if(simulateTimers) {
 					if(!mraiRunning.get(providers.get(i))) {
@@ -278,6 +326,7 @@ public class Wiser_AS extends AS {
 				sendUpdatesToPeer(providers.get(i));
 			}
 			for(int i=0; i<peers.size(); i++) {
+				addWiserPathAttribute(newPath, p, peers.get(i));
 				addPathToPendingUpdatesForPeer(newPath, peers.get(i));
 				if(simulateTimers) {
 					if(!mraiRunning.get(peers.get(i))) {
@@ -408,10 +457,10 @@ public class Wiser_AS extends AS {
 		}
 		
 		if(type == ControlMessage.ANNOUNCE) { // need to announce current best path
-			IA copy = new IA(p.getPath(), p.getRootCause());
+			IA copy = new IA(p);//new IA(p.getPath(), p.getRootCause());
 			// need to always send a copy!
-			passThrough.attachPassthrough(copy); //[ADDED]
 			copy.prepend(asn);		
+			passThrough.attachPassthrough(copy); //[ADDED]
 			uwMsg = new UpdateMessage(asn, prefix, copy); // TODO: Do we need to change root cause?
 		}
 		else { // WITHDRAW
@@ -659,7 +708,7 @@ public class Wiser_AS extends AS {
 			// to all our peers
 		    Simulator.debug("BGP_AS" + asn + ": Added best path to dst BGP_AS" + dst + ": " + p.getPath());
 			bestPath.put(dst, p);
-			p = passThrough.attachPassthrough(p); //[COMMENT] added
+//			p = passThrough.attachPassthrough(p); //[COMMENT] added
 			addPathToUpdates(p, Simulator.otherTimers);
 
 			dstRIBHistMap.get(dst).addUpdateToHistory(p, nextHop);
@@ -702,7 +751,7 @@ public class Wiser_AS extends AS {
 			dstRIBHistMap.get(dst).addUpdateToHistory(newBestPath, nextHop);
 
 			if(newBestPath.getPath() != null) {
-				newBestPath = passThrough.attachPassthrough(newBestPath);
+//				newBestPath = passThrough.attachPassthrough(newBestPath);
 				addPathToUpdates(newBestPath, Simulator.otherTimers);
 				sendWithdrawalsIfNecessary(bp, newBestPath);
 				dstRIBHistMap.get(dst).addToSequence(newBestPath.getRootCause());
@@ -933,6 +982,7 @@ public class Wiser_AS extends AS {
 		// and in case of a tie, shortest path length
 		// and then break tie by lowest BGP_AS number for next hop
 
+		
 		if(p2 == null || p2.getPath() == null) 
 			return true;
 		if(p1 == null || p1.getPath() == null)
@@ -943,6 +993,59 @@ public class Wiser_AS extends AS {
 		
 		int p1nhType = neighborMap.get(p1nh);
 		int p2nhType = neighborMap.get(p2nh);
+
+
+		byte[] p1WiserBytes = p1.getProtocolPathAttribute(new Protocol(AS.WISER), p1.getPath());
+		byte[] p2WiserBytes = p2.getProtocolPathAttribute(new Protocol(AS.WISER), p2.getPath());
+		String p1WiserProps = null;
+		String p2WiserProps = null;
+
+		if(p1WiserBytes[0] != (byte) 0xFF)
+		{
+			try {
+				p1WiserProps = new String(p1WiserBytes, "UTF-8");
+			} catch (UnsupportedEncodingException e) {
+				// TODO Auto-generated catch block
+				e.printStackTrace();
+			}
+		}
+		if(p2WiserBytes[0] != (byte) 0xFF)
+		{
+			try {
+				p2WiserProps = new String(p2WiserBytes, "UTF-8");
+			} catch (UnsupportedEncodingException e) {
+				// TODO Auto-generated catch block
+				e.printStackTrace();
+			}
+		}
+		
+		//if there is a propagated wiser cost, then we will choose one of them
+		//this is a very coarse policy with regards to this, but it can be changed later
+		if(p1WiserProps != null || p2WiserProps != null)
+		{
+			if(p1WiserProps != null && p2WiserProps == null)
+			{
+				return true;
+			}
+			else if(p1WiserProps == null && p2WiserProps != null)
+			{
+				return false;
+			}
+			else
+			{
+				String[] p1Props = p1WiserProps.split("\\s+");
+				String[] p2Props = p2WiserProps.split("\\s+");
+				
+				int p1Wisercost = Integer.valueOf(p1Props[0]);
+				int p1Normalization = Integer.valueOf(p1Props[1]);
+				
+				int p2Wisercost = Integer.valueOf(p2Props[0]);
+				int p2Normalization = Integer.valueOf(p2Props[1]);
+				
+				return p1Wisercost/p1Normalization < p2Wisercost/p2Normalization;
+			}
+		}
+		
 		
 		if( p1nhType < p2nhType ) { //
 			return true;
