@@ -220,16 +220,16 @@ public class Wiser_AS extends AS {
 				String[] pProps = pWiserProps.split("\\s+");
 
 				pWisercost = Integer.valueOf(pProps[0]);
-				pNormalization = Integer.valueOf(pProps[1]);
+//uncomment				pNormalization = Integer.valueOf(pProps[1]);
 			} catch (UnsupportedEncodingException e) {
 				// TODO Auto-generated catch block
 				e.printStackTrace();
 			}
 		}
 		//wiser cost is just the wisercost received so far (normalized) + the latency of the link we are advertising to
-		int wiserCost = pWisercost/pNormalization + neighborLatency.get(advertisedToAS);
+		int wiserCost = pWisercost/pNormalization + neighborLatency.get(advertisedToAS);	// 
 		//normalization is just the wiser cost that came in (normalized) or 1 if we are the first to advertise, since there will only be one advertised path with the same next hops.
-		pNormalization = pWisercost == 0 ? 1 : pWisercost/pNormalization;
+//uncomment		pNormalization = pWisercost == 0 ? 1 : pWisercost/pNormalization;
 		//convert these two things to string (easier to work with) combine and add the bytes to the path attribute.
 		String pathAttribute = String.valueOf(wiserCost) + " " + String.valueOf(pNormalization);
 		try {
@@ -720,7 +720,7 @@ public class Wiser_AS extends AS {
 			// we need to find the new best path
 			if(p.getPath()==null) { // this is a withdrawal of our active path .. so we are temporarily disconnected
 				Simulator.addAffected(asn);
-				passThrough.removeFromDatabase(IA.pathToKey(p.getPath())); //[COMMENT] added if our best path is being withdrawn, remove it from passthroughdatabase
+				passThrough.removeFromDatabase(IA.pathToKey(bp.getPath())); //[COMMENT] added if our best path is being withdrawn, remove it from passthroughdatabase
 			}
 			
 			ArrayList<IA> allPathsToDst = new ArrayList<IA>(ribIn.get(dst).values());

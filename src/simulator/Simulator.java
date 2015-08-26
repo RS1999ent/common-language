@@ -1035,6 +1035,8 @@ public class Simulator {
 		  
 		case 7:
 			System.out.println("Number of connected components: " + numConnectedComponents() + "\n");
+			trimASMap(largestConnectedComponent());
+			System.out.println("Number of connected components: " + numConnectedComponents() + "\n");
 			IASimulation();
 			break;
 
@@ -1102,6 +1104,133 @@ public class Simulator {
 		
 	}
 	
+	public static ArrayList<Integer> largestConnectedComponent()
+	{
+		int numConnectedComponents = 0;
+		//store the largest connected component here
+		ArrayList<Integer> largestConnectedComponent = new ArrayList<Integer>();
+		HashSet<Integer> verticesSeenSoFar = new HashSet<Integer>();
+//		System.out.println("[DEBUG] total ASes: " + asMap.size());
+		int ccSizeAggregateSum = 0;
+		for(Integer asMapKey: asMap.keySet()){
+			//perform breadth first search
+			if(!verticesSeenSoFar.contains(asMapKey))
+			{
+				ArrayList<Integer> connectedComponent = new ArrayList<Integer>(); //hold this connected component
+				numConnectedComponents++;
+				int ccSize = 0;
+	//			System.out.println("DEBUG CCs: " + numConnectedComponents );
+				ArrayDeque<Integer> searchQueue = new ArrayDeque<Integer>();
+				searchQueue.add(asMapKey);
+				verticesSeenSoFar.add(asMapKey);
+				//add the first as to the temp cc list
+				connectedComponent.add(asMapKey);
+				while(!searchQueue.isEmpty())
+				{
+	//				System.out.print("searchqueuesize: " + searchQueue.size() + "\r");
+					Integer searchEntry = searchQueue.pop();
+					AS searchAS = asMap.get(searchEntry);
+//					verticesSeenSoFar.add(searchEntry);
+					ccSize++;
+					for(Integer customer : searchAS.customers)
+					{
+						if(!verticesSeenSoFar.contains(customer))
+						{
+							searchQueue.add(customer);
+							verticesSeenSoFar.add(customer);
+							//add to cc
+							connectedComponent.add(customer);
+						}
+					}
+					for(Integer peer : searchAS.peers)
+					{
+						if(!verticesSeenSoFar.contains(peer))
+						{
+							searchQueue.add(peer);
+							verticesSeenSoFar.add(peer);
+							//add to cc
+							connectedComponent.add(peer);
+						}
+					}
+					for(Integer provider : searchAS.providers)
+					{
+						if(!verticesSeenSoFar.contains(provider))
+						{
+							searchQueue.add(provider);
+							verticesSeenSoFar.add(provider);
+							connectedComponent.add(provider);
+						}
+					}
+				}
+				//if the connected component we are in is larger than the largest so far, clone it into largest
+				if(connectedComponent.size() > largestConnectedComponent.size())
+				{
+					largestConnectedComponent = (ArrayList<Integer>) connectedComponent.clone();
+				}
+//				System.out.println("DEBUG ccsize: " + ccSize);
+				ccSizeAggregateSum += ccSize;
+			}
+		}
+//		System.out.println("[DEBUG] ccSizeAggregateSum: " + ccSizeAggregateSum);
+		return largestConnectedComponent;
+		
+	}
+	//trim the AS map (contains all ASes and relations) so that it only contains the largest connected component
+	public static void trimASMap(ArrayList<Integer> largestCC){
+		
+		ArrayList<Integer> asesToRemove = new ArrayList<Integer>();//add ases to remove here, to avoid concurrent modification exception
+		
+		// for each key in the current AS map, if it is in the largestCC, its
+		// good otherwise remove it. Check to see if customers, peers and
+		// providers are in there too. If not, then remove them
+		for(Integer asMapKey : asMap.keySet())
+		{
+			//if the largeest cc doesn't have this as, remove it
+			if(!largestCC.contains(asMapKey))
+			{
+				asesToRemove.add(asMapKey); //add as to be removed
+				//asMap.remove(asMapKey); //concurrent modification exceptoin			
+			}
+			else
+			{
+				//check for customers in the as
+				AS checkAS = asMap.get(asMapKey);
+				for(Integer customer : checkAS.customers)
+				{
+					//if customers not in cc, then remove them from this AS
+					
+					if(!largestCC.contains(customer))
+						checkAS.customers.remove(checkAS.customers.indexOf(customer)); //remove that customer
+				}
+				
+				//check peers in the as
+				for(Integer peer : checkAS.peers)
+				{
+					//if peer not in cc remove it
+					if(!largestCC.contains(peer))
+						checkAS.peers.remove(checkAS.peers.indexOf(peer)); //remove the peer
+				}
+				
+				//check providers in as
+				for(Integer provider : checkAS.providers)
+				{
+					//if providernot present, remove it
+					if(!largestCC.contains(provider))
+						checkAS.providers.remove(checkAS.providers.indexOf(provider)); //remove the provider
+				}
+			}
+		}
+		
+		//remove ases to be removed from asmap
+		for(Integer as : asesToRemove)
+		{
+			asMap.remove(as);
+		}
+	}
+	
+	/**
+	 * 
+	 */
 	public static void IASimulation(){
 		
 		// the set of ASes whose paths are affected by this failure
@@ -1120,7 +1249,7 @@ public class Simulator {
 		
 		for( Integer asMapKey : asMap.keySet())
 		{
-			int rVal = 0;//r.nextInt() % 1600;
+			int rVal = r.nextInt() % 1600;
 			if(rVal == 0){
 				asMap.get(asMapKey).announceSelf();
 				announcedASes.add(asMapKey);
@@ -1131,14 +1260,20 @@ public class Simulator {
 		instrumented = false;
 		run();
 		
-		for(Integer asMapKey : asMap.keySet())
+		//show forwarding tables of announced ases
+		for(Integer as : announcedASes)
+		{
+			System.out.println(asMap.get(as).showFwdTable());
+		}
+		
+		/*for(Integer asMapKey : asMap.keySet())
 		{
 			AS as = asMap.get(asMapKey);
 			System.out.println(as.showFwdTable());			
-		}
+		}*/
 		
-		/*
-		for( Integer upstreamASKey : upstreamASes.keySet())
+		
+/*		for( Integer upstreamASKey : upstreamASes.keySet())
 		{
 			int numUpstreamAses = upstreamASes.get(upstreamASKey).size();
 			if (announcedASes.contains(upstreamASKey) && (numUpstreamAses) != numAses)
