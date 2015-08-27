@@ -121,6 +121,9 @@ public class Simulator {
 	static int numAses = 0;
 	static int numTransitASes = 0;
 	
+	//definitions where the special AS numbers goes.  used in read topo to create the special AS types
+	static HashMap<Integer, Integer> asTypeDef = new HashMap<Integer, Integer>();
+	
 	public static void addDiscon(int asn) {
 	    // System.out.println("Adding disconnected " + asn);
 		disconnectedASes.add(asn);
@@ -976,7 +979,8 @@ public class Simulator {
 				.defaultHelp(true)
 				.description("Simulator to simulate integrated advertisements and passthroughs");
 		parser.addArgument("ASRelationships").metavar("ASRel").type(String.class);
-		parser.addArgument("failLinksFile").metavar("FailLinks").type(String.class);
+		parser.addArgument("ASTypesFile").metavar("ASTypes").type(String.class);
+		parser.addArgument("--failLinksFile").metavar("FailLinks").type(String.class);
 		parser.addArgument("--parentsFile").metavar("ParentsFile").type(String.class);
 		parser.addArgument("--seed").required(true).metavar("seed").type(Long.class);
 		parser.addArgument("--sim").required(true).metavar("sim").type(Integer.class);
@@ -995,49 +999,52 @@ public class Simulator {
 		out = new BufferedWriter(new FileWriter("output.log"));
 		seedVal = arguments.getLong("seed");
 		String topologyFile = arguments.getString("ASRelationships");
-		String linkFile = arguments.getString("failLinksFile");
+		//file for AStypes
+		String typeFile = arguments.getString("ASTypesFile");
+		String linkFile = arguments.getString("--failLinksFile");
 		String parentsFile = arguments.getString("--parentsFile");
 		simMode = arguments.getInt("sim");
+		readTypes(typeFile); //reading types must go before readtopology, otherwise allnodes will be bgp
 		readTopology(topologyFile);
-		readLinks(linkFile);
+		//readLinks(linkFile);
 		//readParents(parentsFile);
 		
 		r = new Random(seedVal);
 		numAses = asMap.size();
 		switch(simMode) {
 		case 0:
-		    runFCPSimulations();
+	//	    runFCPSimulations();
 		    break;
 
 		case 1:
-		    runFCPRandomSimulations();
+	//	    runFCPRandomSimulations();
 		    break;
 
 		case 2:
-		    runNewRegularSimulations();
+	//	    runNewRegularSimulations();
 		    break;
 
 		case 3:
-		    runOverheadSimulations();
+	//	    runOverheadSimulations();
 		    break;
 
 		case 4:
-		    runBGPOverheadSimulations();
+	//	    runBGPOverheadSimulations();
 		    break;
 
 		case 5:
-		    runTAASSimulations();
+		//    runTAASSimulations();
 		    break;
 
 		case 6:
-		    runTAASASSimulations();
+		//    runTAASASSimulations();
 		    break;
 		  
 		case 7:
 			System.out.println("Number of connected components: " + numConnectedComponents() + "\n");
 			trimASMap(largestConnectedComponent());
 			System.out.println("Number of connected components: " + numConnectedComponents() + "\n");
-			IASimulation();
+			iaBasicSimulation();
 			break;
 
 		default:
@@ -1099,7 +1106,7 @@ public class Simulator {
 				ccSizeAggregateSum += ccSize;
 			}
 		}
-//		System.out.println("[DEBUG] ccSizeAggregateSum: " + ccSizeAggregateSum);
+		System.out.println("[DEBUG] ccSizeAggregateSum: " + ccSizeAggregateSum);
 		return numConnectedComponents;
 		
 	}
@@ -1231,12 +1238,15 @@ public class Simulator {
 	/**
 	 * 
 	 */
-	public static void IASimulation(){
+	public static void iaBasicSimulation(){
 		
 		// the set of ASes whose paths are affected by this failure
 		HashSet<Integer> relevantASes = new HashSet<Integer>();
 		HashSet<Integer> validASes = new HashSet<Integer>();
-		tier1ASes = computeTier1();
+		
+		//ases that will be used for observation
+		ArrayList<Integer> monitorASes = new ArrayList<Integer>();
+	//	tier1ASes = computeTier1();
 
 		/* Obtaining tier-1 paths */
 
@@ -1246,15 +1256,22 @@ public class Simulator {
 		upstreamASes.clear();
 		r = new Random(seedVal);
 		ArrayList<Integer> announcedASes = new ArrayList<Integer>();
+		//Find AS to use as monitor
+		monitorASes.add(r.nextInt(asMap.size())); //doesn't check for overlap with special ASes, fix later
 		
-		for( Integer asMapKey : asMap.keySet())
+		//go through and have all wiser nodes announce themselves
+		for( Integer asMapKey : asTypeDef.keySet())
 		{
-			int rVal = r.nextInt() % 1600;
+			
+			if(asTypeDef.get(asMapKey) == AS.WISER)
+				asMap.get(asMapKey).announceSelf();
+			
+			/*int rVal = r.nextInt() % 1600;
 			if(rVal == 0){
 				asMap.get(asMapKey).announceSelf();
 				announcedASes.add(asMapKey);
 
-			}
+			}*/
 		}
 		System.out.println("Number of announced ASes: " + announcedASes.size());
 		instrumented = false;
@@ -1263,9 +1280,11 @@ public class Simulator {
 		//show forwarding tables of announced ases
 		for(Integer as : announcedASes)
 		{
+			System.out.println("num upstream ases: " + upstreamASes.get(as).size());
 			System.out.println(asMap.get(as).showFwdTable());
 		}
 		
+		System.out.println(disconnectedASes.size());
 		/*for(Integer asMapKey : asMap.keySet())
 		{
 			AS as = asMap.get(asMapKey);
@@ -2118,6 +2137,19 @@ public class Simulator {
 		}
 	}
 
+	//method that reads in the types file, puts them in a special types list
+	//this keeps in mind that the default type is BGP.
+	private static void readTypes(String typesFile) throws Exception{
+		BufferedReader br = new BufferedReader(new FileReader(typesFile));
+		while(br.ready()){
+			String[] token = br.readLine().split("\\s+");
+			int as = Integer.parseInt(token[0]);
+			int type = Integer.parseInt(token[1]);
+			asTypeDef.put(as, type);
+		}
+		br.close();
+	}
+	
 	private static void readTopology(String topologyFile) throws Exception {
 		// remember to initialize seedVal before calling this function.
 
@@ -2128,21 +2160,27 @@ public class Simulator {
 			int as2 = Integer.parseInt(token[1]);
 			int relation = Integer.parseInt(token[2]);
 			int latency = Integer.parseInt(token[3]);
-			int as1Type = Integer.parseInt(token[4]);
-			int as2Type = Integer.parseInt(token[5]);
+//			int as1Type = Integer.parseInt(token[4]);
+//			int as2Type = Integer.parseInt(token[5]);
 			if(relation == AS.SIBLING) // we don't deal with this now
 				continue;
-			AS temp1, temp2;
+			AS temp1 = null, temp2 = null;
 			if(!asMap.containsKey(as1)) {
 				int mraiVal = (int)(Math.round((r.nextFloat()*0.25 + 0.75)*MRAI_TIMER_VALUE/1000)*1000);
 //				System.err.println("AS" + as1 + " MRAI: " + mraiVal);
-				if(as1Type == AS.BGP)
-					temp1 = new BGP_AS(as1, mraiVal); //
+				//if there is a special as type defined, then use that
+				if(asTypeDef.containsKey(as1))					
+					if(asTypeDef.get(as1) == AS.TRANSIT)
+						temp1 = new Wiser_AS(as1, mraiVal, true);
+					else if(asTypeDef.get(as1) == AS.WISER)
+						temp1 = new Wiser_AS(as1, mraiVal, false);
+					//temp1 = new BGP_AS(as1, mraiVal); //
+				//else just use efault bgp
 				else
 				{
-					temp1 = new Wiser_AS(as1, mraiVal);
+					temp1 = new BGP_AS(as1, mraiVal);
 				}
-				temp1.protocol = as1Type;
+	//			temp1.protocol = as1Type;
 				asMap.put(as1, temp1);
 			}
 			temp1 = asMap.get(as1);
@@ -2150,13 +2188,16 @@ public class Simulator {
 			if(!asMap.containsKey(as2)) {
 				int mraiVal = (int)(Math.round((r.nextFloat()*0.25 + 0.75)*MRAI_TIMER_VALUE/1000)*1000);
 //				System.err.println("AS" + as2 + " MRAI: " + mraiVal);
-				if(as2Type == AS.BGP)
-					temp2 = new BGP_AS(as2, mraiVal); //CHANGE TO BE GENERIC
+				if(asTypeDef.containsKey(as2))
+					if(asTypeDef.get(as2) == AS.TRANSIT)
+						temp2 = new Wiser_AS(as2, mraiVal, true);
+					else if(asTypeDef.get(as2) == AS.WISER)
+						temp2 = new Wiser_AS(as2, mraiVal, false);
 				else
 				{
-					temp2 = new Wiser_AS(as2, mraiVal);
+					temp2 = new BGP_AS(as2, mraiVal);
 				}
-				temp2.protocol = as2Type;
+//				temp2.protocol = as2Type;
 				asMap.put(as2, temp2);
 			}
 			temp2 = asMap.get(as2);
@@ -2183,6 +2224,7 @@ public class Simulator {
 //			temp2.addCustomer(as1);
 //			}
 		}
+		br.close();
 	}
 
 	public static void debug(String str){

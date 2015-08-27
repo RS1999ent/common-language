@@ -93,16 +93,19 @@ public class Wiser_AS extends AS {
 
 	/** This stores the information on conditionally incomplete updates from all my floods this epoch */ 
 	HashSet<UpdateDependency> floodsConditional = new HashSet<UpdateDependency>();
+	
+	//true if this is a basic transit AS, just means that it doesn't add wiser costs
+	boolean isBasic;
 
 	/**
 	 * The constructor for an BGP_AS
 	 * 
 	 * @param asnum The BGP_AS number of this BGP_AS
 	 */
-	public Wiser_AS(int asnum, int mrai) {
+	public Wiser_AS(int asnum, int mrai, boolean isBasic) {
 		asn = asnum;
 		mraiValue = mrai;
-
+		this.isBasic = isBasic;
 //		// initialize all MRAI timers to false
 //		// set the neighbor type
 //		// announce self to all neighbors
@@ -276,8 +279,9 @@ public class Wiser_AS extends AS {
 		passThrough.attachPassthrough(newPath); //attach passthrough before sending to neighbors
 		if(nhType == PROVIDER || nhType == PEER) { // announce it only to customers .. and to nextHop in the path 
 			for(int i=0; i<customers.size(); i++) {
-				//add wiser path attributes
-				addWiserPathAttribute(newPath, p, customers.get(i));
+				//add wiser path attributes if this is a full wiser node
+				if(!isBasic)
+					addWiserPathAttribute(newPath, p, customers.get(i)) ;
 				addPathToPendingUpdatesForPeer(newPath, customers.get(i));
 				if(simulateTimers) {
 					if(!mraiRunning.get(customers.get(i))) {
@@ -288,7 +292,8 @@ public class Wiser_AS extends AS {
 				}
 				sendUpdatesToPeer(customers.get(i));
 			}
-			addWiserPathAttribute(newPath, p, nh); //add wiser path attribute.  this is to sending update to peer we received advert from.
+			if(!isBasic) //if this a full wiser node, add costs
+				addWiserPathAttribute(newPath, p, nh); //add wiser path attribute.  this is to sending update to peer we received advert from.
 			addPathToPendingUpdatesForPeer(newPath, nh);
 			if(simulateTimers) {
 				if(!mraiRunning.get(nh)) {
@@ -301,8 +306,9 @@ public class Wiser_AS extends AS {
 		}
 		else { // customer path, so announce to all
 			for(int i=0; i<customers.size(); i++) {
-				//add wiser path attributes
-				addWiserPathAttribute(newPath, p, customers.get(i));
+				//add wiser path attributes if this is a wiser node
+				if(!isBasic)
+					addWiserPathAttribute(newPath, p, customers.get(i));
 				addPathToPendingUpdatesForPeer(newPath, customers.get(i));
 				if(simulateTimers) {
 					if(!mraiRunning.get(customers.get(i))) {
@@ -314,7 +320,9 @@ public class Wiser_AS extends AS {
 				sendUpdatesToPeer(customers.get(i));
 			}
 			for(int i=0; i<providers.size(); i++) {
-				addWiserPathAttribute(newPath, p, providers.get(i));
+				//add wiser path attributes if this is a wiser node
+				if(!isBasic)
+					addWiserPathAttribute(newPath, p, providers.get(i));
 				addPathToPendingUpdatesForPeer(newPath, providers.get(i));
 				if(simulateTimers) {
 					if(!mraiRunning.get(providers.get(i))) {
@@ -326,7 +334,9 @@ public class Wiser_AS extends AS {
 				sendUpdatesToPeer(providers.get(i));
 			}
 			for(int i=0; i<peers.size(); i++) {
-				addWiserPathAttribute(newPath, p, peers.get(i));
+				//add wiser path attributes if this is a wiser node
+				if(!isBasic)
+					addWiserPathAttribute(newPath, p, peers.get(i));
 				addPathToPendingUpdatesForPeer(newPath, peers.get(i));
 				if(simulateTimers) {
 					if(!mraiRunning.get(peers.get(i))) {

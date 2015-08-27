@@ -25,6 +25,7 @@ public abstract class AS {
 	
 	static final int BGP = 500;
 	static final int WISER = 501;
+	static final int TRANSIT = 502;
 	
 		/** Set of neighbors that are customers */
 	ArrayList<Integer> customers = new ArrayList<Integer>();
