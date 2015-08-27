@@ -6,8 +6,11 @@ package simulator;
  */
 
 import integratedAdvertisement.IA;
+import integratedAdvertisement.Protocol;
 import integratedAdvertisement.RootCause;
+import integratedAdvertisement.Values;
 
+import java.io.UnsupportedEncodingException;
 import java.util.*;
 
 /**
@@ -1153,7 +1156,19 @@ public class BGP_AS extends AS {
 	public String showFwdTable() {
 		String table = "FWD_TABLE : BGP_AS" + asn + " #paths = " + bestPath.size() + "\n";
 		for(Iterator<IA> it = bestPath.values().iterator(); it.hasNext();) {
-			table += it.next().getPath() + "\n";
+			IA bestPath = it.next();
+			table += bestPath.getPath() + "\n";
+			byte[] wiserValues = bestPath.getProtocolPathAttribute(new Protocol(AS.WISER), bestPath.getPath());
+			if(wiserValues[0] != (byte) 0xFF)
+			{
+				try {
+					table += new String(wiserValues, "UTF-8") + '\n';
+				} catch (UnsupportedEncodingException e) {
+					// TODO Auto-generated catch block
+					e.printStackTrace();
+				}
+			}
+			
 		}
 		return table;
 	}

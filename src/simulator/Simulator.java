@@ -1257,14 +1257,16 @@ public class Simulator {
 		r = new Random(seedVal);
 		ArrayList<Integer> announcedASes = new ArrayList<Integer>();
 		//Find AS to use as monitor
-		monitorASes.add(r.nextInt(asMap.size())); //doesn't check for overlap with special ASes, fix later
+		monitorASes.add((Integer) asMap.keySet().toArray()[r.nextInt(asMap.size())]); //doesn't check for overlap with special ASes, fix later
 		
 		//go through and have all wiser nodes announce themselves
 		for( Integer asMapKey : asTypeDef.keySet())
 		{
 			
-			if(asTypeDef.get(asMapKey) == AS.WISER)
+			if(asTypeDef.get(asMapKey) == AS.WISER){
 				asMap.get(asMapKey).announceSelf();
+				announcedASes.add(asMapKey);
+			}
 			
 			/*int rVal = r.nextInt() % 1600;
 			if(rVal == 0){
@@ -1277,14 +1279,20 @@ public class Simulator {
 		instrumented = false;
 		run();
 		
-		//show forwarding tables of announced ases
+		
+		//show forarding tables of monitoring ases
+		for(Integer as: monitorASes){
+			System.out.println(asMap.get(as).showFwdTable());
+		}
+		
+	/*	//show forwarding tables of announced ases
 		for(Integer as : announcedASes)
 		{
 			System.out.println("num upstream ases: " + upstreamASes.get(as).size());
 			System.out.println(asMap.get(as).showFwdTable());
 		}
-		
-		System.out.println(disconnectedASes.size());
+		*/
+	//	System.out.println(disconnectedASes.size());
 		/*for(Integer asMapKey : asMap.keySet())
 		{
 			AS as = asMap.get(asMapKey);
@@ -2169,11 +2177,12 @@ public class Simulator {
 				int mraiVal = (int)(Math.round((r.nextFloat()*0.25 + 0.75)*MRAI_TIMER_VALUE/1000)*1000);
 //				System.err.println("AS" + as1 + " MRAI: " + mraiVal);
 				//if there is a special as type defined, then use that
-				if(asTypeDef.containsKey(as1))					
+				if(asTypeDef.containsKey(as1)){					
 					if(asTypeDef.get(as1) == AS.TRANSIT)
 						temp1 = new Wiser_AS(as1, mraiVal, true);
 					else if(asTypeDef.get(as1) == AS.WISER)
 						temp1 = new Wiser_AS(as1, mraiVal, false);
+				}
 					//temp1 = new BGP_AS(as1, mraiVal); //
 				//else just use efault bgp
 				else
@@ -2188,11 +2197,12 @@ public class Simulator {
 			if(!asMap.containsKey(as2)) {
 				int mraiVal = (int)(Math.round((r.nextFloat()*0.25 + 0.75)*MRAI_TIMER_VALUE/1000)*1000);
 //				System.err.println("AS" + as2 + " MRAI: " + mraiVal);
-				if(asTypeDef.containsKey(as2))
+				if(asTypeDef.containsKey(as2)){
 					if(asTypeDef.get(as2) == AS.TRANSIT)
 						temp2 = new Wiser_AS(as2, mraiVal, true);
 					else if(asTypeDef.get(as2) == AS.WISER)
 						temp2 = new Wiser_AS(as2, mraiVal, false);
+				}
 				else
 				{
 					temp2 = new BGP_AS(as2, mraiVal);
