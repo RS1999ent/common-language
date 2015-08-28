@@ -41,12 +41,12 @@ public class BGP_AS extends AS {
 	int mraiValue;
 
 	/** Mapping of neighbor to relationship */
-	HashMap<Integer, Integer> neighborMap = new HashMap<Integer, Integer>();
+//	HashMap<Integer, Integer> neighborMap = new HashMap<Integer, Integer>();
 
 	// we also need to store all the paths received from neighbors for each
 	// destination. this would be our rib-in. the rib-in is implemented as
 	// a pair of nested hash tables: hashed on <prefix, neighbor>
-	HashMap<Integer, HashMap<Integer,IA>> ribIn = new HashMap<Integer, HashMap<Integer, IA>>();
+//	HashMap<Integer, HashMap<Integer,IA>> ribIn = new HashMap<Integer, HashMap<Integer, IA>>();
 
 	/** Stores the current best path to each prefix 
 	 *	This is almost equivalent to the forwarding table :) 
@@ -687,7 +687,7 @@ public class BGP_AS extends AS {
 			// we need to find the new best path
 			if(p.getPath()==null) { // this is a withdrawal of our active path .. so we are temporarily disconnected
 				Simulator.addAffected(asn);
-				passThrough.removeFromDatabase(IA.pathToKey(p.getPath())); //[COMMENT] added if our best path is being withdrawn, remove it from passthroughdatabase
+				passThrough.removeFromDatabase(IA.pathToKey(bp.getPath())); //[COMMENT] added if our best path is being withdrawn, remove it from passthroughdatabase
 			}
 			
 			ArrayList<IA> allPathsToDst = new ArrayList<IA>(ribIn.get(dst).values());

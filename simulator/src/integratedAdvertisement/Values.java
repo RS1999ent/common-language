@@ -23,6 +23,11 @@ public class Values {
 		
 	}
 	
+	//copy constructor for values
+	Values(Values toCopy)
+	{
+		c_protocolValues = (Hashtable<Long, byte[]>) toCopy.c_protocolValues.clone();
+	}
 
 	//returns null if no associated info with classID
 	//grabs the value associated with the class.

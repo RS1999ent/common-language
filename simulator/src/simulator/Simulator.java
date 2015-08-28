@@ -1,5 +1,6 @@
 package simulator;
 import integratedAdvertisement.IA;
+import integratedAdvertisement.Protocol;
 import integratedAdvertisement.RootCause;
 
 import java.util.*;
@@ -1256,8 +1257,9 @@ public class Simulator {
 		upstreamASes.clear();
 		r = new Random(seedVal);
 		ArrayList<Integer> announcedASes = new ArrayList<Integer>();
+		
 		//Find AS to use as monitor
-		monitorASes.add((Integer) asMap.keySet().toArray()[r.nextInt(asMap.size())]); //doesn't check for overlap with special ASes, fix later
+		//monitorASes.add((Integer) asMap.keySet().toArray()[r.nextInt(asMap.size())]); //doesn't check for overlap with special ASes, fix later
 		
 		//go through and have all wiser nodes announce themselves
 		for( Integer asMapKey : asTypeDef.keySet())
@@ -1279,11 +1281,86 @@ public class Simulator {
 		instrumented = false;
 		run();
 		
-		
-		//show forarding tables of monitoring ases
-		for(Integer as: monitorASes){
-			System.out.println(asMap.get(as).showFwdTable());
+		int gotLowestCost = 0;
+		int total = asMap.size();
+		//for all ASes, see how many got the lowest path cost path to the announced ASes.
+		for(Integer as : asMap.keySet())
+		{
+			//for each announced AS, compare their lowest outgoing wiser cost with what was received
+			AS monitoredAS = asMap.get(as); //the AS we are measuring from, should eventually be all but announced
+			for(Integer announcedAS : announcedASes)
+			{
+				//make sure that the we aren't comparing the AS who announced this to itself
+				if(as == announcedAS){
+					continue;
+				}
+				AS compareAS = asMap.get(announcedAS); //the AS that announced
+				//what is the lowest cost outgoing link of announced Node
+				int lowestCost = Integer.MAX_VALUE;
+				for(Integer neighbor: compareAS.neighborLatency.keySet())
+				{
+					if(compareAS.neighborLatency.get(neighbor) < lowestCost)
+					{
+						lowestCost = compareAS.neighborLatency.get(neighbor);
+					}
+				}
+				//System.out.println("[DEBUG] lowest cost: " + lowestCost);
+				// see if monitored AS has that path in the RIB_in, //if it doesn't have a path, that means policy
+				//disconnection, don't include it in our percentage.
+				if (monitoredAS.ribIn.get(announcedAS) != null) {
+					for (IA path : monitoredAS.ribIn.get(announcedAS).values()) {
+						// all paths should have wiser information in them
+						byte[] wiserBytes = path.getProtocolPathAttribute(
+								new Protocol(AS.WISER), path.getPath());
+						String wiserProps = null;
+						int wiserCost = 0;
+						int normalization = 1;
+						// if ther is wiser props
+						if (wiserBytes[0] != (byte) 0xFF) {
+							try {
+								// fill them into our variables
+								wiserProps = new String(wiserBytes, "UTF-8");
+								String[] split = wiserProps.split("\\s+");
+								wiserCost = Integer.valueOf(split[0]);
+								normalization = Integer.valueOf(split[1]);
+							} catch (UnsupportedEncodingException e) {
+								// TODO Auto-generated catch block
+								e.printStackTrace();
+							}
+						} else {
+							System.out.println("[DEBUG] NO WISER PROPS FOR: "
+									+ announcedAS);
+						}
+						
+						if(monitoredAS.neighborMap.containsKey(compareAS.asn))
+						{							
+							//System.out.println("[DEBUG] AS " + monitoredAS.asn + " neighbor of: " + compareAS.asn);
+							//System.out.println("[DEBUG] received lowest cost: " + wiserProps);
+							//System.out.println("[DEBUG] rib of AS is : " + monitoredAS.ribIn.toString());
+						}
+						
+//						System.out.println("[DEBUG] received lowest cost: " + wiserCost);
+						if (wiserCost == lowestCost) {
+							
+							gotLowestCost++;
+							break;
+						}
+
+					}// endfor
+					
+				}
+				else
+				{
+					total--;
+				}
+			}
 		}
+		
+		System.out.println("Percent that got lowest cost: " + String.valueOf((float) gotLowestCost/total));
+		//show forarding tables of monitoring ases
+	//	for(Integer as: monitorASes){
+		//	System.out.println(asMap.get(as).showFwdTable());
+	//	}
 		
 	/*	//show forwarding tables of announced ases
 		for(Integer as : announcedASes)

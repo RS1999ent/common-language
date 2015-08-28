@@ -40,6 +40,15 @@ public abstract class AS {
 	
 	PassThrough passThrough = new PassThrough(); //enable passthroughfunctionality for AS
 	
+	/** Mapping of neighbor to relationship */
+	HashMap<Integer, Integer> neighborMap = new HashMap<Integer, Integer>();
+
+	// we also need to store all the paths received from neighbors for each
+	// destination. this would be our rib-in. the rib-in is implemented as
+	// a pair of nested hash tables: hashed on <prefix, neighbor>
+	HashMap<Integer, HashMap<Integer,IA>> ribIn = new HashMap<Integer, HashMap<Integer, IA>>();
+
+	
 	public Integer asn;
 	
 	public Integer protocol;

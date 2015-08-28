@@ -1,10 +1,11 @@
 import argparse
 import random
+import math
 
 parser = argparse.ArgumentParser(description='generates AStypes for initial experiment')
 parser.add_argument('annotatedIplaneData', metavar='annotatedIplane', nargs = 1, help = 'annotated iplane data, generated from annotateIplaneData.py')
 parser.add_argument('outFile', metavar='outputFile', nargs=1, help = 'file to output astypes')
-parser.add_argument('--numTransits', metavar='numberTransits', nargs = 1, help = 'number of transits to specify (random', default = 10)
+parser.add_argument('--numTransits', metavar='numberTransits', help = 'number of transits to specify (random', default = 0)
 parser.add_argument('--seedTransit', metavar='rgenerator seed',  help = 'seed for random number generator for generating transits', default=1)
 parser.add_argument('--seedWiser', metavar='seed', help = 'seed for random number generator for generating wiser', default=2)
 
@@ -24,6 +25,8 @@ PROVIDER_CUSTOMER = 1
 
 #asMap (integer, AS)
 asMap = {}
+stubASes = {} #stub ases, (integer, AS)
+transitASes = {} #transit ases (integer AS)
 
 #seeds
 wiserSeed = args.seedWiser
@@ -122,43 +125,70 @@ def largestConnectedComponent():
         return largestConnectedComponent        
                 
                   
-                
-                  
+#fills the dictoinary with the ASes that stubs (have no customers)                
+def fillStubs(largestCC):
+    for element in largestCC:
+        candAS = asMap[element]
+        if len(candAS.customers) == 0:
+            stubASes[element] = candAS
+
+#fills the dictionary with ases that are transits (have customers)
+def fillTransit(largestCC):
+    for element in largestCC:
+        candAS = asMap[element]
+        if len(candAS.customers) > 0:
+            transitASes[element] = candAS
+    
 #writes list of ASes to file            
 def putToOutput(ASList, asType):
     for element in ASList:
         outFile.write(str(element) + ' ' + str(asType) + '\n')
 
-
-
+#returns the asn of the largest stub as with the most neighbors
+def largestStub():
+    largestSoFar = 0 #largest stub found so far #probably more elegant way to do this
+    for element in stubASes:
+        if largestSoFar == 0:
+            largestSoFar = element        
+        elif len(stubASes[element].neighborMap) > len(stubASes[largestSoFar].neighborMap):
+            largestSoFar = element
+    return largestSoFar
     
 parseIplane()
 print len(asMap)
 largestConnectedComponent = largestConnectedComponent()
-print len(largestConnectedComponent)
-
+fillStubs(largestConnectedComponent)
+print len(stubASes)
+print largestStub()
 
 transits = []
 wiserAS = []
+random.seed(wiserSeed)
+
+tempAS = largestStub() #use largest stub as wiser as
+print len(asMap[tempAS].neighborMap)
+#rNum = random.randrange(0, len(largestConnectedComponent)-1)
+#tempAS = largestConnectedComponent[rNum]
+#while tempAS in transits:
+#    rNum = random.randrange(0, len(largestConnectedComponent)-1)
+#    tempAS = largestConnectedComponent[rNum]
+
+wiserAS.append(tempAS)
+
+
+#going to do percentage
 random.seed(transitSeed)
-for i in range(numTransits):
+print int(numTransits * (len(largestConnectedComponent) - len(wiserAS)))
+for i in range(int(numTransits * (len(largestConnectedComponent) - len(wiserAS)))):
     #generate random number in range of largestcc, if not in transits, add it if it is, generate another and add
     rNum = random.randrange(0, len(largestConnectedComponent)-1)
     tempAS = largestConnectedComponent[rNum]
-    while tempAS in transits:
+    while tempAS in transits or tempAS in wiserAS:
         rNum = random.randrange(0, len(largestConnectedComponent)-1)
         tempAS = largestConnectedComponent[rNum]
     transits.append(tempAS)
 
-random.seed(wiserSeed)
 
-rNum = random.randrange(0, len(largestConnectedComponent)-1)
-tempAS = largestConnectedComponent[rNum]
-while tempAS in transits:
-    rNum = random.randrange(0, len(largestConnectedComponent)-1)
-    tempAS = largestConnectedComponent[rNum]
-
-wiserAS.append(tempAS)
 putToOutput(transits, TRANSIT_NUMBER)
 putToOutput(wiserAS, WISER_NUMBER)
 #print transits

@@ -41,7 +41,13 @@ public class IA {
 	{
 		legacyPath = (LinkedList<Integer>) toCopy.legacyPath.clone();
 		paths = (HashMap<String, LinkedList<Integer>>) toCopy.paths.clone();
-		pathValues = (HashMap<String, Values>) toCopy.pathValues.clone();
+		//clone into pathvalues
+		for(String pathValuesKey : toCopy.pathValues.keySet())
+		{
+			Values copyValues = new Values(toCopy.pathValues.get(pathValuesKey));
+			pathValues.put(pathValuesKey, copyValues);
+		}
+//		pathValues = (HashMap<String, Values>) toCopy.pathValues.clone();
 		rc = new RootCause(toCopy.rc.rcAsn, toCopy.rc.updateNum, toCopy.rc.getDest());
 	}
 	
@@ -169,7 +175,7 @@ public class IA {
 		{
 			pathAttributes = new Values();
 		}
-		pathAttributes.putValue(protocol, setBytes);
+		pathAttributes.putValue(protocol, setBytes.clone()); 
 		pathValues.put(pathToKey(path), pathAttributes);
 	}
 	

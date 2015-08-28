@@ -29,12 +29,12 @@ public class Wiser_AS extends AS {
 	int mraiValue;
 
 	/** Mapping of neighbor to relationship */
-	HashMap<Integer, Integer> neighborMap = new HashMap<Integer, Integer>();
+//	HashMap<Integer, Integer> neighborMap = new HashMap<Integer, Integer>();
 
 	// we also need to store all the paths received from neighbors for each
 	// destination. this would be our rib-in. the rib-in is implemented as
 	// a pair of nested hash tables: hashed on <prefix, neighbor>
-	HashMap<Integer, HashMap<Integer,IA>> ribIn = new HashMap<Integer, HashMap<Integer, IA>>();
+//	HashMap<Integer, HashMap<Integer,IA>> ribIn = new HashMap<Integer, HashMap<Integer, IA>>();
 
 	/** Stores the current best path to each prefix 
 	 *	This is almost equivalent to the forwarding table :) 
@@ -282,7 +282,7 @@ public class Wiser_AS extends AS {
 				//add wiser path attributes if this is a full wiser node
 				if(!isBasic)
 					addWiserPathAttribute(newPath, p, customers.get(i)) ;
-				addPathToPendingUpdatesForPeer(newPath, customers.get(i));
+				addPathToPendingUpdatesForPeer(new IA(newPath), customers.get(i));
 				if(simulateTimers) {
 					if(!mraiRunning.get(customers.get(i))) {
 						mraiRunning.put(customers.get(i), true);
@@ -294,7 +294,7 @@ public class Wiser_AS extends AS {
 			}
 			if(!isBasic) //if this a full wiser node, add costs
 				addWiserPathAttribute(newPath, p, nh); //add wiser path attribute.  this is to sending update to peer we received advert from.
-			addPathToPendingUpdatesForPeer(newPath, nh);
+			addPathToPendingUpdatesForPeer(new IA(newPath), nh);
 			if(simulateTimers) {
 				if(!mraiRunning.get(nh)) {
 					mraiRunning.put(nh, true);
@@ -309,7 +309,7 @@ public class Wiser_AS extends AS {
 				//add wiser path attributes if this is a wiser node
 				if(!isBasic)
 					addWiserPathAttribute(newPath, p, customers.get(i));
-				addPathToPendingUpdatesForPeer(newPath, customers.get(i));
+				addPathToPendingUpdatesForPeer(new IA(newPath), customers.get(i));
 				if(simulateTimers) {
 					if(!mraiRunning.get(customers.get(i))) {
 						mraiRunning.put(customers.get(i), true);
@@ -323,7 +323,7 @@ public class Wiser_AS extends AS {
 				//add wiser path attributes if this is a wiser node
 				if(!isBasic)
 					addWiserPathAttribute(newPath, p, providers.get(i));
-				addPathToPendingUpdatesForPeer(newPath, providers.get(i));
+				addPathToPendingUpdatesForPeer(new IA(newPath), providers.get(i));
 				if(simulateTimers) {
 					if(!mraiRunning.get(providers.get(i))) {
 						mraiRunning.put(providers.get(i), true);
@@ -337,7 +337,7 @@ public class Wiser_AS extends AS {
 				//add wiser path attributes if this is a wiser node
 				if(!isBasic)
 					addWiserPathAttribute(newPath, p, peers.get(i));
-				addPathToPendingUpdatesForPeer(newPath, peers.get(i));
+				addPathToPendingUpdatesForPeer(new IA(newPath), peers.get(i));
 				if(simulateTimers) {
 					if(!mraiRunning.get(peers.get(i))) {
 						mraiRunning.put(peers.get(i), true);
