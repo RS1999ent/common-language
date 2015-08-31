@@ -987,7 +987,7 @@ public class Simulator {
 		parser.addArgument("--sim").required(true).metavar("sim").type(Integer.class);
 		Namespace arguments = null;
 		try{
-			System.out.println(parser.parseArgs(args));
+//			System.out.println(parser.parseArgs(args));
 			arguments = parser.parseArgs(args);				
 		}
 		catch(ArgumentParserException e){
@@ -1042,9 +1042,9 @@ public class Simulator {
 		    break;
 		  
 		case 7:
-			System.out.println("Number of connected components: " + numConnectedComponents() + "\n");
+//			System.out.println("Number of connected components: " + numConnectedComponents() + "\n");
 			trimASMap(largestConnectedComponent());
-			System.out.println("Number of connected components: " + numConnectedComponents() + "\n");
+//			System.out.println("Number of connected components: " + numConnectedComponents() + "\n");
 			iaBasicSimulation();
 			break;
 
@@ -1107,7 +1107,7 @@ public class Simulator {
 				ccSizeAggregateSum += ccSize;
 			}
 		}
-		System.out.println("[DEBUG] ccSizeAggregateSum: " + ccSizeAggregateSum);
+//		System.out.println("[DEBUG] ccSizeAggregateSum: " + ccSizeAggregateSum);
 		return numConnectedComponents;
 		
 	}
@@ -1268,6 +1268,7 @@ public class Simulator {
 			if(asTypeDef.get(asMapKey) == AS.WISER){
 				asMap.get(asMapKey).announceSelf();
 				announcedASes.add(asMapKey);
+//				System.out.println("[debug] num neighbors of wiser AS: " + asMap.get(asMapKey).neighborMap.size());
 			}
 			
 			/*int rVal = r.nextInt() % 1600;
@@ -1277,7 +1278,7 @@ public class Simulator {
 
 			}*/
 		}
-		System.out.println("Number of announced ASes: " + announcedASes.size());
+//		System.out.println("Number of announced ASes: " + announcedASes.size());
 		instrumented = false;
 		run();
 		
@@ -1334,7 +1335,7 @@ public class Simulator {
 						
 						if(monitoredAS.neighborMap.containsKey(compareAS.asn))
 						{							
-							//System.out.println("[DEBUG] AS " + monitoredAS.asn + " neighbor of: " + compareAS.asn);
+						//	System.out.println("[DEBUG] AS " + monitoredAS.asn + " neighbor of: " + compareAS.asn);
 							//System.out.println("[DEBUG] received lowest cost: " + wiserProps);
 							//System.out.println("[DEBUG] rib of AS is : " + monitoredAS.ribIn.toString());
 						}

@@ -5,7 +5,7 @@ import math
 parser = argparse.ArgumentParser(description='generates AStypes for initial experiment')
 parser.add_argument('annotatedIplaneData', metavar='annotatedIplane', nargs = 1, help = 'annotated iplane data, generated from annotateIplaneData.py')
 parser.add_argument('outFile', metavar='outputFile', nargs=1, help = 'file to output astypes')
-parser.add_argument('--numTransits', metavar='numberTransits', help = 'number of transits to specify (random', default = 0)
+parser.add_argument('--numTransits', metavar='numberTransits', help = 'number of transits to specify (random', default = .1)
 parser.add_argument('--seedTransit', metavar='rgenerator seed',  help = 'seed for random number generator for generating transits', default=1)
 parser.add_argument('--seedWiser', metavar='seed', help = 'seed for random number generator for generating wiser', default=2)
 
@@ -33,7 +33,9 @@ wiserSeed = args.seedWiser
 transitSeed = args.seedTransit
 
 #number of transits
-numTransits = args.numTransits
+numTransits =  float(args.numTransits)
+
+#print numTransits
 
 class AS:
 #    peers = []
@@ -155,18 +157,18 @@ def largestStub():
     return largestSoFar
     
 parseIplane()
-print len(asMap)
+#print '[debug] number of ases: ', len(asMap)
 largestConnectedComponent = largestConnectedComponent()
 fillStubs(largestConnectedComponent)
-print len(stubASes)
-print largestStub()
+#print '[debug] number of stub ases: ', len(stubASes)
+#print '[debug] largest stub as: ', largestStub()
 
 transits = []
 wiserAS = []
 random.seed(wiserSeed)
 
 tempAS = largestStub() #use largest stub as wiser as
-print len(asMap[tempAS].neighborMap)
+#print '[debug] number of neighbors largest stub has', len(asMap[tempAS].neighborMap)
 #rNum = random.randrange(0, len(largestConnectedComponent)-1)
 #tempAS = largestConnectedComponent[rNum]
 #while tempAS in transits:
@@ -178,7 +180,8 @@ wiserAS.append(tempAS)
 
 #going to do percentage
 random.seed(transitSeed)
-print int(numTransits * (len(largestConnectedComponent) - len(wiserAS)))
+#print int(numTransits * len(largestConnectedComponent) - len(wiserAS))
+#print 'num transits from ', numTransits, 'percent: ', int(numTransits * (len(largestConnectedComponent) - len(wiserAS)))
 for i in range(int(numTransits * (len(largestConnectedComponent) - len(wiserAS)))):
     #generate random number in range of largestcc, if not in transits, add it if it is, generate another and add
     rNum = random.randrange(0, len(largestConnectedComponent)-1)

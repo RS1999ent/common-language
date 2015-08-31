@@ -52,6 +52,10 @@ for line in interASFile:
     pop2 = split[4]
     latency = split[2]
 
+    #deal with -9999 lateny here
+    if int(latency) == -9999:
+        latency = '0'
+
     #gather link statistics
     linksTotal += 1
     if AS1 not in nodesSeen:
