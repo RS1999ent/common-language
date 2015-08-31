@@ -1043,7 +1043,7 @@ public class Simulator {
 		  
 		case 7:
 //			System.out.println("Number of connected components: " + numConnectedComponents() + "\n");
-			trimASMap(largestConnectedComponent());
+			trimASMap(largestConnectedComponent()); //trims the AS map to be one connected component
 //			System.out.println("Number of connected components: " + numConnectedComponents() + "\n");
 			iaBasicSimulation();
 			break;
@@ -1055,6 +1055,11 @@ public class Simulator {
 		out.close();
 	}
 
+	/**
+	 * method that figures via breadthfirst search the number of connected components in the 
+	 * topology (asMap).
+	 * @return returns the number of connected components in the asMap
+	 */
 	public static int numConnectedComponents()
 	{
 		int numConnectedComponents = 0;
@@ -1112,6 +1117,13 @@ public class Simulator {
 		
 	}
 	
+	
+	/**
+	 * method that computes the largest connected component and returns the list
+	 * of ASes contained within it
+	 * 
+	 * @return list of asnums contained in largest connected component
+	 */
 	public static ArrayList<Integer> largestConnectedComponent()
 	{
 		int numConnectedComponents = 0;
