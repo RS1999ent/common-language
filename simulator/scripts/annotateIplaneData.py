@@ -17,6 +17,7 @@ iplaneNcaidaFile = open(args.iplaneNcaida[0], 'w')
 CAIDAHash = {}
 CAIDAASes = []
 
+#processes the caida file into a hash table for fast lookup, being:"AS1 AS2" => relationship
 def preProcessCAIDA():
     for line in convertedCAIDAFile:
         split = line.split()
@@ -57,24 +58,29 @@ for line in interASFile:
         latency = '0'
 
     #gather link statistics
-    linksTotal += 1
+    linksTotal += 1 #each line is a link
+
+    #add as we haven't sen to nodes seen
     if AS1 not in nodesSeen:
         nodesSeen.append(AS1)
     if AS2 not in nodesSeen:
         nodesSeen.append(AS1)
         
-    key1 = AS1 + ' ' + AS2
+    key1 = AS1 + ' ' + AS2 #create lookup keys into the CAIDA HASH
     key2 = AS2 + ' ' + AS1
 
     if key1 in CAIDAHash:
         outFile.write(AS1 + ' ' + AS2 + ' ' + str(CAIDAHash[key1][0]) + ' ' + latency + ' ' + pop1 + ' ' + pop2 + '\n')
-        linksMatched+= 1
+        linksMatched+= 1 #we matched a link
+        #add unique nodes to nodes we've matched if they aren't already there
         if AS1 not in nodesMatched:
             nodesMatched.append(AS1)
         if AS2 not in nodesMatched:
             nodesMatched.append(AS2)
+        #bidirectional match, therefore, we add marker to show what has been matched from caida
+        #used in postprocessing
         if not len(CAIDAHash[key1]) > 1:
-                   CAIDAHash[key1] = (CAIDAHash[key1][0], True)
+                   CAIDAHash[key1] = (CAIDAHash[key1][0], True) 
 #        print AS1, AS2, CAIDAHash[key1], latency, pop1, pop2
     elif key2 in CAIDAHash and key1 not in CAIDAHash:
         outFile.write(AS2 + ' ' + AS1 + ' ' + str(CAIDAHash[key2][0]) + ' ' + latency + ' ' + pop2 + ' ' + pop1 + '\n')
@@ -86,9 +92,12 @@ for line in interASFile:
         if not len(CAIDAHash[key2]) > 1:
                    CAIDAHash[key2] = (CAIDAHash[key2][0], True)
  #       print AS2, AS1, CAIDAHash[key2], latency, pop2, pop1
-    else:
+    else: #no match in caida, therefore iplane has something that caida doesn't
         iplaneNcaidaFile.write(AS1 + ' ' + AS2 + ' ' + latency + ' ' + pop1 + ' ' + pop2 + ' ' + '\n')
 
+
+#postprocessing statistics, find all caida elements that don't have a marker, these are the links
+#in caida that aren't in iplane
 unMatched = 0        
 for element in CAIDAHash:
     if not len(CAIDAHash[element]) > 1:

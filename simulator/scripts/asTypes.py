@@ -129,7 +129,7 @@ def largestConnectedComponent():
                   
         return largestConnectedComponent        
 
-TIER1_THRESHOLD = 50
+TIER1_THRESHOLD = 0
 #computes tier1 ases, returns a list of asnums that are tier 1s
 def computeTier1(largestCC):
     tier1s = []
