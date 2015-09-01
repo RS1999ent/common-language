@@ -1,0 +1,82 @@
+parameters largest wiser stub 20940
+
+transit seed 1
+tier 1 threshold 50
+
+
+Testing for transit percentage: 0.000000
+15
+19154
+22252
+0
+Average cost sum for all ASes: 13.155876
+
+Testing for transit percentage: 0.100000
+15
+19154
+22252
+1
+Average cost sum for all ASes: 13.142909
+
+Testing for transit percentage: 0.200000
+15
+19154
+22252
+3
+Average cost sum for all ASes: 13.142909
+
+Testing for transit percentage: 0.300000
+15
+19154
+22252
+4
+Average cost sum for all ASes: 13.142909
+
+Testing for transit percentage: 0.400000
+15
+19154
+22252
+6
+Average cost sum for all ASes: 14.484294
+
+Testing for transit percentage: 0.500000
+15
+19154
+22252
+7
+Average cost sum for all ASes: 14.259703
+
+Testing for transit percentage: 0.600000
+15
+19154
+22252
+9
+Average cost sum for all ASes: 14.259703
+
+Testing for transit percentage: 0.700000
+15
+19154
+22252
+10
+Average cost sum for all ASes: 12.755867
+
+Testing for transit percentage: 0.800000
+15
+19154
+22252
+12
+Average cost sum for all ASes: 12.597799
+
+Testing for transit percentage: 0.900000
+15
+19154
+22252
+13
+Average cost sum for all ASes: 6.802164
+
+Testing for transit percentage: 1.000000
+15
+19154
+22252
+15
+Average cost sum for all ASes: 5.903616

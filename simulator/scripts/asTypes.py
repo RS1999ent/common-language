@@ -26,7 +26,9 @@ PROVIDER_CUSTOMER = 1
 #asMap (integer, AS)
 asMap = {}
 stubASes = {} #stub ases, (integer, AS)
-transitASes = {} #transit ases (integer AS)
+transitASes = [] #transit ases (integer AS) superset of tier1s and tier2s
+tier1s = []
+tier2s = []
 
 #seeds
 wiserSeed = args.seedWiser
@@ -95,6 +97,7 @@ def parseIplane():
         if relationship == PROVIDER_CUSTOMER: #included for redundancy sake, not contained in file
             AS1.addNeighbor(AS2Num, PROVIDER_CUSTOMER)
             AS2.addNeighbor(AS1Num, CUSTOMER_PROVIDER)
+            print 'SHOULDN\'T BE HERE'
 
         #add to dictionary
         asMap[AS1Num] = AS1
@@ -125,7 +128,31 @@ def largestConnectedComponent():
                 largestConnectedComponent = connectedComponent
                   
         return largestConnectedComponent        
+
+TIER1_THRESHOLD = 50
+#computes tier1 ases, returns a list of asnums that are tier 1s
+def computeTier1(largestCC):
+    tier1s = []
+    for element in largestCC:
+        tempAS = asMap[element]
+        if len(tempAS.providers) == 0:
+            if len(tempAS.customers) + len(tempAS.peers) > TIER1_THRESHOLD:
+                tier1s.append(element)
+    return tier1s
+
+#computes tier2s (all transits that aren't tier 1s) returns list of asnums
+def computeTier2(largestCC):
+    tier2s = []
+    for element in largestCC:
+        tempAS = asMap[element]
+        if len(tempAS.providers) == 0:
+            if len(tempAS.customers) + len(tempAS.peers) < TIER1_THRESHOLD:
+                tier2s.append(element)
+        elif len(tempAS.customers) > 0 and len(tempAS.providers) + len(tempAS.peers) > 0:
+            tier2s.append(element)
+    return tier2s
                 
+
                   
 #fills the dictoinary with the ASes that stubs (have no customers)                
 def fillStubs(largestCC):
@@ -139,7 +166,7 @@ def fillTransit(largestCC):
     for element in largestCC:
         candAS = asMap[element]
         if len(candAS.customers) > 0:
-            transitASes[element] = candAS
+            transitASes.append(element)
     
 #writes list of ASes to file            
 def putToOutput(ASList, asType):
@@ -160,6 +187,10 @@ parseIplane()
 #print '[debug] number of ases: ', len(asMap)
 largestConnectedComponent = largestConnectedComponent()
 fillStubs(largestConnectedComponent)
+fillTransit(largestConnectedComponent)
+tier1s = computeTier1(largestConnectedComponent)
+tier2s = computeTier2(largestConnectedComponent)
+print 'number of stubs: ', len(tier1s), len(tier2s), len(transitASes)
 #print '[debug] number of stub ases: ', len(stubASes)
 #print '[debug] largest stub as: ', largestStub()
 
@@ -180,15 +211,24 @@ wiserAS.append(tempAS)
 
 #going to do percentage
 random.seed(transitSeed)
-#print int(numTransits * len(largestConnectedComponent) - len(wiserAS))
+
+print len(transitASes)
+print len(stubASes)
+print len(largestConnectedComponent)
 #print 'num transits from ', numTransits, 'percent: ', int(numTransits * (len(largestConnectedComponent) - len(wiserAS)))
-for i in range(int(numTransits * (len(largestConnectedComponent) - len(wiserAS)))):
+
+transitRange = tier2s #list of transits to grab from, will shrink
+iterations = int(numTransits * len(transitRange)) #number of transits to
+                                                 #add (easiliy modifiable to be from any tier)
+print iterations
+for i in range(iterations):
     #generate random number in range of largestcc, if not in transits, add it if it is, generate another and add
-    rNum = random.randrange(0, len(largestConnectedComponent)-1)
-    tempAS = largestConnectedComponent[rNum]
+    rNum = random.randrange(0, len(transitRange))
+    tempAS = transitRange[rNum]
     while tempAS in transits or tempAS in wiserAS:
-        rNum = random.randrange(0, len(largestConnectedComponent)-1)
-        tempAS = largestConnectedComponent[rNum]
+        rNum = random.randrange(0, len(transitRange))
+        tempAS = transitRange[rNum]
+    transitRange.pop(rNum)
     transits.append(tempAS)
 
 

@@ -63,6 +63,7 @@ public class Simulator {
 	private static int tieBreaker = 0;
 	static Random r = new Random(seedVal);
 	static BufferedWriter out ;
+	static BufferedWriter outFile; //file to write results to
 
 	public static HashSet<Integer> disconnectedASes = new HashSet<Integer>();
 	public static HashSet<Integer> affectedASes = new HashSet<Integer>();
@@ -528,11 +529,12 @@ public class Simulator {
 	    case 5:
 	    case 6:
 	    case 7: //CHANGED
-		changedPathLoopCheck(as, dst, oldPath, newPath);
+	    	changedPathLoopCheck(as, dst, oldPath, newPath);
 		break;
 
 	    default:
-		changedPathCheck(as, dst, oldPath, newPath);
+	    	//changedPathCheck(as, dst, oldPath, newPath);
+	    	changedPathLoopCheck(as, dst, oldPath, newPath);		
 		break;
 	    }
 	}
@@ -753,6 +755,21 @@ public class Simulator {
 		for(Iterator<AS> it = asMap.values().iterator(); it.hasNext();) {
 			AS a = it.next();
 			if(a.customers.size() > 0 && (a.providers.size() + a.peers.size() > 0)) {
+				temp.add(a.asn);
+			}
+		}
+		return temp;
+	}
+	
+	/**
+	 * computes stub ases.  A stub is an AS with no customers
+	 * @return hashset of stub asnums
+	 */
+	public static HashSet<Integer> computeStubs(){
+		HashSet<Integer> temp = new HashSet<Integer>();
+		for(Iterator<AS> it = asMap.values().iterator(); it.hasNext();) {
+			AS a = it.next();
+			if(a.customers.size() == 0) {
 				temp.add(a.asn);
 			}
 		}
@@ -981,6 +998,7 @@ public class Simulator {
 				.description("Simulator to simulate integrated advertisements and passthroughs");
 		parser.addArgument("ASRelationships").metavar("ASRel").type(String.class);
 		parser.addArgument("ASTypesFile").metavar("ASTypes").type(String.class);
+		parser.addArgument("outFile").metavar("file to output results").type(String.class);
 		parser.addArgument("--failLinksFile").metavar("FailLinks").type(String.class);
 		parser.addArgument("--parentsFile").metavar("ParentsFile").type(String.class);
 		parser.addArgument("--seed").required(true).metavar("seed").type(Long.class);
@@ -998,6 +1016,7 @@ public class Simulator {
 		
 		
 		out = new BufferedWriter(new FileWriter("output.log"));
+		outFile = new BufferedWriter(new FileWriter(arguments.getString("outFile")));
 		seedVal = arguments.getLong("seed");
 		String topologyFile = arguments.getString("ASRelationships");
 		//file for AStypes
@@ -1011,6 +1030,7 @@ public class Simulator {
 		//readParents(parentsFile);
 		
 		r = new Random(seedVal);
+		trimASMap(largestConnectedComponent()); //trims the AS map to be one connected component
 		numAses = asMap.size();
 		switch(simMode) {
 		case 0:
@@ -1038,14 +1058,14 @@ public class Simulator {
 		    break;
 
 		case 6:
-		//    runTAASASSimulations();
+			iaBasicSimulation();
 		    break;
 		  
 		case 7:
 //			System.out.println("Number of connected components: " + numConnectedComponents() + "\n");
-			trimASMap(largestConnectedComponent()); //trims the AS map to be one connected component
 //			System.out.println("Number of connected components: " + numConnectedComponents() + "\n");
-			iaBasicSimulation();
+		//	iaBasicSimulation();
+			iaSumSimulation();
 			break;
 
 		default:
@@ -1249,7 +1269,7 @@ public class Simulator {
 	}
 	
 	/**
-	 * 
+	 * runs a basic IA simulation
 	 */
 	public static void iaBasicSimulation(){
 		
@@ -1294,7 +1314,7 @@ public class Simulator {
 		instrumented = false;
 		run();
 		
-		int gotLowestCost = 0;
+		int costSum = 0;
 		int total = asMap.size();
 		//for all ASes, see how many got the lowest path cost path to the announced ASes.
 		for(Integer as : asMap.keySet())
@@ -1345,6 +1365,9 @@ public class Simulator {
 									+ announcedAS);
 						}
 						
+						costSum += wiserCost;
+						
+						//debug if statement
 						if(monitoredAS.neighborMap.containsKey(compareAS.asn))
 						{							
 						//	System.out.println("[DEBUG] AS " + monitoredAS.asn + " neighbor of: " + compareAS.asn);
@@ -1353,11 +1376,12 @@ public class Simulator {
 						}
 						
 //						System.out.println("[DEBUG] received lowest cost: " + wiserCost);
-						if (wiserCost == lowestCost) {
+						//this is used for percent lowest cost
+					/*	if (wiserCost == lowestCost) {
 							
-							gotLowestCost++;
+							costSum++;
 							break;
-						}
+						}*/
 
 					}// endfor
 					
@@ -1369,7 +1393,7 @@ public class Simulator {
 			}
 		}
 		
-		System.out.println("Percent that got lowest cost: " + String.valueOf((float) gotLowestCost/total));
+		System.out.println("Average cost sum for all ASes: " + String.valueOf((float) costSum/total));
 		//show forarding tables of monitoring ases
 	//	for(Integer as: monitorASes){
 		//	System.out.println(asMap.get(as).showFwdTable());
@@ -1413,19 +1437,118 @@ public class Simulator {
 			//asMap.get(tier1).announceSelf();
 		//}
 		
-		
-		
-		
+	}
+	
+	public static void iaSumSimulation() {
+
+		simTime = 0;
+		upstreamASes.clear();
+		r = new Random(seedVal);
+		ArrayList<Integer> announcedASes = new ArrayList<Integer>();
+
+		// Find AS to use as monitor
+		// monitorASes.add((Integer)
+		// asMap.keySet().toArray()[r.nextInt(asMap.size())]); //doesn't check
+		// for overlap with special ASes, fix later
+
+		// go through and have all wiser nodes announce themselves
+		for (Integer asMapKey : asTypeDef.keySet()) {
+
+			if (asTypeDef.get(asMapKey) == AS.WISER) {
+				asMap.get(asMapKey).announceSelf();
+				announcedASes.add(asMapKey);
+				// System.out.println("[debug] num neighbors of wiser AS: " +
+				// asMap.get(asMapKey).neighborMap.size());
+			}
+
+			/*
+			 * int rVal = r.nextInt() % 1600; if(rVal == 0){
+			 * asMap.get(asMapKey).announceSelf(); announcedASes.add(asMapKey);
+			 * 
+			 * }
+			 */
+		}
+		// System.out.println("Number of announced ASes: " +
+		// announcedASes.size());
+		instrumented = false;
+		run();
+
+		// int gotLowestCost = 0;
+		// int total = asMap.size();
+		// for all stub ASes, see how many got the lowest path cost path to the
+		// announced ASes.
+		for (Integer as : computeStubs()) {
+			// for each announced AS, compare their lowest outgoing wiser cost
+			// with what was received
+			AS monitoredAS = asMap.get(as); // the AS we are measuring from,
+											// should eventually be all but
+											// announced
+			for (Integer announcedAS : announcedASes) {
+				// make sure that the we aren't comparing the AS who announced
+				// this to itself
+				if (as == announcedAS) {
+					continue;
+				}
+				AS compareAS = asMap.get(announcedAS); // the AS that announced
+
+				// System.out.println("[DEBUG] lowest cost: " + lowestCost);
+				// see if monitored AS has that path in the RIB_in, //if it
+				// doesn't have a path, that means policy
+				// disconnection, don't include it in our percentage.
+				if (monitoredAS.ribIn.get(announcedAS) != null) {
+					int costSum = 0; // hold sum of advertised paths
+					for (IA path : monitoredAS.ribIn.get(announcedAS).values()) {
+						// all paths should have wiser information in them
+						byte[] wiserBytes = path.getProtocolPathAttribute(
+								new Protocol(AS.WISER), path.getPath());
+						String wiserProps = null;
+						int wiserCost = 0;
+						int normalization = 1;
+						// if ther is wiser props
+						if (wiserBytes[0] != (byte) 0xFF) {
+							try {
+								// fill them into our variables
+								wiserProps = new String(wiserBytes, "UTF-8");
+								String[] split = wiserProps.split("\\s+");
+								wiserCost = Integer.valueOf(split[0]);
+								normalization = Integer.valueOf(split[1]);
+							} catch (UnsupportedEncodingException e) {
+								// TODO Auto-generated catch block
+								e.printStackTrace();
+							}
+						} else {
+							System.out.println("[DEBUG] NO WISER PROPS FOR: "
+									+ announcedAS);
+						}
+
+						costSum += wiserCost / normalization; // add the wiser
+																// cost received
+
+					}// endfor
+					String resultLine = String.valueOf(monitoredAS.asn) + " "
+							+ String.valueOf(costSum) + " "
+							+ monitoredAS.bestPath.get(announcedAS).getPath().size() + "\n";
+					try {
+						outFile.write(resultLine);
+						outFile.flush();
+					} catch (IOException e) {
+						// TODO Auto-generated catch block
+						e.printStackTrace();
+					}
+
+				}
+			}
+		}
 	}
 	
 	public static void runBGPOverheadSimulations() {
 		int numLinks = failureCustomer.size();
-		for(int i=0; i<numLinks; i++) {
+		for (int i = 0; i < numLinks; i++) {
 			int customer = failureCustomer.get(i);
 			int provider = failureProvider.get(i);
-			if(customer != currentCustomer) {
+			if (customer != currentCustomer) {
 				currentCustomer = customer;
-				for(Iterator<AS> it = asMap.values().iterator(); it.hasNext();) {
+				for (Iterator<AS> it = asMap.values().iterator(); it.hasNext();) {
 					it.next().RESET();
 				}
 				simTime = 0;
@@ -1433,44 +1556,46 @@ public class Simulator {
 				r = new Random(seedVal);
 				asMap.get(customer).announceSelf();
 				run();
-			}
-			else {
-				// we are continuing with the same customer .. we need to re-announce the 
+			} else {
+				// we are continuing with the same customer .. we need to
+				// re-announce the
 				// previously failed link
 				simTime = 0;
-				simulateAnnouncement(customer,customer,currentTarget,(long)10);
+				simulateAnnouncement(customer, customer, currentTarget,
+						(long) 10);
 				run();
 			}
 			// now we have to simulate the withdrawal!
 			simTime = 0;
-			simulateWithdrawal(customer,customer,provider,(long)10);
+			simulateWithdrawal(customer, customer, provider, (long) 10);
 			run();
 
 			System.out.println("Failure: " + customer + " -> " + provider);
 			System.out.println("ASes: " + asMap.size());
-			System.out.println("" + numUpdateMessages + " " + numWithdrawMessages);
+			System.out.println("" + numUpdateMessages + " "
+					+ numWithdrawMessages);
 			System.out.println();
 		}
 
 	}
 
 	public static void runOverheadSimulations() {
-		final int EPOCH_DURATION = 60000*2;
+		final int EPOCH_DURATION = 60000 * 2;
 		final int WITHDRAW_TIME = 10000;
 		transitASes = computeTransit();
 		numTransitASes = transitASes.size();
-		
+
 		tier1ASes = computeTier1();
-		
+
 		getDistanceToTier1(transitASes);
-		
-//		System.out.println("Num ASes = " + numAses);
+
+		// System.out.println("Num ASes = " + numAses);
 		int numLinks = failureCustomer.size();
-		for(int i=0; i<numLinks; i++) {
+		for (int i = 0; i < numLinks; i++) {
 			int customer = failureCustomer.get(i);
 			int provider = failureProvider.get(i);
 			currentCustomer = customer;
-			for(Iterator<AS> it = asMap.values().iterator(); it.hasNext();) {
+			for (Iterator<AS> it = asMap.values().iterator(); it.hasNext();) {
 				it.next().RESET();
 			}
 			simTime = 0;
@@ -1488,20 +1613,25 @@ public class Simulator {
 			unfinishedThisEpoch.clear();
 			// now we have to simulate the withdrawal!
 			System.out.println("Failure: " + customer + " -> " + provider);
-			System.out.println("Num Valid = " + numValidASes + " Num Invalid = " + (numAses-numValidASes) + " Num Transit = " + numTransitASes);
-//			numFloodsDone = 2;
+			System.out.println("Num Valid = " + numValidASes
+					+ " Num Invalid = " + (numAses - numValidASes)
+					+ " Num Transit = " + numTransitASes);
+			// numFloodsDone = 2;
 			simTime = 0;
 			// the system is in a stable state .. take the snapshot
-			startSnapshot((int)243, (long)10);
-			simulateWithdrawal(customer,customer,provider,(long)WITHDRAW_TIME);
-			for(int k = 1; k <= 60000*5/EPOCH_DURATION; k++) {
-				startSnapshot((int)243, (long)(WITHDRAW_TIME + k*EPOCH_DURATION) );
+			startSnapshot((int) 243, (long) 10);
+			simulateWithdrawal(customer, customer, provider,
+					(long) WITHDRAW_TIME);
+			for (int k = 1; k <= 60000 * 5 / EPOCH_DURATION; k++) {
+				startSnapshot((int) 243, (long) (WITHDRAW_TIME + k
+						* EPOCH_DURATION));
 			}
 			numUpdateMessages = numWithdrawMessages = 0;
 			run();
-//			System.out.println("\nStable at : " + lastSimTime);
+			// System.out.println("\nStable at : " + lastSimTime);
 			System.out.println("\nTransit at : " + lastTransitSimTime);
-			System.out.println("" + numUpdateMessages + " " + numWithdrawMessages);
+			System.out.println("" + numUpdateMessages + " "
+					+ numWithdrawMessages);
 			System.out.println();
 		}
 
