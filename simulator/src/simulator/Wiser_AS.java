@@ -53,7 +53,7 @@ public class Wiser_AS extends AS {
 	 * This is because when the MRAI timer expires for a peer, 
 	 * you want to get all the messages for that peer
 	 */
-	HashMap<Integer, HashMap<Integer,IA>> pendingUpdates = new HashMap<Integer, HashMap<Integer, IA>>();
+	HashMap<Integer, HashMap<Integer,ArrayList<IA>>> pendingUpdates = new HashMap<Integer, HashMap<Integer, ArrayList<IA>>>();
 
 	/**
 	 * Stores the RIBHist for each destination. The RIBHist contains the history of
@@ -147,12 +147,6 @@ public class Wiser_AS extends AS {
 		mraiRunning.put(asnum, false);
 	}
 
-	@Override
-	public void addLatency(int as, int latency) {
-		neighborLatency.put(as, latency);
-
-	}
-
 	/**
 	 * This function is used to reset the state of the BGP_AS
 	 *
@@ -229,8 +223,11 @@ public class Wiser_AS extends AS {
 				e.printStackTrace();
 			}
 		}
+		//get the latency between the two points of presence.
+		int latency = neighborLatency.get(advertisedToAS).get(newPath.getPoPTuple());
+		
 		//wiser cost is just the wisercost received so far (normalized) + the latency of the link we are advertising to
-		int wiserCost = pWisercost/pNormalization + neighborLatency.get(advertisedToAS);	// 
+		int wiserCost = pWisercost/pNormalization + latency;	// 
 		//normalization is just the wiser cost that came in (normalized) or 1 if we are the first to advertise, since there will only be one advertised path with the same next hops.
 //uncomment		pNormalization = pWisercost == 0 ? 1 : pWisercost/pNormalization;
 		//convert these two things to string (easier to work with) combine and add the bytes to the path attribute.
@@ -279,10 +276,16 @@ public class Wiser_AS extends AS {
 		passThrough.attachPassthrough(newPath); //attach passthrough before sending to neighbors
 		if(nhType == PROVIDER || nhType == PEER) { // announce it only to customers .. and to nextHop in the path 
 			for(int i=0; i<customers.size(); i++) {
-				//add wiser path attributes if this is a full wiser node
-				if(!isBasic)
-					addWiserPathAttribute(newPath, p, customers.get(i)) ;
-				addPathToPendingUpdatesForPeer(new IA(newPath), customers.get(i));
+				
+				//for all point of presence pairs between these two ASes, attach wiser attributes and add to updates
+				for(IA advert : genPathforNeighbor(newPath, customers.get(i)))
+				{
+					//add wiser path attributes if this is a full wiser node	
+					if(!isBasic)	
+						addWiserPathAttribute(advert, p, customers.get(i)) ;
+					addPathToPendingUpdatesForPeer(advert, customers.get(i));
+				}
+			
 				if(simulateTimers) {
 					if(!mraiRunning.get(customers.get(i))) {
 						mraiRunning.put(customers.get(i), true);
@@ -292,9 +295,16 @@ public class Wiser_AS extends AS {
 				}
 				sendUpdatesToPeer(customers.get(i));
 			}
-			if(!isBasic) //if this a full wiser node, add costs
-				addWiserPathAttribute(newPath, p, nh); //add wiser path attribute.  this is to sending update to peer we received advert from.
-			addPathToPendingUpdatesForPeer(new IA(newPath), nh);
+			
+			//send update back to advertising as (note; why does this have to be the case
+			//for all point of presence pairs between these two ASes, attach wiser attributes and add to updates
+			for(IA advert : genPathforNeighbor(newPath, nh))
+			{
+				//add wiser path attributes if this is a full wiser node	
+				if(!isBasic)	
+					addWiserPathAttribute(advert, p, nh) ;
+				addPathToPendingUpdatesForPeer(advert, nh);
+			}
 			if(simulateTimers) {
 				if(!mraiRunning.get(nh)) {
 					mraiRunning.put(nh, true);
@@ -306,10 +316,14 @@ public class Wiser_AS extends AS {
 		}
 		else { // customer path, so announce to all
 			for(int i=0; i<customers.size(); i++) {
-				//add wiser path attributes if this is a wiser node
-				if(!isBasic)
-					addWiserPathAttribute(newPath, p, customers.get(i));
-				addPathToPendingUpdatesForPeer(new IA(newPath), customers.get(i));
+				//for all point of presence pairs between these two ASes, attach wiser attributes and add to updates
+				for(IA advert : genPathforNeighbor(newPath, customers.get(i)))
+				{
+					//add wiser path attributes if this is a full wiser node	
+					if(!isBasic)	
+						addWiserPathAttribute(advert, p, customers.get(i)) ;
+					addPathToPendingUpdatesForPeer(advert, customers.get(i));
+				}
 				if(simulateTimers) {
 					if(!mraiRunning.get(customers.get(i))) {
 						mraiRunning.put(customers.get(i), true);
@@ -320,10 +334,14 @@ public class Wiser_AS extends AS {
 				sendUpdatesToPeer(customers.get(i));
 			}
 			for(int i=0; i<providers.size(); i++) {
-				//add wiser path attributes if this is a wiser node
-				if(!isBasic)
-					addWiserPathAttribute(newPath, p, providers.get(i));
-				addPathToPendingUpdatesForPeer(new IA(newPath), providers.get(i));
+				//for all point of presence pairs between these two ASes, attach wiser attributes and add to updates
+				for(IA advert : genPathforNeighbor(newPath, providers.get(i)))
+				{
+					//add wiser path attributes if this is a full wiser node	
+					if(!isBasic)	
+						addWiserPathAttribute(advert, p, providers.get(i)) ;
+					addPathToPendingUpdatesForPeer(advert, providers.get(i));
+				}
 				if(simulateTimers) {
 					if(!mraiRunning.get(providers.get(i))) {
 						mraiRunning.put(providers.get(i), true);
@@ -334,10 +352,14 @@ public class Wiser_AS extends AS {
 				sendUpdatesToPeer(providers.get(i));
 			}
 			for(int i=0; i<peers.size(); i++) {
-				//add wiser path attributes if this is a wiser node
-				if(!isBasic)
-					addWiserPathAttribute(newPath, p, peers.get(i));
-				addPathToPendingUpdatesForPeer(new IA(newPath), peers.get(i));
+				//for all point of presence pairs between these two ASes, attach wiser attributes and add to updates
+				for(IA advert : genPathforNeighbor(newPath, peers.get(i)))
+				{
+					//add wiser path attributes if this is a full wiser node	
+					if(!isBasic)	
+						addWiserPathAttribute(advert, p, peers.get(i)) ;
+					addPathToPendingUpdatesForPeer(advert, peers.get(i));
+				}
 				if(simulateTimers) {
 					if(!mraiRunning.get(peers.get(i))) {
 						mraiRunning.put(peers.get(i), true);
@@ -356,17 +378,31 @@ public class Wiser_AS extends AS {
 	 * @param peer The peer for whom this update is queued
 	 */
 	private void addPathToPendingUpdatesForPeer(IA p, int peer) {
-		HashMap<Integer,IA> dstPathMap = new HashMap<Integer,IA>();
+		HashMap<Integer,ArrayList<IA>> dstPathMap = new HashMap<Integer,ArrayList<IA>>();
 		if(!pendingUpdates.containsKey(peer)) {
 			pendingUpdates.put(peer, dstPathMap);
 		}
 		dstPathMap = pendingUpdates.get(peer);
 		int dst = p.getDest();
-		if(dstPathMap.containsKey(dst)) { // we are replacing a pending update with another
-			IA replaced = dstPathMap.get(dst);
-			removeFromRIBHistAndMakeConditional(replaced, p);
+		if(dstPathMap.containsKey(dst)) { // check if we are updating a path update, has to match PoPs
+			//go through points of presence for these updates
+			for(IA pendUpdate : dstPathMap.get(dst))
+			{
+				if(pendUpdate.getPoPTuple().equals(p.getPoPTuple()))
+				{
+					IA replaced = pendUpdate;
+					removeFromRIBHistAndMakeConditional(replaced, p);
+					break;
+				}
+			}
+//			IA replaced = dstPathMap.get(dst);
+			//removeFromRIBHistAndMakeConditional(replaced, p);
 		}
-		dstPathMap.put(dst, p);
+		else
+		{
+			dstPathMap.put(dst, new ArrayList<IA>());
+		}
+		dstPathMap.get(dst).add(p);
 	}
 
 	/**
@@ -621,19 +657,23 @@ public class Wiser_AS extends AS {
 			// there are no updates for this peer
 			return;
 		}
-		HashMap<Integer, IA> dstPathMap = pendingUpdates.get(peer);
-		List<IA> updates = new ArrayList<IA>(dstPathMap.values());
+		HashMap<Integer, ArrayList<IA>> dstPathMap = pendingUpdates.get(peer);
+//		List<ArrayList<IA>> updates = new List<ArrayList<IA>>(dstPathMap.values());//new ArrayList<IA>(dstPathMap.values());
+//process the updates for this peer
+		for(ArrayList<IA> updateList : dstPathMap.values())
+		{
+			for(Iterator<IA> it = updateList.iterator(); it.hasNext();)
+			{
+				IA p = it.next();
 
-		for(Iterator<IA> it = updates.iterator(); it.hasNext(); ) {
-			IA p = it.next();
+				prefixList = new ArrayList<Integer>();
+				prefixList.add(p.getDest());
 
-			prefixList = new ArrayList<Integer>();
-			prefixList.add(p.getDest());
-
-			Event e = new Event(Simulator.getTime() + LINK_DELAY,
-					peer,
-					new UpdateMessage(asn, prefixList, p));
-			Simulator.addEvent(e);
+				Event e = new Event(Simulator.getTime() + LINK_DELAY,
+						peer,
+						new UpdateMessage(asn, prefixList, p));
+				Simulator.addEvent(e);
+			}
 		}
 
 		// since all the updates have been processed, clear the list
@@ -1108,9 +1148,14 @@ public class Wiser_AS extends AS {
 		if(!pendingUpdates.containsKey(peer))
 			return updatesRC;
 
-		Collection<IA> dstPaths = pendingUpdates.get(peer).values();
-		for(Iterator<IA> it = dstPaths.iterator(); it.hasNext();) {
-			updatesRC.add(it.next().getRootCause());
+		Collection<ArrayList<IA>> dstPaths = pendingUpdates.get(peer).values();
+		//
+		for(Iterator<ArrayList<IA>> it = dstPaths.iterator(); it.hasNext();) {
+			for(IA pendingUpdate : it.next())
+			{
+				updatesRC.add(pendingUpdate.getRootCause());
+			}
+			//updatesRC.add(it.next().getRootCause());
 		}
 		return updatesRC;
 	}

@@ -7,6 +7,9 @@ package integratedAdvertisement;
 
 import java.util.*;
 
+import simulator.AS;
+import simulator.AS.PoPTuple;
+
 /**
  * Stores an AS Integrated advertisement
  */
@@ -22,6 +25,27 @@ public class IA {
 	private HashMap<String, Values> pathValues = new HashMap<String, Values>();
 
 	private RootCause rc; // stores root cause of this integrated advertisement
+
+	//true cost of path
+	long trueCost;
+	
+	public long getTrueCost() {
+		return trueCost;
+	}
+
+	public void setTrueCost(long trueCost) {
+		this.trueCost = trueCost;
+	}
+
+	AS.PoPTuple popTuple; //the pop that this path advertisement comes from
+	
+	public PoPTuple getPoPTuple() {
+		return popTuple;
+	}
+
+	public void setPoPTuple(AS.PoPTuple newTuple) {
+		this.popTuple = newTuple;
+	}
 
 	/**
 	 * Default constructor. Creates an empty path
@@ -47,6 +71,8 @@ public class IA {
 	public IA(IA toCopy) {
 		legacyPath = (LinkedList<Integer>) toCopy.legacyPath.clone();
 		paths = (HashMap<String, LinkedList<Integer>>) toCopy.paths.clone();
+		this.trueCost = toCopy.trueCost;
+		this.popTuple = toCopy.popTuple;
 		// copy the path attributes, if Values implenets interface "cloneable",
 		// then
 		// we might be able to just call pathValues.clone(). Since it doesn't,

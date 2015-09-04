@@ -6,6 +6,7 @@ import integratedAdvertisement.RootCause;
 import java.util.*;
 import java.io.*;
 
+import simulator.AS.PoPTuple;
 import jdk.nashorn.internal.runtime.regexp.joni.constants.Arguments;
 import net.sourceforge.argparse4j.ArgumentParsers;
 import net.sourceforge.argparse4j.inf.ArgumentParser;
@@ -842,6 +843,8 @@ public class Simulator {
 		numUpdateMessages = 0;
 		numWithdrawMessages = 0;
 		while(true) {
+			if(eventQueue.size() % 100 == 0)
+				System.out.println("eventqueue size: " + eventQueue.size());
 			Event e = eventQueue.poll();
 			if( e == null) {
 				// system is in a stable state
@@ -1276,11 +1279,11 @@ public class Simulator {
 	public static void iaBasicSimulationTransitsOnly(){
 		
 		
-		//ases that will be used for observation
+	/*	//ases that will be used for observation
 		ArrayList<Integer> monitorASes = new ArrayList<Integer>();
 	//	tier1ASes = computeTier1();
 
-		/* Obtaining tier-1 paths */
+		 Obtaining tier-1 paths 
 
 		// We first announce all the tier-1 ASes and save 
 		// the paths from each of our failure-provider to the tier1
@@ -1306,12 +1309,12 @@ public class Simulator {
 				monitorASes.add(asMapKey);
 			}
 			
-			/*int rVal = r.nextInt() % 1600;
+			int rVal = r.nextInt() % 1600;
 			if(rVal == 0){
 				asMap.get(asMapKey).announceSelf();
 				announcedASes.add(asMapKey);
 
-			}*/
+			}
 		}
 //		System.out.println("Number of announced ASes: " + announcedASes.size());
 		instrumented = false;
@@ -1380,11 +1383,11 @@ public class Simulator {
 						
 //						System.out.println("[DEBUG] received lowest cost: " + wiserCost);
 						//this is used for percent lowest cost
-					/*	if (wiserCost == lowestCost) {
+						if (wiserCost == lowestCost) {
 							
 							costSum++;
 							break;
-						}*/
+						}
 
 					}// endfor
 					
@@ -1396,7 +1399,7 @@ public class Simulator {
 			}
 		}
 		
-		System.out.println("Average cost sum for transit ASes: " + String.valueOf((float) costSum/total));
+		System.out.println("Average cost sum for transit ASes: " + String.valueOf((float) costSum/total));*/
 	}
 	
 	
@@ -1413,7 +1416,7 @@ public class Simulator {
 		ArrayList<Integer> monitorASes = new ArrayList<Integer>();
 	//	tier1ASes = computeTier1();
 
-		/* Obtaining tier-1 paths */
+	//	 Obtaining tier-1 paths 
 
 		// We first announce all the tier-1 ASes and save 
 		// the paths from each of our failure-provider to the tier1
@@ -1435,12 +1438,12 @@ public class Simulator {
 //				System.out.println("[debug] num neighbors of wiser AS: " + asMap.get(asMapKey).neighborMap.size());
 			}
 			
-			/*int rVal = r.nextInt() % 1600;
+			int rVal = r.nextInt() % 1600;
 			if(rVal == 0){
 				asMap.get(asMapKey).announceSelf();
 				announcedASes.add(asMapKey);
 
-			}*/
+			}
 		}
 //		System.out.println("Number of announced ASes: " + announcedASes.size());
 		instrumented = false;
@@ -1462,13 +1465,13 @@ public class Simulator {
 				AS compareAS = asMap.get(announcedAS); //the AS that announced
 				//what is the lowest cost outgoing link of announced Node
 				int lowestCost = Integer.MAX_VALUE;
-				for(Integer neighbor: compareAS.neighborLatency.keySet())
-				{
-					if(compareAS.neighborLatency.get(neighbor) < lowestCost)
-					{
-						lowestCost = compareAS.neighborLatency.get(neighbor);
-					}
-				}
+	//			for(Integer neighbor: compareAS.neighborLatency.keySet())
+	//			{
+	//				if(compareAS.neighborLatency.get(neighbor) < lowestCost)
+	//				{
+	//					lowestCost = compareAS.neighborLatency.get(neighbor);
+	//				}
+	//			}
 				//System.out.println("[DEBUG] lowest cost: " + lowestCost);
 				// see if monitored AS has that path in the RIB_in, //if it doesn't have a path, that means policy
 				//disconnection, don't include it in our percentage.
@@ -1509,11 +1512,11 @@ public class Simulator {
 						
 //						System.out.println("[DEBUG] received lowest cost: " + wiserCost);
 						//this is used for percent lowest cost
-					/*	if (wiserCost == lowestCost) {
+						if (wiserCost == lowestCost) {
 							
 							costSum++;
 							break;
-						}*/
+						}
 
 					}// endfor
 					
@@ -1531,22 +1534,22 @@ public class Simulator {
 		//	System.out.println(asMap.get(as).showFwdTable());
 	//	}
 		
-	/*	//show forwarding tables of announced ases
+		//show forwarding tables of announced ases
 		for(Integer as : announcedASes)
 		{
 			System.out.println("num upstream ases: " + upstreamASes.get(as).size());
 			System.out.println(asMap.get(as).showFwdTable());
 		}
-		*/
+		
 	//	System.out.println(disconnectedASes.size());
-		/*for(Integer asMapKey : asMap.keySet())
+		for(Integer asMapKey : asMap.keySet())
 		{
 			AS as = asMap.get(asMapKey);
 			System.out.println(as.showFwdTable());			
-		}*/
+		}
 		
 		
-/*		for( Integer upstreamASKey : upstreamASes.keySet())
+		for( Integer upstreamASKey : upstreamASes.keySet())
 		{
 			int numUpstreamAses = upstreamASes.get(upstreamASKey).size();
 			if (announcedASes.contains(upstreamASKey) && (numUpstreamAses) != numAses)
@@ -1563,7 +1566,7 @@ public class Simulator {
 				System.out.println("total num of ases: " + numAses);
 				
 			}
-		}*/
+		}
 		//for(Iterator<Integer>it = tier1ASes.iterator(); it.hasNext();) {
 //			int tier1 = it.next();
 			//asMap.get(tier1).announceSelf();
@@ -2520,6 +2523,8 @@ public class Simulator {
 			int as2 = Integer.parseInt(token[1]);
 			int relation = Integer.parseInt(token[2]);
 			int latency = Integer.parseInt(token[3]);
+			int pop1 = Integer.parseInt(token[4]);
+			int pop2 = Integer.parseInt(token[5]);
 //			int as1Type = Integer.parseInt(token[4]);
 //			int as2Type = Integer.parseInt(token[5]);
 			if(relation == AS.SIBLING) // we don't deal with this now
@@ -2579,8 +2584,8 @@ public class Simulator {
 				temp2.addPeer(as1);
 			}
 			
-			temp1.addLatency(temp2.asn, latency);
-			temp2.addLatency(temp1.asn, latency);
+			temp1.addLatency(temp2.asn, new AS.PoPTuple(pop1, pop2), latency);
+			temp2.addLatency(temp1.asn, new AS.PoPTuple(pop2, pop1) , latency);
 //			else { // sibling?
 //			temp1.addCustomer(as2);
 //			temp2.addCustomer(as1);
