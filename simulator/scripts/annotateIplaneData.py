@@ -38,7 +38,7 @@ def preProcessCAIDA():
 #                CAIDAHash[peerKey] = [relationship]
 
 
-
+#MAIN
 preProcessCAIDA()
 linksTotal = 0
 linksMatched = 0
@@ -97,7 +97,7 @@ for line in interASFile:
 
 
 #postprocessing statistics, find all caida elements that don't have a marker, these are the links
-#in caida that aren't in iplane
+#in caida that aren't in iplane. each element should signify a link.
 unMatched = 0        
 for element in CAIDAHash:
     if not len(CAIDAHash[element]) > 1:
