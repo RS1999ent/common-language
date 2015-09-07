@@ -37,15 +37,15 @@ public class IA {
 		this.trueCost = trueCost;
 	}
 
-	AS.PoPTuple popTuple; //the pop that this path advertisement comes from
+	//HashMap<AS.PoPTuple, Integer> intraDomainCosts; 
 	
-	public PoPTuple getPoPTuple() {
+	/*public PoPTuple getPoPTuple() {
 		return popTuple;
 	}
 
 	public void setPoPTuple(AS.PoPTuple newTuple) {
 		this.popTuple = newTuple;
-	}
+	}*/
 
 	/**
 	 * Default constructor. Creates an empty path
@@ -72,7 +72,7 @@ public class IA {
 		legacyPath = (LinkedList<Integer>) toCopy.legacyPath.clone();
 		paths = (HashMap<String, LinkedList<Integer>>) toCopy.paths.clone();
 		this.trueCost = toCopy.trueCost;
-		this.popTuple = toCopy.popTuple;
+	//	this.popTuple = toCopy.popTuple;
 		// copy the path attributes, if Values implenets interface "cloneable",
 		// then
 		// we might be able to just call pathValues.clone(). Since it doesn't,

@@ -240,16 +240,26 @@ public class BGP_AS extends AS {
 		if(p.getPath().size() > 0) {
 			nh = p.getFirstHop(); // this is the BGP_AS that advertised the path to us
 			nhType = neighborMap.get(nh);
+			
+			// update for the true cost of path. This will be the poptuple that has
+			// the lowest latency to simulate choosing the lowest MRAI value
+			long trueCostInc = Long.MAX_VALUE;
+			for(Integer latency : neighborLatency.get(nh).values()){				
+				if(latency < trueCostInc)
+				{
+					trueCostInc = latency;
+				}
+			}
+			
+	//		System.out.println("true cost inc: " + trueCostInc);
+			newPath.setTrueCost(newPath.getTrueCost() + trueCostInc);
 		}
 
+		
 		passThrough.attachPassthrough(newPath); //attach passthrough info before sending to neighbors
 		if(nhType == PROVIDER || nhType == PEER) { // announce it only to customers .. and to nextHop in the path 
 			for(int i=0; i<customers.size(); i++) {
-				//generate the advertisemetns via different points of presence and add them
-				for(IA advert: genPathforNeighbor(newPath, customers.get(i))){
-					addPathToPendingUpdatesForPeer(advert, customers.get(i));
-				}
-		//		addPathToPendingUpdatesForPeer(newPath, customers.get(i));
+				addPathToPendingUpdatesForPeer(newPath, customers.get(i));
 				if(simulateTimers) {
 					if(!mraiRunning.get(customers.get(i))) {
 						mraiRunning.put(customers.get(i), true);
@@ -260,10 +270,7 @@ public class BGP_AS extends AS {
 				sendUpdatesToPeer(customers.get(i));
 			}
 			
-			for(IA advert: genPathforNeighbor(newPath, nh)){
-					addPathToPendingUpdatesForPeer(advert, nh);
-				}
-	//		addPathToPendingUpdatesForPeer(newPath, nh);
+			addPathToPendingUpdatesForPeer(newPath, nh);
 			if(simulateTimers) {
 				if(!mraiRunning.get(nh)) {
 					mraiRunning.put(nh, true);
@@ -275,10 +282,7 @@ public class BGP_AS extends AS {
 		}
 		else { // customer path, so announce to all
 			for(int i=0; i<customers.size(); i++) {
-				for(IA advert: genPathforNeighbor(newPath, customers.get(i))){
-					addPathToPendingUpdatesForPeer(advert, customers.get(i));
-				}
-	//			addPathToPendingUpdatesForPeer(newPath, customers.get(i));
+				addPathToPendingUpdatesForPeer(newPath, customers.get(i));
 				if(simulateTimers) {
 					if(!mraiRunning.get(customers.get(i))) {
 						mraiRunning.put(customers.get(i), true);
@@ -289,10 +293,7 @@ public class BGP_AS extends AS {
 				sendUpdatesToPeer(customers.get(i));
 			}
 			for(int i=0; i<providers.size(); i++) {
-				for(IA advert: genPathforNeighbor(newPath, providers.get(i))){
-					addPathToPendingUpdatesForPeer(advert, providers.get(i));
-				}
-	//			addPathToPendingUpdatesForPeer(newPath, providers.get(i));
+				addPathToPendingUpdatesForPeer(newPath, providers.get(i));
 				if(simulateTimers) {
 					if(!mraiRunning.get(providers.get(i))) {
 						mraiRunning.put(providers.get(i), true);
@@ -303,10 +304,7 @@ public class BGP_AS extends AS {
 				sendUpdatesToPeer(providers.get(i));
 			}
 			for(int i=0; i<peers.size(); i++) {
-				for(IA advert: genPathforNeighbor(newPath, peers.get(i))){
-					addPathToPendingUpdatesForPeer(advert, peers.get(i));
-				}
-			//	addPathToPendingUpdatesForPeer(newPath, peers.get(i));
+				addPathToPendingUpdatesForPeer(newPath, peers.get(i));
 				if(simulateTimers) {
 					if(!mraiRunning.get(peers.get(i))) {
 						mraiRunning.put(peers.get(i), true);
@@ -324,35 +322,8 @@ public class BGP_AS extends AS {
 	 * @param p The path that is being added.
 	 * @param peer The peer for whom this update is queued
 	 */
-	private void addPathToPendingUpdatesForPeer(IA p, int peer) {
-		
-		HashMap<Integer,ArrayList<IA>> dstPathMap = new HashMap<Integer,ArrayList<IA>>();
-		if(!pendingUpdates.containsKey(peer)) {
-			pendingUpdates.put(peer, dstPathMap);
-		}
-		dstPathMap = pendingUpdates.get(peer);
-		int dst = p.getDest();
-		if(dstPathMap.containsKey(dst)) { // check if we are updating a path update, has to match PoPs
-			//go through points of presence for these updates
-			for(IA pendUpdate : dstPathMap.get(dst))
-			{
-				if(pendUpdate.getPoPTuple().equals(p.getPoPTuple()))
-				{
-					IA replaced = pendUpdate;
-					removeFromRIBHistAndMakeConditional(replaced, p);
-					break;
-				}
-			}
-//			IA replaced = dstPathMap.get(dst);
-			//removeFromRIBHistAndMakeConditional(replaced, p);
-		}
-		else
-		{
-			dstPathMap.put(dst, new ArrayList<IA>());
-		}
-		dstPathMap.get(dst).add(p);
-		
-	/*	HashMap<Integer,IA> dstPathMap = new HashMap<Integer,IA>();
+	private void addPathToPendingUpdatesForPeer(IA p, int peer) {	
+		HashMap<Integer,IA> dstPathMap = new HashMap<Integer,IA>();
 		if(!pendingUpdates.containsKey(peer)) {
 			pendingUpdates.put(peer, dstPathMap);
 		}
@@ -362,7 +333,7 @@ public class BGP_AS extends AS {
 			IA replaced = dstPathMap.get(dst);
 			removeFromRIBHistAndMakeConditional(replaced, p);
 		}
-		dstPathMap.put(dst, p);*/
+		dstPathMap.put(dst, p);
 	}
 
 	/**
@@ -607,45 +578,7 @@ public class BGP_AS extends AS {
 	 * @param peer
 	 */
 	private void sendUpdatesToPeer(int peer) {
-
 		// the set of prefixes with the same BGP_AS Path
-		// right now, we have just the dest BGP_AS as the prefix
-		ArrayList<Integer> prefixList; 
-		if(mraiRunning.get(peer))
-			return;
-
-		if(!pendingUpdates.containsKey(peer)) {
-			// there are no updates for this peer
-			return;
-		}
-		HashMap<Integer, ArrayList<IA>> dstPathMap = pendingUpdates.get(peer);
-		//				List<ArrayList<IA>> updates = new List<ArrayList<IA>>(dstPathMap.values());//new ArrayList<IA>(dstPathMap.values());
-		//process the updates for this peer
-		for(ArrayList<IA> updateList : dstPathMap.values())
-		{
-			for(Iterator<IA> it = updateList.iterator(); it.hasNext();)
-			{
-				IA p = it.next();
-
-				prefixList = new ArrayList<Integer>();
-				prefixList.add(p.getDest());
-
-				Event e = new Event(Simulator.getTime() + LINK_DELAY,
-						peer,
-						new UpdateMessage(asn, prefixList, p));
-				Simulator.addEvent(e);
-			}
-		}
-
-		// since all the updates have been processed, clear the list
-		pendingUpdates.remove(peer);
-
-		// start the next round of the MRAI timer
-		Simulator.addEvent(new Event(Simulator.getTime() + mraiValue,
-				asn, peer));
-		mraiRunning.put(peer, true);
-		
-		/*// the set of prefixes with the same BGP_AS Path
 		// right now, we have just the dest BGP_AS as the prefix
 		ArrayList<Integer> prefixList; 
 		if(mraiRunning.get(peer))
@@ -676,7 +609,7 @@ public class BGP_AS extends AS {
 		// start the next round of the MRAI timer
 		Simulator.addEvent(new Event(Simulator.getTime() + mraiValue,
 				asn, peer));
-		mraiRunning.put(peer, true);*/
+		mraiRunning.put(peer, true);
 	}
 
 	public Collection<IA> getAllPaths(int dst) {
@@ -1089,25 +1022,11 @@ public class BGP_AS extends AS {
 		if(!pendingUpdates.containsKey(peer))
 			return updatesRC;
 
-		Collection<ArrayList<IA>> dstPaths = pendingUpdates.get(peer).values();
-		//
-		for(Iterator<ArrayList<IA>> it = dstPaths.iterator(); it.hasNext();) {
-			for(IA pendingUpdate : it.next())
-			{
-				updatesRC.add(pendingUpdate.getRootCause());
-			}
-			//updatesRC.add(it.next().getRootCause());
-		}
-		return updatesRC;
-	/*	HashSet<RootCause> updatesRC = new HashSet<RootCause>();
-		if(!pendingUpdates.containsKey(peer))
-			return updatesRC;
-
 		Collection<IA> dstPaths = pendingUpdates.get(peer).values();
 		for(Iterator<IA> it = dstPaths.iterator(); it.hasNext();) {
 			updatesRC.add(it.next().getRootCause());
 		}
-		return updatesRC;*/
+		return updatesRC;
 	}
 
 	/**

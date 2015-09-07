@@ -1438,12 +1438,12 @@ public class Simulator {
 //				System.out.println("[debug] num neighbors of wiser AS: " + asMap.get(asMapKey).neighborMap.size());
 			}
 			
-			int rVal = r.nextInt() % 1600;
-			if(rVal == 0){
-				asMap.get(asMapKey).announceSelf();
-				announcedASes.add(asMapKey);
+//			int rVal = r.nextInt() % 1600;
+	//		if(rVal == 0){
+	//			asMap.get(asMapKey).announceSelf();
+	//			announcedASes.add(asMapKey);
 
-			}
+//			}
 		}
 //		System.out.println("Number of announced ASes: " + announcedASes.size());
 		instrumented = false;
@@ -1535,21 +1535,21 @@ public class Simulator {
 	//	}
 		
 		//show forwarding tables of announced ases
-		for(Integer as : announcedASes)
-		{
-			System.out.println("num upstream ases: " + upstreamASes.get(as).size());
-			System.out.println(asMap.get(as).showFwdTable());
-		}
+//		for(Integer as : announcedASes)
+	//	{
+	///		System.out.println("num upstream ases: " + upstreamASes.get(as).size());
+	//		System.out.println(asMap.get(as).showFwdTable());
+	//	}
 		
 	//	System.out.println(disconnectedASes.size());
-		for(Integer asMapKey : asMap.keySet())
-		{
-			AS as = asMap.get(asMapKey);
-			System.out.println(as.showFwdTable());			
-		}
+	//	for(Integer asMapKey : asMap.keySet())
+	//	{
+		//	AS as = asMap.get(asMapKey);
+//			System.out.println(as.showFwdTable());			
+	//	}
 		
 		
-		for( Integer upstreamASKey : upstreamASes.keySet())
+	/*	for( Integer upstreamASKey : upstreamASes.keySet())
 		{
 			int numUpstreamAses = upstreamASes.get(upstreamASKey).size();
 			if (announcedASes.contains(upstreamASKey) && (numUpstreamAses) != numAses)
@@ -1566,7 +1566,7 @@ public class Simulator {
 				System.out.println("total num of ases: " + numAses);
 				
 			}
-		}
+		}*/
 		//for(Iterator<Integer>it = tier1ASes.iterator(); it.hasNext();) {
 //			int tier1 = it.next();
 			//asMap.get(tier1).announceSelf();

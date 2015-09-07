@@ -273,7 +273,7 @@ public abstract class AS {
 	 * @param neighbor the neighbor to send advertisemetn
 	 * @return a list of advertisemetns for that neighbor
 	 */
-	ArrayList<IA> genPathforNeighbor(IA advert, int neighbor)
+/*	ArrayList<IA> genPathforNeighbor(IA advert, int neighbor)
 	{
 		//grab pop links for this neighbor
 		HashMap<PoPTuple, Integer> popConnections = neighborLatency.get(neighbor);
@@ -291,7 +291,7 @@ public abstract class AS {
 		
 		return paths;
 		
-	}
+	}*/
 
 
 
