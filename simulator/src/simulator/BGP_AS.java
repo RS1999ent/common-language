@@ -65,7 +65,7 @@ public class BGP_AS extends AS {
 	 * This is because when the MRAI timer expires for a peer, 
 	 * you want to get all the messages for that peer
 	 */
-	HashMap<Integer, HashMap<Integer,ArrayList<IA>>> pendingUpdates = new HashMap<Integer, HashMap<Integer, ArrayList<IA>>>();
+	HashMap<Integer, HashMap<Integer, IA>> pendingUpdates = new HashMap<Integer, HashMap<Integer, IA>>();
 
 	/**
 	 * Stores the RIBHist for each destination. The RIBHist contains the history of
