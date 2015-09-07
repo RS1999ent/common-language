@@ -47,10 +47,15 @@ public abstract class AS {
 	 */
 	public static class PoPTuple {
 		
+		@Override
+		public String toString() {
+			return "PoPTuple [pop1=" + pop1 + ", pop2=" + pop2 + "]";
+		}
+
 		public Integer pop1;
 		public Integer pop2;
 		
-		PoPTuple(int pop1, int pop2)
+		public PoPTuple(int pop1, int pop2)
 		{
 			this.pop1 = pop1;
 			this.pop2 = pop2;

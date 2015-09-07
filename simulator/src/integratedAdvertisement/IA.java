@@ -15,6 +15,12 @@ import simulator.AS.PoPTuple;
  */
 public class IA {
 
+	@Override
+	public String toString() {
+		return "IA [legacyPath=" + legacyPath + ", pathValues=" + pathValues
+				+ ", popCosts=" + popCosts + ", trueCost=" + trueCost + "]";
+	}
+
 	// used for returning a default path for legacy support with the rest of sim
 	private LinkedList<Integer> legacyPath = new LinkedList<Integer>();
 
@@ -25,6 +31,8 @@ public class IA {
 	private HashMap<String, Values> pathValues = new HashMap<String, Values>();
 
 	private RootCause rc; // stores root cause of this integrated advertisement
+	
+	public HashMap<AS.PoPTuple, Integer> popCosts = new HashMap<AS.PoPTuple, Integer>();
 
 	//true cost of path
 	long trueCost;
@@ -72,6 +80,11 @@ public class IA {
 		legacyPath = (LinkedList<Integer>) toCopy.legacyPath.clone();
 		paths = (HashMap<String, LinkedList<Integer>>) toCopy.paths.clone();
 		this.trueCost = toCopy.trueCost;
+		//copy poptuples in
+		for(AS.PoPTuple tuple : toCopy.popCosts.keySet())
+		{
+			popCosts.put(new AS.PoPTuple(tuple.pop1,  tuple.pop2), toCopy.popCosts.get(tuple));
+		}
 	//	this.popTuple = toCopy.popTuple;
 		// copy the path attributes, if Values implenets interface "cloneable",
 		// then

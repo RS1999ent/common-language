@@ -33,6 +33,7 @@ public class UpdateMessage extends UWMessage{
 		
 		//asPath = new IA(asp.getPath(), asp.getRootCause());
 		asPath = new IA(asp);
+	//	asPath = asp;
 	}
 	
 	// bad programming practice!

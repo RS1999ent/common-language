@@ -203,13 +203,23 @@ public class Wiser_AS extends AS {
 	}
 
 	//adds wiser path attributes to newPath based on what's in oldpath
+	//newpath is mutated
 	void addWiserPathAttribute(IA newPath, IA oldPath, Integer advertisedToAS)
 	{
-		byte[] pWiserBytes = oldPath.getProtocolPathAttribute(new Protocol(AS.WISER), oldPath.getPath());
-		String pWiserProps = null;
-		int pWisercost = 0;
-		int pNormalization = 1;
+			byte[] pWiserBytes = oldPath.getProtocolPathAttribute(new Protocol(AS.WISER), oldPath.getPath());
+			String pWiserProps = null;
+			int pWisercost = 0;
+			int pNormalization = 1;
 
+			//add intradomain costs here, instead it is just going to be the same for now
+			int cost = getTrueCostInc(oldPath);
+			for(AS.PoPTuple poptuple : neighborLatency.get(advertisedToAS).keySet())
+			{
+		//		cost = neighborLatency.get(advertisedToAS).get(poptuple);
+				//			int cost = getTrueCostInc(oldPath); //the true cost inc, will be the wiser cost advertised for now
+				newPath.popCosts.put(poptuple, cost);
+			}
+/* block 1		
 		if(pWiserBytes[0] != (byte) 0xFF)
 		{
 			try {
@@ -226,8 +236,8 @@ public class Wiser_AS extends AS {
 		//get the latency between the two points of presence
 	//	int latency = neighborLatency.get(advertisedToAS).get(newPath.getPoPTuple());
 		
-		//wiser cost is just the wisercost received so far (normalized) + the latency of the link we are advertising to
-		int wiserCost = pWisercost/pNormalization + 1;	// 
+		//wiser cost is just the wisercost received so far (normalized) + the
+		int wiserCost = pWisercost/pNormalization + cost;	// 
 		//normalization is just the wiser cost that came in (normalized) or 1 if we are the first to advertise, since there will only be one advertised path with the same next hops.
 //uncomment		pNormalization = pWisercost == 0 ? 1 : pWisercost/pNormalization;
 		//convert these two things to string (easier to work with) combine and add the bytes to the path attribute.
@@ -237,7 +247,8 @@ public class Wiser_AS extends AS {
 		} catch (UnsupportedEncodingException e) {
 			// TODO Auto-generated catch block
 			e.printStackTrace();
-		}		
+		}
+		*/ //endblock 1	
 	}
 	
 	/**
@@ -271,15 +282,19 @@ public class Wiser_AS extends AS {
 		if(p.getPath().size() > 0) {
 			nh = p.getFirstHop(); // this is the BGP_AS that advertised the path to us
 			nhType = neighborMap.get(nh);
+			newPath.setTrueCost(newPath.getTrueCost() + getTrueCostInc(p));
+			newPath.popCosts.clear(); //clear popcosts as we've already used them, local, shouldn't be passed on
 		}
 
 		passThrough.attachPassthrough(newPath); //attach passthrough before sending to neighbors
 		if(nhType == PROVIDER || nhType == PEER) { // announce it only to customers .. and to nextHop in the path 
 			for(int i=0; i<customers.size(); i++) {
 				//add wiser path attributes if this is a full wiser node
+				//copy newpath because we are adding multiple stuff to it
+				IA overWritePath = new IA(newPath);
 				if(!isBasic)
-					addWiserPathAttribute(newPath, p, customers.get(i)) ;
-				addPathToPendingUpdatesForPeer(new IA(newPath), customers.get(i));
+					addWiserPathAttribute(overWritePath, p, customers.get(i)) ;
+				addPathToPendingUpdatesForPeer(overWritePath, customers.get(i));
 				if(simulateTimers) {
 					if(!mraiRunning.get(customers.get(i))) {
 						mraiRunning.put(customers.get(i), true);
@@ -289,9 +304,10 @@ public class Wiser_AS extends AS {
 				}
 				sendUpdatesToPeer(customers.get(i));
 			}
+			IA overWritePath = new IA(newPath);
 			if(!isBasic) //if this a full wiser node, add costs
-				addWiserPathAttribute(newPath, p, nh); //add wiser path attribute.  this is to sending update to peer we received advert from.
-			addPathToPendingUpdatesForPeer(new IA(newPath), nh);
+				addWiserPathAttribute(overWritePath, p, nh); //add wiser path attribute.  this is to sending update to peer we received advert from.
+			addPathToPendingUpdatesForPeer(overWritePath, nh);
 			if(simulateTimers) {
 				if(!mraiRunning.get(nh)) {
 					mraiRunning.put(nh, true);
@@ -304,9 +320,10 @@ public class Wiser_AS extends AS {
 		else { // customer path, so announce to all
 			for(int i=0; i<customers.size(); i++) {
 				//add wiser path attributes if this is a wiser node
+				IA overWritePath = new IA(newPath);	
 				if(!isBasic)
-					addWiserPathAttribute(newPath, p, customers.get(i));
-				addPathToPendingUpdatesForPeer(new IA(newPath), customers.get(i));
+					addWiserPathAttribute(overWritePath, p, customers.get(i));
+				addPathToPendingUpdatesForPeer(overWritePath, customers.get(i));
 				if(simulateTimers) {
 					if(!mraiRunning.get(customers.get(i))) {
 						mraiRunning.put(customers.get(i), true);
@@ -316,11 +333,12 @@ public class Wiser_AS extends AS {
 				}
 				sendUpdatesToPeer(customers.get(i));
 			}
-			for(int i=0; i<providers.size(); i++) {
+			for(int i=0; i<providers.size(); i++) {				
 				//add wiser path attributes if this is a wiser node
+				IA overWritePath = new IA(newPath);
 				if(!isBasic)
-					addWiserPathAttribute(newPath, p, providers.get(i));
-				addPathToPendingUpdatesForPeer(new IA(newPath), providers.get(i));
+					addWiserPathAttribute(overWritePath, p, providers.get(i));
+				addPathToPendingUpdatesForPeer(overWritePath, providers.get(i));
 				if(simulateTimers) {
 					if(!mraiRunning.get(providers.get(i))) {
 						mraiRunning.put(providers.get(i), true);
@@ -332,9 +350,10 @@ public class Wiser_AS extends AS {
 			}
 			for(int i=0; i<peers.size(); i++) {
 				//add wiser path attributes if this is a wiser node
+				IA overWritePath = new IA(newPath);
 				if(!isBasic)
-					addWiserPathAttribute(newPath, p, peers.get(i));
-				addPathToPendingUpdatesForPeer(new IA(newPath), peers.get(i));
+					addWiserPathAttribute(overWritePath, p, peers.get(i));
+				addPathToPendingUpdatesForPeer(overWritePath, peers.get(i));
 				if(simulateTimers) {
 					if(!mraiRunning.get(peers.get(i))) {
 						mraiRunning.put(peers.get(i), true);
@@ -977,7 +996,7 @@ public class Wiser_AS extends AS {
 
 	/**
 	 * This function determines if the first path is better than the second
-	 * @param p1 The first path
+	 * @param p1 The first path 
 	 * @param p2 The second path
 	 * 
 	 * @return true 	if p1 is better than p2
@@ -1026,6 +1045,53 @@ public class Wiser_AS extends AS {
 			}
 		}
 		
+		//if we are talking to a wiser node for path 1, then popCosts will have some elements in it, work with those
+		int p1LowestCost = Integer.MAX_VALUE;
+		AS.PoPTuple p1Tuple = null;
+		int p2LowestCost = Integer.MAX_VALUE;
+		AS.PoPTuple p2Tuple = null;
+		//find the lowest costs if we are talking iwth wiser node
+		if(p1.popCosts.size() > 0)
+		{
+			for(AS.PoPTuple tuple : p1.popCosts.keySet())
+			{
+				if(p1.popCosts.get(tuple) < p1LowestCost){
+					p1LowestCost = p1.popCosts.get(tuple);
+					p1Tuple = new AS.PoPTuple(tuple.pop2, tuple.pop1); //reverse it because we find latencies via pop (in us) to pop (in them)
+				}
+			}
+		}
+		
+		if(p2.popCosts.size() > 0)
+		{
+			for(AS.PoPTuple tuple : p2.popCosts.keySet())
+			{
+				if(p2.popCosts.get(tuple) < p2LowestCost){
+					p2LowestCost = p2.popCosts.get(tuple);
+					p2Tuple = new AS.PoPTuple(tuple.pop2, tuple.pop1); //reverse it because we find latencies via pop (in us) to pop (in them)
+				}
+			}
+		}
+		
+		//always choose low cost paths with wiser nodes over low cost paths that are passed through
+		if(p1Tuple != null || p2Tuple != null)
+		{
+			if(p1Tuple != null && p2Tuple == null)
+			{
+				return true;
+			}
+			else if(p1Tuple == null && p2Tuple != null)
+			{
+				return false;
+			}
+			else
+			{
+				int p1TotalCost = neighborLatency.get(p1.getFirstHop()).get(p1Tuple) + p1LowestCost; 
+				int p2TotalCost = neighborLatency.get(p2.getFirstHop()).get(p2Tuple) + p2LowestCost;
+				return p1TotalCost < p2TotalCost;
+			}
+		}
+		
 		//if there is a propagated wiser cost, then we will choose one of them
 		//this is a very coarse policy with regards to this, but it can be changed later
 		if(p1WiserProps != null || p2WiserProps != null)
@@ -1071,6 +1137,49 @@ public class Wiser_AS extends AS {
 		}
 		return false;
 	}
+	
+	/**
+	 * @param path path to find the true cost increment of
+	 * @return the amount to increment the true cost of path
+	 */
+	private int getTrueCostInc(IA path)
+	{
+		if(path.getPath().isEmpty())
+		{
+			return 0; //this path is empty, so it has no cost
+		}
+		
+		//if we are talking to a wiser node for path 1, then popCosts will have some elements in it, work with those
+		int p1LowestCost = Integer.MAX_VALUE;
+		AS.PoPTuple p1Tuple = null;
+		//find the lowest costs if we are talking iwth wiser node
+		if(path.popCosts.size() > 0)
+		{
+			for(AS.PoPTuple tuple : path.popCosts.keySet())
+			{
+				if(path.popCosts.get(tuple) < p1LowestCost){
+					p1LowestCost = path.popCosts.get(tuple);
+					p1Tuple = new AS.PoPTuple(tuple.pop2, tuple.pop1); //reverse it because we find latencies via pop (in us) to pop (in them)
+				}
+			}
+			return neighborLatency.get(path.getFirstHop()).get(p1Tuple) + p1LowestCost; 
+		}
+		else
+		{
+			//choose path with lowest outbound latency, simulates lowest mrai value
+			int trueCostInc = Integer.MAX_VALUE;
+			for(Integer latency : neighborLatency.get(path.getFirstHop()).values()){				
+				if(latency < trueCostInc)
+				{
+					trueCostInc = latency;
+				}
+			}
+			return trueCostInc;
+		}
+
+
+	}
+	
 
 	/**
 	 * This function returns the set of pending updates.

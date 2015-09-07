@@ -244,11 +244,36 @@ public class BGP_AS extends AS {
 			// update for the true cost of path. This will be the poptuple that has
 			// the lowest latency to simulate choosing the lowest MRAI value
 			long trueCostInc = Long.MAX_VALUE;
-			for(Integer latency : neighborLatency.get(nh).values()){				
+			PoPTuple tupleChosen = null;
+			for(PoPTuple tuple : neighborLatency.get(nh).keySet()){
+				int latency = neighborLatency.get(nh).get(tuple);
 				if(latency < trueCostInc)
 				{
 					trueCostInc = latency;
+					tupleChosen = tuple;
 				}
+			}
+			//put the wiser information that would have been there if we weren't hacking a solution here
+			//this is only if our neighbor is a wiser node, simulates the advertisemetns received from multiple pops
+			if(p.popCosts.size() > 0)
+			{
+				int wisercost = 9999; //debug, shows something is wrong if this shows up
+				int normalization = 1;
+				//reversed because we chose a tuple from us to them, in the advertisement the tuple
+				//will be in form from them to us.
+				PoPTuple advertisementTuple = new PoPTuple(tupleChosen.pop2, tupleChosen.pop1);
+				wisercost = p.popCosts.get(advertisementTuple);
+				//would compute normalization here
+				String pathAttribute = String.valueOf(wisercost) + " " + String.valueOf(normalization);
+				try {
+					newPath.setProtocolPathAttribute(pathAttribute.getBytes("UTF-8"), new Protocol(AS.WISER), newPath.getPath());
+				} catch (UnsupportedEncodingException e) {
+					// TODO Auto-generated catch block
+					e.printStackTrace();
+				}
+				
+				//clear the popcosts from newpath, this is a bgp node
+				newPath.popCosts.clear();
 			}
 			
 	//		System.out.println("true cost inc: " + trueCostInc);
@@ -259,7 +284,7 @@ public class BGP_AS extends AS {
 		passThrough.attachPassthrough(newPath); //attach passthrough info before sending to neighbors
 		if(nhType == PROVIDER || nhType == PEER) { // announce it only to customers .. and to nextHop in the path 
 			for(int i=0; i<customers.size(); i++) {
-				addPathToPendingUpdatesForPeer(newPath, customers.get(i));
+				addPathToPendingUpdatesForPeer(new IA(newPath), customers.get(i));
 				if(simulateTimers) {
 					if(!mraiRunning.get(customers.get(i))) {
 						mraiRunning.put(customers.get(i), true);
@@ -270,7 +295,7 @@ public class BGP_AS extends AS {
 				sendUpdatesToPeer(customers.get(i));
 			}
 			
-			addPathToPendingUpdatesForPeer(newPath, nh);
+			addPathToPendingUpdatesForPeer(new IA(newPath), nh);
 			if(simulateTimers) {
 				if(!mraiRunning.get(nh)) {
 					mraiRunning.put(nh, true);
@@ -282,7 +307,7 @@ public class BGP_AS extends AS {
 		}
 		else { // customer path, so announce to all
 			for(int i=0; i<customers.size(); i++) {
-				addPathToPendingUpdatesForPeer(newPath, customers.get(i));
+				addPathToPendingUpdatesForPeer(new IA(newPath), customers.get(i));
 				if(simulateTimers) {
 					if(!mraiRunning.get(customers.get(i))) {
 						mraiRunning.put(customers.get(i), true);
@@ -293,7 +318,7 @@ public class BGP_AS extends AS {
 				sendUpdatesToPeer(customers.get(i));
 			}
 			for(int i=0; i<providers.size(); i++) {
-				addPathToPendingUpdatesForPeer(newPath, providers.get(i));
+				addPathToPendingUpdatesForPeer(new IA(newPath), providers.get(i));
 				if(simulateTimers) {
 					if(!mraiRunning.get(providers.get(i))) {
 						mraiRunning.put(providers.get(i), true);
@@ -304,7 +329,7 @@ public class BGP_AS extends AS {
 				sendUpdatesToPeer(providers.get(i));
 			}
 			for(int i=0; i<peers.size(); i++) {
-				addPathToPendingUpdatesForPeer(newPath, peers.get(i));
+				addPathToPendingUpdatesForPeer(new IA(newPath), peers.get(i));
 				if(simulateTimers) {
 					if(!mraiRunning.get(peers.get(i))) {
 						mraiRunning.put(peers.get(i), true);
