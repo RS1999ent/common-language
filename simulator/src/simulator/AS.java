@@ -5,11 +5,16 @@ package simulator;
 
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.Collections;
 import java.util.Comparator;
 import java.util.HashMap;
+import java.util.HashSet;
+import java.util.Iterator;
+import java.util.List;
 import java.util.PriorityQueue;
 import java.util.Set;
 
+import simulator.AS.Node;
 import integratedAdvertisement.IA;
 import integratedAdvertisement.PassThrough;
 import integratedAdvertisement.RootCause;
@@ -189,7 +194,7 @@ public abstract class AS {
 
 	}
 	
-	class Node implements Comparator<Node>
+	class Node implements Comparable<Node>
 	{
 		
 		public int node;
@@ -200,63 +205,89 @@ public abstract class AS {
 			this.distance = distance;
 		}
 		@Override
-		public int compare(Node o1, Node o2) {
-			if(o1.distance < o2.distance)
-			{
+		public int compareTo(Node o) {
+			if(o.distance > this.distance)
 				return -1;
-			}
-			else if(o1.distance == o2.distance)
-			{
-				return 0;
-			}
-			else
-			{
+			else if(o.distance < this.distance)
 				return 1;
+			else
+				return 0;
+		}
+		
+	}
+
+	private Integer getLowestCost(HashSet<Integer> nodes, HashMap<Integer, Integer> distance)
+	{
+		Integer lowestCost = Integer.MAX_VALUE;
+		Integer lowKey = null;
+		for(Iterator<Integer> it = nodes.iterator(); it.hasNext();)
+		{
+			int node = it.next();
+			if(distance.get(node) < lowestCost)
+			{
+				lowKey = node;
 			}
 		}
+		return lowKey;
+		
 	}
 	
 	public int getIntraDomainCost(int pop1, int pop2)
 	{
 		
 		//priority queue of unvisted nodes
-		PriorityQueue<Node> unvisitedNodes = new PriorityQueue(intraD.size());
+		HashSet<Integer> unsettledNodes = new HashSet<Integer>();
+		HashSet<Integer> settledNodes = new HashSet<Integer>();
+		HashMap<Integer, Integer> distance = new HashMap<Integer, Integer>();
 		
-		//initialize node distances to be 0 for pop1 (start), infinity for all others
-		for(Integer node : intraD.keySet())
+		for(Integer key : intraD.keySet())
 		{
-			if(node != pop1)
-			{
-				unvisitedNodes.offer(new Node(node, Integer.MAX_VALUE));
-			}			
-			else
-			{
-				unvisitedNodes.offer(new Node(node, 0));
-			}
+			distance.put(key, Integer.MAX_VALUE);
 		}
+		/*if(intraD.containsKey(pop1))
+			System.out.println("contains 1");
+		if(intraD.containsKey(pop2))
+			System.out.println("contains 2");
+			*/
 		
-		if(unvisitedNodes.peek().node != pop1)
+		if(!intraD.containsKey(pop1) || !intraD.containsKey(pop2))
 		{
-			System.out.println("pop 1 not in node set");
-			return -1;
+	//		System.out.println("[DEBUG] no such intradomain connection");
+			return 0;
+			//System.exit(1);
 		}
-		
-		Node current = unvisitedNodes.poll();
-		while(unvisitedNodes.size() > 0)
+//		System.out.println("here at least 1");
+		unsettledNodes.add(pop1);
+		distance.put(pop1, 0);
+		while(!unsettledNodes.isEmpty())
 		{
-			//perform dikjstra loop
-			//adds distance to the current nodes neighbors
-			HashMap<Integer, Integer> neighbors = intraD.get(current.node);
+			
+			Integer evalNode = getLowestCost(unsettledNodes, distance);
+			unsettledNodes.remove(evalNode)	;
+			//evaluate neighbors
+			HashMap<Integer, Integer> neighbors = intraD.get(evalNode);
+			settledNodes.add(evalNode);
 			for(Integer key : neighbors.keySet())
 			{
-				
+				if(!settledNodes.contains(key)){
+					if(neighbors.get(key) + distance.get(evalNode) < distance.get(key) )
+					{
+						distance.put(key, neighbors.get(key) + distance.get(evalNode));
+						unsettledNodes.add(key);
+					}
+				}
 			}
+				
 		}
 		
-		
-		
-		return 1;
+		if(distance.get(pop2) == Integer.MAX_VALUE){
+//			System.out.println("no path to pop2: " + pop2);
+			return 0;
+		}
+		return distance.get(pop2);
 	}
+	
+	
 
 	//gets all the paths for a particular destination (in the ribIn)
 	public abstract Collection<IA> getAllPaths(int dst);

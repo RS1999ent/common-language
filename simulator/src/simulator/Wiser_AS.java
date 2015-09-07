@@ -212,11 +212,14 @@ public class Wiser_AS extends AS {
 			int pNormalization = 1;
 
 			//add intradomain costs here, instead it is just going to be the same for now
-			int cost = getTrueCostInc(oldPath);
+			PoPTuple tupleChosen = new PoPTuple(-1,-1);
+			int cost = getTrueCostInc(oldPath, tupleChosen);
 			for(AS.PoPTuple poptuple : neighborLatency.get(advertisedToAS).keySet())
 			{
 		//		cost = neighborLatency.get(advertisedToAS).get(poptuple);
 				//			int cost = getTrueCostInc(oldPath); //the true cost inc, will be the wiser cost advertised for now
+//				if(tupleChosen.pop1 != -1)
+//					cost += getIntraDomainCost(tupleChosen.pop1, poptuple.pop1);
 				newPath.popCosts.put(poptuple, cost);
 			}
 /* block 1		
@@ -282,7 +285,23 @@ public class Wiser_AS extends AS {
 		if(p.getPath().size() > 0) {
 			nh = p.getFirstHop(); // this is the BGP_AS that advertised the path to us
 			nhType = neighborMap.get(nh);
-			newPath.setTrueCost(newPath.getTrueCost() + getTrueCostInc(p));
+			PoPTuple tupleChosen = new PoPTuple(-1, -1);
+			if(p.popCosts.size()>0){
+				int normalization = 1;
+				int wisercost = 9999;
+				long newTrueCost = newPath.getTrueCost() + getTrueCostInc(p, tupleChosen);
+				newPath.setTrueCost(newTrueCost);
+				PoPTuple advertisementTuple = new PoPTuple(tupleChosen.pop2, tupleChosen.pop1);
+				wisercost = p.popCosts.get(advertisementTuple);
+				//would compute normalization here
+				String pathAttribute = String.valueOf(wisercost) + " " + String.valueOf(normalization);
+				try {
+					newPath.setProtocolPathAttribute(pathAttribute.getBytes("UTF-8"), new Protocol(AS.WISER), newPath.getPath());
+				} catch (UnsupportedEncodingException e) {
+					// TODO Auto-generated catch block
+					e.printStackTrace();
+				}
+			}
 			newPath.popCosts.clear(); //clear popcosts as we've already used them, local, shouldn't be passed on
 		}
 
@@ -1142,10 +1161,11 @@ public class Wiser_AS extends AS {
 	 * @param path path to find the true cost increment of
 	 * @return the amount to increment the true cost of path
 	 */
-	private int getTrueCostInc(IA path)
+	private int getTrueCostInc(IA path, AS.PoPTuple tupleChosen)
 	{
 		if(path.getPath().isEmpty())
 		{
+			tupleChosen = null;
 			return 0; //this path is empty, so it has no cost
 		}
 		
@@ -1162,18 +1182,24 @@ public class Wiser_AS extends AS {
 					p1Tuple = new AS.PoPTuple(tuple.pop2, tuple.pop1); //reverse it because we find latencies via pop (in us) to pop (in them)
 				}
 			}
+			tupleChosen.pop1 = p1Tuple.pop1;// = p1Tuple;
+			tupleChosen.pop2 = p1Tuple.pop2;
 			return neighborLatency.get(path.getFirstHop()).get(p1Tuple) + p1LowestCost; 
 		}
 		else
 		{
 			//choose path with lowest outbound latency, simulates lowest mrai value
 			int trueCostInc = Integer.MAX_VALUE;
-			for(Integer latency : neighborLatency.get(path.getFirstHop()).values()){				
-				if(latency < trueCostInc)
+			PoPTuple p2Tuple = null;
+			for(PoPTuple tuple : neighborLatency.get(path.getFirstHop()).keySet()){				
+				if(neighborLatency.get(path.getFirstHop()).get(tuple) < trueCostInc)
 				{
-					trueCostInc = latency;
+					trueCostInc = neighborLatency.get(path.getFirstHop()).get(tuple);
+					p2Tuple = tuple;
 				}
 			}
+			tupleChosen.pop1 = p2Tuple.pop1;
+			tupleChosen.pop2 = p2Tuple.pop2;
 			return trueCostInc;
 		}
 

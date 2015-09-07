@@ -24,6 +24,9 @@ BEGIN{
 
 
 $2 == $4{
+    #-999 case
+    if($5 == -9999)
+	$5 = 0
     if($2 in intraAS)
 	intraAS[$2] = intraAS[$2] $1 " " $3 " " $5 ":";
     else{

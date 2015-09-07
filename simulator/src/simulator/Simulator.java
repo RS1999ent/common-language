@@ -1001,6 +1001,7 @@ public class Simulator {
 				.description("Simulator to simulate integrated advertisements and passthroughs");
 		parser.addArgument("ASRelationships").metavar("ASRel").type(String.class);
 		parser.addArgument("ASTypesFile").metavar("ASTypes").type(String.class);
+		parser.addArgument("IntraDomainFile").metavar("IntraDomain").type(String.class);
 		parser.addArgument("outFile").metavar("file to output results").type(String.class);
 		parser.addArgument("--failLinksFile").metavar("FailLinks").type(String.class);
 		parser.addArgument("--parentsFile").metavar("ParentsFile").type(String.class);
@@ -1024,11 +1025,13 @@ public class Simulator {
 		String topologyFile = arguments.getString("ASRelationships");
 		//file for AStypes
 		String typeFile = arguments.getString("ASTypesFile");
+		String intraFile = arguments.getString("IntraDomainFile");
 		String linkFile = arguments.getString("--failLinksFile");
 		String parentsFile = arguments.getString("--parentsFile");
 		simMode = arguments.getInt("sim");
 		readTypes(typeFile); //reading types must go before readtopology, otherwise allnodes will be bgp
 		readTopology(topologyFile);
+		readIntraDomain(intraFile);
 		//readLinks(linkFile);
 		//readParents(parentsFile);
 		
@@ -2514,6 +2517,35 @@ public class Simulator {
 		br.close();
 	}
 	
+	/**
+	 * 
+	 * method that reads intradomain latencies, should be ran after readtopology
+	 * @param intraFile the file containing intradomain info
+	 * @throws Exception
+	 */
+	private static void readIntraDomain(String intraFile) throws Exception{
+		BufferedReader br = new BufferedReader(new FileReader(intraFile));
+		while(br.ready())
+		{
+			//split so asnum is in first position			
+			String[] token = br.readLine().split("\\|"); 			
+			int as = Integer.parseInt(token[0]);
+			//split into pop pairs
+			String[] popPair = token[1].split(":");
+			//for each paair, split, add to adjacency list of as
+			for(String pair : popPair)
+			{
+				String[] pairToken = pair.split("\\s+");
+				int pop1 = Integer.valueOf(pairToken[0]);
+				int pop2 = Integer.valueOf(pairToken[1]);
+				int latency = Integer.valueOf(pairToken[2]);
+				if(asMap.containsKey(as))
+					asMap.get(as).addIntraDomainLatency(pop1, pop2, latency);
+			}
+		}
+		
+	}
+	
 	private static void readTopology(String topologyFile) throws Exception {
 		// remember to initialize seedVal before calling this function.
 
@@ -2537,7 +2569,7 @@ public class Simulator {
 				//if there is a special as type defined, then use that
 				if(asTypeDef.containsKey(as1)){					
 					if(asTypeDef.get(as1) == AS.TRANSIT)
-						temp1 = new Wiser_AS(as1, mraiVal, true);
+						temp1 = new Wiser_AS(as1, mraiVal, false);
 					else if(asTypeDef.get(as1) == AS.WISER)
 						temp1 = new Wiser_AS(as1, mraiVal, false);
 				}
