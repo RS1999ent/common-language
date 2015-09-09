@@ -17,8 +17,10 @@ public class IA {
 
 	@Override
 	public String toString() {
-		return "IA [legacyPath=" + legacyPath + ", pathValues=" + pathValues
-				+ ", popCosts=" + popCosts + ", trueCost=" + trueCost + "]";
+		return "IA [legacyPath=" + legacyPath + ", paths=" + paths
+				+ ", pathValues=" + pathValues + ", popCosts=" + popCosts
+				+ ",\n truePoPCosts=" + truePoPCosts + ", trueCost=" + trueCost
+				+ "]";
 	}
 
 	// used for returning a default path for legacy support with the rest of sim
@@ -32,8 +34,15 @@ public class IA {
 
 	private RootCause rc; // stores root cause of this integrated advertisement
 	
+	//used to simulate the information that three adverts will contain for wiser nodes
+	//inforamtion about the intradomain costs for each pop pair needs to be in single advert
+	//so we need this
+	//should be cleared after use, is used for processing only
 	public HashMap<AS.PoPTuple, Integer> popCosts = new HashMap<AS.PoPTuple, Integer>();
 
+	//bookkeepign for true cost of as path. like the popcosts, only all nodes use this for true cost updates
+	//should be cleared after use used for local processing only
+	public HashMap<AS.PoPTuple, Integer> truePoPCosts = new HashMap<AS.PoPTuple, Integer>();
 	//true cost of path
 	long trueCost;
 	
@@ -84,6 +93,11 @@ public class IA {
 		for(AS.PoPTuple tuple : toCopy.popCosts.keySet())
 		{
 			popCosts.put(new AS.PoPTuple(tuple.pop1,  tuple.pop2), toCopy.popCosts.get(tuple));
+		}
+		//copy truepoptuples in
+		for(AS.PoPTuple tuple : toCopy.truePoPCosts.keySet())
+		{
+			truePoPCosts.put(new AS.PoPTuple(tuple.pop1, tuple.pop2), toCopy.truePoPCosts.get(tuple));
 		}
 	//	this.popTuple = toCopy.popTuple;
 		// copy the path attributes, if Values implenets interface "cloneable",

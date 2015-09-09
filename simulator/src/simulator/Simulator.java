@@ -1282,11 +1282,10 @@ public class Simulator {
 	public static void iaBasicSimulationTransitsOnly(){
 		
 		
-	/*	//ases that will be used for observation
+		//ases that will be used for observation
 		ArrayList<Integer> monitorASes = new ArrayList<Integer>();
 	//	tier1ASes = computeTier1();
 
-		 Obtaining tier-1 paths 
 
 		// We first announce all the tier-1 ASes and save 
 		// the paths from each of our failure-provider to the tier1
@@ -1311,13 +1310,6 @@ public class Simulator {
 			{
 				monitorASes.add(asMapKey);
 			}
-			
-			int rVal = r.nextInt() % 1600;
-			if(rVal == 0){
-				asMap.get(asMapKey).announceSelf();
-				announcedASes.add(asMapKey);
-
-			}
 		}
 //		System.out.println("Number of announced ASes: " + announcedASes.size());
 		instrumented = false;
@@ -1339,13 +1331,13 @@ public class Simulator {
 				AS compareAS = asMap.get(announcedAS); //the AS that announced
 				//what is the lowest cost outgoing link of announced Node
 				int lowestCost = Integer.MAX_VALUE;
-				for(Integer neighbor: compareAS.neighborLatency.keySet())
-				{
-					if(compareAS.neighborLatency.get(neighbor) < lowestCost)
-					{
-						lowestCost = compareAS.neighborLatency.get(neighbor);
-					}
-				}
+	//			for(Integer neighbor: compareAS.neighborLatency.keySet())
+	//			{
+	//				if(compareAS.neighborLatency.get(neighbor) < lowestCost)
+	//				{
+	//					lowestCost = compareAS.neighborLatency.get(neighbor);
+	//				}
+	//			}
 				//System.out.println("[DEBUG] lowest cost: " + lowestCost);
 				// see if monitored AS has that path in the RIB_in, //if it doesn't have a path, that means policy
 				//disconnection, don't include it in our percentage.
@@ -1370,11 +1362,12 @@ public class Simulator {
 								e.printStackTrace();
 							}
 						} else {
-							System.out.println("[DEBUG] NO WISER PROPS FOR: "
+							if(!monitoredAS.neighborMap.containsKey(announcedAS))
+								System.out.println("[DEBUG] NO WISER PROPS FOR: "
 									+ announcedAS);
 						}
 						
-						costSum += wiserCost;
+						costSum += path.getTrueCost();
 						
 						//debug if statement
 						if(monitoredAS.neighborMap.containsKey(compareAS.asn))
@@ -1386,11 +1379,11 @@ public class Simulator {
 						
 //						System.out.println("[DEBUG] received lowest cost: " + wiserCost);
 						//this is used for percent lowest cost
-						if (wiserCost == lowestCost) {
+					//	if (wiserCost == lowestCost) {
 							
-							costSum++;
-							break;
-						}
+				//			costSum++;
+				//			break;
+				//		}
 
 					}// endfor
 					
@@ -1402,7 +1395,7 @@ public class Simulator {
 			}
 		}
 		
-		System.out.println("Average cost sum for transit ASes: " + String.valueOf((float) costSum/total));*/
+		System.out.println("Average cost sum for transit ASes: " + String.valueOf((float) costSum/total));
 	}
 	
 	
@@ -1516,11 +1509,11 @@ public class Simulator {
 						
 //						System.out.println("[DEBUG] received lowest cost: " + wiserCost);
 						//this is used for percent lowest cost
-						if (wiserCost == lowestCost) {
+			//			if (wiserCost == lowestCost) {
 							
-							costSum++;
-							break;
-						}
+		//					costSum++;
+		//					break;
+			//			}
 
 					}// endfor
 					
@@ -2589,7 +2582,7 @@ public class Simulator {
 //				System.err.println("AS" + as2 + " MRAI: " + mraiVal);
 				if(asTypeDef.containsKey(as2)){
 					if(asTypeDef.get(as2) == AS.TRANSIT)
-						temp2 = new Wiser_AS(as2, mraiVal, true);
+						temp2 = new Wiser_AS(as2, mraiVal, false);
 					else if(asTypeDef.get(as2) == AS.WISER)
 						temp2 = new Wiser_AS(as2, mraiVal, false);
 				}

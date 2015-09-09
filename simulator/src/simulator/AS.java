@@ -232,14 +232,15 @@ public abstract class AS {
 		
 	}
 	
+	boolean stop = true;
 	public int getIntraDomainCost(int pop1, int pop2)
 	{
-		
+		if(stop)
+			return 0;
 		//priority queue of unvisted nodes
 		HashSet<Integer> unsettledNodes = new HashSet<Integer>();
 		HashSet<Integer> settledNodes = new HashSet<Integer>();
 		HashMap<Integer, Integer> distance = new HashMap<Integer, Integer>();
-		
 		for(Integer key : intraD.keySet())
 		{
 			distance.put(key, Integer.MAX_VALUE);
@@ -270,9 +271,10 @@ public abstract class AS {
 			for(Integer key : neighbors.keySet())
 			{
 				if(!settledNodes.contains(key)){
-					if(neighbors.get(key) + distance.get(evalNode) < distance.get(key) )
+					int potentialCost = neighbors.get(key) + distance.get(evalNode);//latency of adjacency + distance
+					if(potentialCost < distance.get(key) )
 					{
-						distance.put(key, neighbors.get(key) + distance.get(evalNode));
+						distance.put(key, potentialCost);
 						unsettledNodes.add(key);
 					}
 				}
@@ -285,6 +287,7 @@ public abstract class AS {
 			return 0;
 		}
 		return distance.get(pop2);
+		
 	}
 	
 	

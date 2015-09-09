@@ -211,6 +211,31 @@ public class BGP_AS extends AS {
 		temp.put(nextHop, p);
 		passThrough.addToDatabase(p); //add path and information to passthrough database
 	}
+	
+
+	
+	/**
+	 * method that fills true pop cost with information
+	 * @param advert the advertisement we need to fill with info
+	 * @param advertisedToAS the as we are advertising to
+	 * @param tupleChosen the pop tuple we chose for the downstream as
+	 * 
+	 */
+	public void intraDomainCost(IA advert, Integer advertisedToAS, PoPTuple tupleChosen)
+	{
+		if(tupleChosen.pop1 == -1)
+		{
+			System.out.println("[debug] intradomaintruecost: shouldn't be here (maybe(");		
+		}
+		else{
+			for(AS.PoPTuple poptuple : neighborLatency.get(advertisedToAS).keySet())
+			{
+				int intraDomainCost = getIntraDomainCost(tupleChosen.pop1, poptuple.pop1);
+				advert.truePoPCosts.put(poptuple, intraDomainCost);
+			}	
+		}
+	}
+	
 
 	/**
 	 * This function adds a path to the set of path
@@ -237,14 +262,14 @@ public class BGP_AS extends AS {
 		int pseudoMraiValue = Math.round(this.mraiValue*Simulator.r.nextFloat()/1000)*1000;
 //		int pseudoMraiValue = this.mraiValue;
 //		int pseudoMraiValue = Math.round(this.mraiValue*Simulator.r.nextFloat());
+		PoPTuple tupleChosen = null;
 		if(p.getPath().size() > 0) {
 			nh = p.getFirstHop(); // this is the BGP_AS that advertised the path to us
 			nhType = neighborMap.get(nh);
 			
 			// update for the true cost of path. This will be the poptuple that has
-			// the lowest latency to simulate choosing the lowest MRAI value
-			long trueCostInc = Long.MAX_VALUE;
-			PoPTuple tupleChosen = null;
+			// the lowest latency to simulate choosing the lowest MED value
+			long trueCostInc = Long.MAX_VALUE;			
 			for(PoPTuple tuple : neighborLatency.get(nh).keySet()){
 				int latency = neighborLatency.get(nh).get(tuple);
 				if(latency < trueCostInc)
@@ -262,7 +287,15 @@ public class BGP_AS extends AS {
 				//reversed because we chose a tuple from us to them, in the advertisement the tuple
 				//will be in form from them to us.
 				PoPTuple advertisementTuple = new PoPTuple(tupleChosen.pop2, tupleChosen.pop1);
-				wisercost = p.popCosts.get(advertisementTuple);
+				wisercost = p.popCosts.get(advertisementTuple); //this is also the true cost (intradomain of wisernode)
+				trueCostInc += wisercost;
+				if(p.popCosts.get(advertisementTuple) == null) 
+				{
+					System.out.println("there is no point of presence from them to us in advertisement, shouldn't happen");
+				}
+				if(wisercost == 9999){
+					System.out.println("bgp_as wisercost 9999");
+				}
 				//would compute normalization here
 				String pathAttribute = String.valueOf(wisercost) + " " + String.valueOf(normalization);
 				try {
@@ -275,8 +308,22 @@ public class BGP_AS extends AS {
 				//clear the popcosts from newpath, this is a bgp node
 				newPath.popCosts.clear();
 			}
-			
-	//		System.out.println("true cost inc: " + trueCostInc);
+			else{
+				//grab the intradomian true cost based on the tuple we chose, add it to true cost
+				//pops reversed because they created advert with inforamtion from them to us, so we
+				//convert our us to them poptuple to them to us
+				PoPTuple advertisementTuple = new PoPTuple(tupleChosen.pop2, tupleChosen.pop1);
+				if(p.truePoPCosts.get(advertisementTuple) == null)
+				{
+					System.out.println("bgp_as, no point of presence from them to us, shouldn't happen");
+				}
+				else{
+					//		System.out.println("HERE");
+					trueCostInc += p.truePoPCosts.get(advertisementTuple);
+				}
+				//		System.out.println("true cost inc: " + trueCostInc);
+			}
+			newPath.truePoPCosts.clear();
 			newPath.setTrueCost(newPath.getTrueCost() + trueCostInc);
 		}
 
@@ -284,7 +331,12 @@ public class BGP_AS extends AS {
 		passThrough.attachPassthrough(newPath); //attach passthrough info before sending to neighbors
 		if(nhType == PROVIDER || nhType == PEER) { // announce it only to customers .. and to nextHop in the path 
 			for(int i=0; i<customers.size(); i++) {
-				addPathToPendingUpdatesForPeer(new IA(newPath), customers.get(i));
+				IA overwrite = new IA(newPath);
+				Integer customer = customers.get(i);
+				if(tupleChosen != null){
+					intraDomainCost(overwrite, customers.get(i), tupleChosen);
+				}
+				addPathToPendingUpdatesForPeer(overwrite, customers.get(i));
 				if(simulateTimers) {
 					if(!mraiRunning.get(customers.get(i))) {
 						mraiRunning.put(customers.get(i), true);
@@ -295,7 +347,11 @@ public class BGP_AS extends AS {
 				sendUpdatesToPeer(customers.get(i));
 			}
 			
-			addPathToPendingUpdatesForPeer(new IA(newPath), nh);
+			IA overwrite = new IA(newPath);
+				if(tupleChosen != null){
+					intraDomainCost(overwrite, nh, tupleChosen);
+				}
+			addPathToPendingUpdatesForPeer(overwrite, nh);
 			if(simulateTimers) {
 				if(!mraiRunning.get(nh)) {
 					mraiRunning.put(nh, true);
@@ -307,7 +363,11 @@ public class BGP_AS extends AS {
 		}
 		else { // customer path, so announce to all
 			for(int i=0; i<customers.size(); i++) {
-				addPathToPendingUpdatesForPeer(new IA(newPath), customers.get(i));
+				IA overwrite = new IA(newPath);
+				if(tupleChosen != null){
+					intraDomainCost(overwrite, customers.get(i), tupleChosen);
+				}
+				addPathToPendingUpdatesForPeer(overwrite, customers.get(i));
 				if(simulateTimers) {
 					if(!mraiRunning.get(customers.get(i))) {
 						mraiRunning.put(customers.get(i), true);
@@ -318,7 +378,11 @@ public class BGP_AS extends AS {
 				sendUpdatesToPeer(customers.get(i));
 			}
 			for(int i=0; i<providers.size(); i++) {
-				addPathToPendingUpdatesForPeer(new IA(newPath), providers.get(i));
+				IA overwrite = new IA(newPath);
+				if(tupleChosen != null){
+					intraDomainCost(overwrite, providers.get(i), tupleChosen);
+				}
+				addPathToPendingUpdatesForPeer(overwrite, providers.get(i));
 				if(simulateTimers) {
 					if(!mraiRunning.get(providers.get(i))) {
 						mraiRunning.put(providers.get(i), true);
@@ -329,7 +393,11 @@ public class BGP_AS extends AS {
 				sendUpdatesToPeer(providers.get(i));
 			}
 			for(int i=0; i<peers.size(); i++) {
-				addPathToPendingUpdatesForPeer(new IA(newPath), peers.get(i));
+				IA overwrite = new IA(newPath);
+				if(tupleChosen != null){
+					intraDomainCost(overwrite, peers.get(i), tupleChosen);
+				}
+				addPathToPendingUpdatesForPeer(overwrite, peers.get(i));
 				if(simulateTimers) {
 					if(!mraiRunning.get(peers.get(i))) {
 						mraiRunning.put(peers.get(i), true);
