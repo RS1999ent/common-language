@@ -219,7 +219,7 @@ public class Wiser_AS extends AS {
 		//		cost = neighborLatency.get(advertisedToAS).get(poptuple);
 				//			int cost = getTrueCostInc(oldPath); //the true cost inc, will be the wiser cost advertised for now
 				if(tupleChosen.pop1 != -1)
-					cost += getIntraDomainCost(tupleChosen.pop1, poptuple.pop1);
+					cost += getIntraDomainCost(tupleChosen.pop1, poptuple.pop1, advertisedToAS);
 				newPath.popCosts.put(poptuple, cost);
 			}
 /* block 1		

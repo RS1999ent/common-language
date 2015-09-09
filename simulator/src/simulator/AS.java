@@ -194,7 +194,7 @@ public abstract class AS {
 
 	}
 	
-	class Node implements Comparable<Node>
+	class Node implements Comparator<Node>
 	{
 		
 		public int node;
@@ -204,14 +204,23 @@ public abstract class AS {
 			this.node = node;
 			this.distance = distance;
 		}
+		
+		public Node() {
+			// TODO Auto-generated constructor stub
+		}
+
 		@Override
-		public int compareTo(Node o) {
-			if(o.distance > this.distance)
+		public int compare(Node arg0, Node arg1) {
+			if(arg0.distance < arg1.distance)
+			{
 				return -1;
-			else if(o.distance < this.distance)
+			}
+			if(arg0.distance > arg1.distance){
 				return 1;
-			else
+			}
+			else{
 				return 0;
+			}
 		}
 		
 	}
@@ -232,60 +241,118 @@ public abstract class AS {
 		
 	}
 	
-	boolean stop = true;
-	public int getIntraDomainCost(int pop1, int pop2)
+	
+	HashMap<PoPTuple, Integer> intraDomainLatencies = new HashMap<PoPTuple, Integer>();
+	/**
+	 * precomutes intradomain costs between all pairs of points of presence
+	 */
+	private void precomputation()
 	{
-		if(stop)
+		for(Integer node : intraD.keySet())
+		{
+			for(Integer anotherNode : intraD.keySet())
+			{
+				if(node != anotherNode)
+				{
+					int intraDomainCost = dijkstra(node, anotherNode, 90);
+					intraDomainLatencies.put(new PoPTuple(node, anotherNode), intraDomainCost);
+				}
+			}
+		}
+	}
+	
+	boolean stop = true;
+	boolean precomputed = false;
+	
+	public int getIntraDomainCost(int pop1, int pop2, Integer advertisedToAS)
+	{
+		if(!precomputed)
+		{
+			precomputation();
+			precomputed = true;
+		}
+		
+		if(intraDomainLatencies.get(new PoPTuple(pop1, pop2)) == null)
+		{
 			return 0;
+		}
+		
+		System.out.println("cache hit");
+		return intraDomainLatencies.get(new PoPTuple(pop1, pop2));
+		
+	}
+	
+	private int dijkstra(int pop1, int pop2, Integer advertisedToAS)
+	{
+			//no intradomain topo information, return 0
+		if(intraD.size() == 0)
+			return 0;
+		
 		//priority queue of unvisted nodes
-		HashSet<Integer> unsettledNodes = new HashSet<Integer>();
+		PriorityQueue<Node> unsettledNodes = new PriorityQueue<Node>(intraD.size(), new Node());
 		HashSet<Integer> settledNodes = new HashSet<Integer>();
 		HashMap<Integer, Integer> distance = new HashMap<Integer, Integer>();
+		
+		//check to make sure that pop1 is in our domain
+		if(!intraD.containsKey(pop1)){
+		//	System.out.println("[DEBUG] no such intradomain connection");
+			return 0;
+		}
+		//check to see if 0 hop from pop1 to pop2 (there is a direct connection from pop1 to pop2 in another AS, 0 cost)
+		if(!intraD.containsKey(pop2) && neighborLatency.get(advertisedToAS).containsKey(new PoPTuple(pop1, pop2)))
+		{
+			System.out.println("0 intradomain hops to neighbor");
+			return 0;
+		}
+		
+		//otherwise there is no such connection, return 0 in that case i guess
+		else if(!intraD.containsKey(pop2))
+		{
+	//		System.out.println("no such pop2");
+			return 0;
+		}
+			
 		for(Integer key : intraD.keySet())
 		{
-			distance.put(key, Integer.MAX_VALUE);
+			if(key != pop1){
+				unsettledNodes.add(new Node(key, Integer.MAX_VALUE));
+				distance.put(key, Integer.MAX_VALUE);
+			}
 		}
-		/*if(intraD.containsKey(pop1))
-			System.out.println("contains 1");
-		if(intraD.containsKey(pop2))
-			System.out.println("contains 2");
-			*/
 		
-		if(!intraD.containsKey(pop1) || !intraD.containsKey(pop2))
-		{
-	//		System.out.println("[DEBUG] no such intradomain connection");
-			return 0;
-			//System.exit(1);
-		}
-//		System.out.println("here at least 1");
-		unsettledNodes.add(pop1);
 		distance.put(pop1, 0);
+		unsettledNodes.add(new Node(pop1, 0));
+		
 		while(!unsettledNodes.isEmpty())
 		{
-			
-			Integer evalNode = getLowestCost(unsettledNodes, distance);
-			unsettledNodes.remove(evalNode)	;
+			Node evalNode = unsettledNodes.remove();			
 			//evaluate neighbors
-			HashMap<Integer, Integer> neighbors = intraD.get(evalNode);
-			settledNodes.add(evalNode);
+			HashMap<Integer, Integer> neighbors = intraD.get(evalNode.node);
+			if(!settledNodes.contains(evalNode.node))
+			{
+				settledNodes.add(evalNode.node);
+			}			
 			for(Integer key : neighbors.keySet())
 			{
 				if(!settledNodes.contains(key)){
-					int potentialCost = neighbors.get(key) + distance.get(evalNode);//latency of adjacency + distance
+					int potentialCost = neighbors.get(key) + evalNode.distance;//latency of adjacency + distance
 					if(potentialCost < distance.get(key) )
 					{
 						distance.put(key, potentialCost);
-						unsettledNodes.add(key);
+						unsettledNodes.add(new Node(key, potentialCost));
 					}
 				}
 			}
 				
 		}
 		
+		//if there was pop2 in our intradomain pops, but it wasn't updated, means that intradomain doesn't have path to
+		//it (it is there, would have returned earlier if it wasn't
 		if(distance.get(pop2) == Integer.MAX_VALUE){
-//			System.out.println("no path to pop2: " + pop2);
+		//	System.out.println("no path to pop2: " + pop2);
 			return 0;
 		}
+	//	System.out.println("path to pop2: ");
 		return distance.get(pop2);
 		
 	}

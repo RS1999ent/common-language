@@ -230,7 +230,7 @@ public class BGP_AS extends AS {
 		else{
 			for(AS.PoPTuple poptuple : neighborLatency.get(advertisedToAS).keySet())
 			{
-				int intraDomainCost = getIntraDomainCost(tupleChosen.pop1, poptuple.pop1);
+				int intraDomainCost = getIntraDomainCost(tupleChosen.pop1, poptuple.pop1, advertisedToAS);
 				advert.truePoPCosts.put(poptuple, intraDomainCost);
 			}	
 		}

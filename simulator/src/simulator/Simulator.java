@@ -843,8 +843,8 @@ public class Simulator {
 		numUpdateMessages = 0;
 		numWithdrawMessages = 0;
 		while(true) {
-//			if(eventQueue.size() % 100 == 0)
-	//			System.out.println("eventqueue size: " + eventQueue.size());
+			if(eventQueue.size() % 100 == 0)
+				System.out.println("eventqueue size: " + eventQueue.size());
 			Event e = eventQueue.poll();
 			if( e == null) {
 				// system is in a stable state
