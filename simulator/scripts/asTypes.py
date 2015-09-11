@@ -3,7 +3,7 @@ import random
 import math
 
 parser = argparse.ArgumentParser(description='generates AStypes for initial experiment')
-parser.add_argument('annotatedIplaneData', metavar='annotatedIplane', nargs = 1, help = 'annotated iplane data, generated from annotateIplaneData.py')
+parser.add_argument('annotatedData', metavar='annotatedIplane', nargs = 1, help = 'annotated data, generated from annotateIplaneData.py or annotateCAIDAData.py')
 parser.add_argument('outFile', metavar='outputFile', nargs=1, help = 'file to output astypes')
 parser.add_argument('--numTransits', metavar='numberTransits', help = 'number of transits to specify (random', default = .1)
 parser.add_argument('--seedTransit', metavar='rgenerator seed',  help = 'seed for random number generator for generating transits', default=1)
@@ -11,7 +11,7 @@ parser.add_argument('--seedWiser', metavar='seed', help = 'seed for random numbe
 
 #open files based on arguments
 args = parser.parse_args()
-annotatedIplaneDataFile = open(args.annotatedIplaneData[0], 'r')
+annotatedDataFile = open(args.annotatedData[0], 'r')
 outFile = open(args.outFile[0], 'w')
 
 #number annotation for node types.  This is wellknown value found in the simulator AS.java file
@@ -71,7 +71,7 @@ class AS:
 #function to parse data into an ASmap (integer - AS)
 def parseIplane():
     #for each line in the iplane file
-    for line in annotatedIplaneDataFile:
+    for line in annotatedDataFile:
         split = line.split()
         AS1Num = int(split[0])
         AS2Num = int(split[1])
@@ -136,8 +136,8 @@ def computeTier1(largestCC):
     for element in largestCC:
         tempAS = asMap[element]
         if len(tempAS.providers) == 0:
-            if len(tempAS.customers) + len(tempAS.peers) > TIER1_THRESHOLD:
-                tier1s.append(element)
+     #       if len(tempAS.customers) + len(tempAS.peers) > TIER1_THRESHOLD:
+            tier1s.append(element)
     return tier1s
 
 #computes tier2s (all transits that aren't tier 1s) returns list of asnums
@@ -145,10 +145,10 @@ def computeTier2(largestCC):
     tier2s = []
     for element in largestCC:
         tempAS = asMap[element]
-        if len(tempAS.providers) == 0:
-            if len(tempAS.customers) + len(tempAS.peers) < TIER1_THRESHOLD:
-                tier2s.append(element)
-        elif len(tempAS.customers) > 0 and len(tempAS.providers) + len(tempAS.peers) > 0:
+        if len(tempAS.providers) > 0 and len(tempAS.customers) > 0:
+     #       if len(tempAS.customers) + len(tempAS.peers) < TIER1_THRESHOLD:
+     #           tier2s.append(element)
+#        elif len(tempAS.customers) > 0 and len(tempAS.providers) + len(tempAS.peers) > 0:
             tier2s.append(element)
     return tier2s
                 
@@ -184,13 +184,32 @@ def largestStub():
     return largestSoFar
     
 parseIplane()
-#print '[debug] number of ases: ', len(asMap)
-largestConnectedComponent = largestConnectedComponent()
+print '[debug] number of ases: ', len(asMap)
+largestConnectedComponent = asMap.keys()
+#largestConnectedComponent = largestConnectedComponent()
+print '[debug] largestcc: ', len(largestConnectedComponent)
 fillStubs(largestConnectedComponent)
 fillTransit(largestConnectedComponent)
 tier1s = computeTier1(largestConnectedComponent)
 tier2s = computeTier2(largestConnectedComponent)
-print 'number of stubs: ', len(tier1s), len(tier2s), len(transitASes)
+print 'number of stubs: ',len(stubASes)
+print 'num transits: ' , len(transitASes)
+print 'num tier1s: ', len(tier1s)
+print 'num tier2s: ', len(tier2s)
+
+##################
+#check
+############
+i = 0
+for element in tier1s:
+    if element  in stubASes:
+        i+=1
+print i        
+
+###########
+#endcheck
+##########
+
 #print '[debug] number of stub ases: ', len(stubASes)
 #print '[debug] largest stub as: ', largestStub()
 
@@ -212,12 +231,12 @@ wiserAS.append(tempAS)
 #going to do percentage
 random.seed(transitSeed)
 
-print len(transitASes)
-print len(stubASes)
-print len(largestConnectedComponent)
+#print len(transitASes)
+#print len(stubASes)
+#print len(largestConnectedComponent)
 #print 'num transits from ', numTransits, 'percent: ', int(numTransits * (len(largestConnectedComponent) - len(wiserAS)))
 
-transitRange = tier2s #list of transits to grab from, will shrink
+transitRange = tier1s #list of transits to grab from, will shrink
 iterations = int(numTransits * len(transitRange)) #number of transits to
                                                  #add (easiliy modifiable to be from any tier)
 print iterations

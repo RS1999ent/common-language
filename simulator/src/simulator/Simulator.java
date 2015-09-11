@@ -843,8 +843,8 @@ public class Simulator {
 		numUpdateMessages = 0;
 		numWithdrawMessages = 0;
 		while(true) {
-			if(eventQueue.size() % 100 == 0)
-				System.out.println("eventqueue size: " + eventQueue.size());
+		//	if(eventQueue.size() % 100 == 0)
+			//	System.out.println("eventqueue size: " + eventQueue.size());
 			Event e = eventQueue.poll();
 			if( e == null) {
 				// system is in a stable state
@@ -1001,7 +1001,7 @@ public class Simulator {
 				.description("Simulator to simulate integrated advertisements and passthroughs");
 		parser.addArgument("ASRelationships").metavar("ASRel").type(String.class);
 		parser.addArgument("ASTypesFile").metavar("ASTypes").type(String.class);
-		parser.addArgument("IntraDomainFile").metavar("IntraDomain").type(String.class);
+		parser.addArgument("--IntraDomainFile").metavar("IntraDomain").type(String.class);
 		parser.addArgument("outFile").metavar("file to output results").type(String.class);
 		parser.addArgument("--failLinksFile").metavar("FailLinks").type(String.class);
 		parser.addArgument("--parentsFile").metavar("ParentsFile").type(String.class);
@@ -1031,7 +1031,7 @@ public class Simulator {
 		simMode = arguments.getInt("sim");
 		readTypes(typeFile); //reading types must go before readtopology, otherwise allnodes will be bgp
 		readTopology(topologyFile);
-		readIntraDomain(intraFile);
+	//	readIntraDomain(intraFile);
 		//readLinks(linkFile);
 		//readParents(parentsFile);
 		

@@ -266,6 +266,8 @@ public abstract class AS {
 	
 	public int getIntraDomainCost(int pop1, int pop2, Integer advertisedToAS)
 	{
+		if (true)
+			return 0;
 		if(!precomputed)
 		{
 			precomputation();
@@ -284,7 +286,7 @@ public abstract class AS {
 	
 	private int dijkstra(int pop1, int pop2, Integer advertisedToAS)
 	{
-			//no intradomain topo information, return 0
+		//no intradomain topo information, return 0
 		if(intraD.size() == 0)
 			return 0;
 		
@@ -329,7 +331,7 @@ public abstract class AS {
 			//evaluate neighbors
 			HashMap<Integer, Integer> neighbors = intraD.get(evalNode.node);
 			if(!settledNodes.contains(evalNode.node))
-			{
+			{			
 				settledNodes.add(evalNode.node);
 			}			
 			for(Integer key : neighbors.keySet())
