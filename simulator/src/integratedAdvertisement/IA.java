@@ -41,7 +41,8 @@ public class IA {
 	public HashMap<AS.PoPTuple, Integer> popCosts = new HashMap<AS.PoPTuple, Integer>();
 
 	//bookkeepign for true cost of as path. like the popcosts, only all nodes use this for true cost updates
-	//should be cleared after use used for local processing only
+	//should be cleared after use used for local processing only.  This represents the intradomain cost that must be added if 
+	//you choose a path going through this pop
 	public HashMap<AS.PoPTuple, Integer> truePoPCosts = new HashMap<AS.PoPTuple, Integer>();
 	//true cost of path
 	long trueCost;

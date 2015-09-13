@@ -280,6 +280,7 @@ public class BGP_AS extends AS {
 			}
 			//put the wiser information that would have been there if we weren't hacking a solution here
 			//this is only if our neighbor is a wiser node, simulates the advertisemetns received from multiple pops
+			//COMPUTES WHAT THE POINT OF PRESENCE THAT WE CHOOSE WOULD HAVE ADVETISED. hackish, i know.
 			if(p.popCosts.size() > 0)
 			{
 				int wisercost = 9999; //debug, shows something is wrong if this shows up
@@ -295,6 +296,11 @@ public class BGP_AS extends AS {
 				}
 				if(wisercost == 9999){
 					System.out.println("bgp_as wisercost 9999");
+				}
+				
+				String[] wiserProps = getWiserProps(p);
+				if(wiserProps != null){
+					wisercost += Integer.valueOf(wiserProps[0]); //add the wiser props
 				}
 				//would compute normalization here
 				String pathAttribute = String.valueOf(wisercost) + " " + String.valueOf(normalization);
@@ -1261,8 +1267,8 @@ public class BGP_AS extends AS {
 		String table = "FWD_TABLE : BGP_AS" + asn + " #paths = " + bestPath.size() + "\n";
 		for(Iterator<IA> it = bestPath.values().iterator(); it.hasNext();) {
 			IA bestPath = it.next();
-			table += bestPath.getPath() + "\n";
-			byte[] wiserValues = bestPath.getProtocolPathAttribute(new Protocol(AS.WISER), bestPath.getPath());
+			table += bestPath.getPath() +  " cost: " + bestPath.getTrueCost() + "\n";
+		/*	byte[] wiserValues = bestPath.getProtocolPathAttribute(new Protocol(AS.WISER), bestPath.getPath());
 			if(wiserValues[0] != (byte) 0xFF)
 			{
 				try {
@@ -1272,7 +1278,7 @@ public class BGP_AS extends AS {
 					e.printStackTrace();
 				}
 			}
-			
+			*/
 		}
 		return table;
 	}

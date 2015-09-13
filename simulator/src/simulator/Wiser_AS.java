@@ -213,15 +213,36 @@ public class Wiser_AS extends AS {
 
 			//add intradomain costs here, instead it is just going to be the same for now
 			PoPTuple tupleChosen = new PoPTuple(-1,-1);
-			int cost = getCostInc(oldPath, tupleChosen);
+			int cost = 0;
+			getCostInc(oldPath, tupleChosen); //get the downstream poptuple that we choose
 			for(AS.PoPTuple poptuple : neighborLatency.get(advertisedToAS).keySet())
 			{
 		//		cost = neighborLatency.get(advertisedToAS).get(poptuple);
 				//			int cost = getTrueCostInc(oldPath); //the true cost inc, will be the wiser cost advertised for now
 				if(tupleChosen.pop1 != -1)
-					cost += getIntraDomainCost(tupleChosen.pop1, poptuple.pop1, advertisedToAS);
+					cost = getIntraDomainCost(tupleChosen.pop1, poptuple.pop1, advertisedToAS); //cost is equal to just intradomain cost, because we are filling popcosts
 				newPath.popCosts.put(poptuple, cost);
 			}
+			
+			String[] wiserProps = getWiserProps(newPath);
+			int wisercost = 0;
+			int normalization = 1;
+			if(wiserProps != null){
+				wisercost += Integer.valueOf(wiserProps[0]); //add the wiser props
+				normalization = Integer.valueOf(wiserProps[1]);
+			}
+			if(oldPath.getPath().size() > 0){
+				wisercost += neighborLatency.get(oldPath.getFirstHop()).get(tupleChosen);
+			}
+			String pathAttribute = String.valueOf(wisercost) + " " + String.valueOf(normalization);
+			try {
+				newPath.setProtocolPathAttribute(pathAttribute.getBytes("UTF-8"), new Protocol(AS.WISER), newPath.getPath());
+			} catch (UnsupportedEncodingException e) {
+				// TODO Auto-generated catch block
+				e.printStackTrace();
+			}
+			
+			
 /* block 1		
 		if(pWiserBytes[0] != (byte) 0xFF)
 		{
@@ -288,7 +309,9 @@ public class Wiser_AS extends AS {
 			PoPTuple tupleChosen = new PoPTuple(-1, -1);
 			long newTrueCost = newPath.getTrueCost() + getCostInc(p, tupleChosen); //should add intradomain cost (only should be used as true cost
 			                                                            //for wiser as that is the only way intradomain costs get in
-			if(p.popCosts.size()>0){ //we are talkign to a wiser node, have to do the hackish stuff here (see bgp_as)
+			if(p.popCosts.size()>0){ //we are talkign to a wiser node, have to do the hackish stuff here (see bgp_as), 
+									//in other words, what is the wiser advertisement that would have been advertised for the
+				  					//PoP pair that we choose as our next hop
 				int normalization = 1;
 				int wisercost = 9999;
 				//long newTrueCost = newPath.getTrueCost() + getCostInc(p, tupleChosen); //should add intradomain cost
@@ -302,6 +325,16 @@ public class Wiser_AS extends AS {
 				if(wisercost == 9999){
 					System.out.println("wiseras wisercost 9999");
 				}
+				//grab the wiser information (that should be filled, remember, we are talking to a wiser node)
+				String[] wiserProps = getWiserProps(p);
+				if(wiserProps != null){
+					wisercost += Integer.valueOf(wiserProps[0]); //add the wiser props
+				}
+	//			else
+		///		{
+	//				wisercost += neighborLatency.get(nh).get(tupleChosen);
+		//		}
+				
 				//would compute normalization here
 				String pathAttribute = String.valueOf(wisercost) + " " + String.valueOf(normalization);
 				try {
@@ -311,7 +344,7 @@ public class Wiser_AS extends AS {
 					e.printStackTrace();
 				}
 			}
-			else //its a wiser node, add the true cost bookeeping informaton on its intradomain costs
+			else //its a bgp node, add the true cost bookeeping informaton on its intradomain costs
 			{
 				//grab the intradomian true cost based on the tuple we chose, add it to true cost
 				//pops reversed because they created advert with inforamtion from them to us, so we
@@ -1069,10 +1102,14 @@ public class Wiser_AS extends AS {
 
 		byte[] p1WiserBytes = p1.getProtocolPathAttribute(new Protocol(AS.WISER), p1.getPath());
 		byte[] p2WiserBytes = p2.getProtocolPathAttribute(new Protocol(AS.WISER), p2.getPath());
-		String p1WiserProps = null;
-		String p2WiserProps = null;
+		String[] p1WiserProps = getWiserProps(p1);
+		String[] p2WiserProps = getWiserProps(p2);
+		int p1WiserCost = p1WiserProps != null ? Integer.valueOf(p1WiserProps[0]) : 0; //pull wisercost out, if the advert has one
+		int p2WiserCost = p2WiserProps != null ? Integer.valueOf(p2WiserProps[0]) : 0; //pull wisercost out, if the advert has one
+		int p1Normalization = p1WiserProps != null ? Integer.valueOf(p1WiserProps[1]) : 0; //pull normalization out, if the advert has one
+		int p2Normalization = p2WiserProps != null ? Integer.valueOf(p2WiserProps[1]) : 0; //pull normalization out, if the advert has one
 
-		if(p1WiserBytes[0] != (byte) 0xFF)
+		/*if(p1WiserBytes[0] != (byte) 0xFF)
 		{
 			try {
 				p1WiserProps = new String(p1WiserBytes, "UTF-8");
@@ -1089,7 +1126,7 @@ public class Wiser_AS extends AS {
 				// TODO Auto-generated catch block
 				e.printStackTrace();
 			}
-		}
+		}*/
 		
 		//if we are talking to a wiser node for path 1, then popCosts will have some elements in it, work with those
 		int p1LowestCost = Integer.MAX_VALUE;
@@ -1101,8 +1138,14 @@ public class Wiser_AS extends AS {
 		{
 			for(AS.PoPTuple tuple : p1.popCosts.keySet())
 			{
-				if(p1.popCosts.get(tuple) < p1LowestCost){
-					p1LowestCost = p1.popCosts.get(tuple);
+				//get the link latency of the path based on the tuple that we are analyzing in the path
+				int linklatency = 0;
+				if(neighborLatency.get(p1.getFirstHop()).get(new PoPTuple(tuple.pop2, tuple.pop1)) != null)
+				{
+					linklatency = neighborLatency.get(p1.getFirstHop()).get(new PoPTuple(tuple.pop2, tuple.pop1));//reverse the tuple for our lookup because the advetisement format is from them to us
+				}
+				if(p1.popCosts.get(tuple) + linklatency + p1WiserCost/p1Normalization < p1LowestCost){
+					p1LowestCost = p1.popCosts.get(tuple) + linklatency + p1WiserCost/p1Normalization ;
 					p1Tuple = new AS.PoPTuple(tuple.pop2, tuple.pop1); //reverse it because we find latencies via pop (in us) to pop (in them)
 				}
 			}
@@ -1112,8 +1155,14 @@ public class Wiser_AS extends AS {
 		{
 			for(AS.PoPTuple tuple : p2.popCosts.keySet())
 			{
-				if(p2.popCosts.get(tuple) < p2LowestCost){
-					p2LowestCost = p2.popCosts.get(tuple);
+				//get the link latency of the path based on the tuple that we are analyzing in the path
+				int linklatency = 0;
+				if(neighborLatency.get(p2.getFirstHop()).get(new PoPTuple(tuple.pop2, tuple.pop1)) != null)
+				{
+					linklatency = neighborLatency.get(p2.getFirstHop()).get(new PoPTuple(tuple.pop2, tuple.pop1));//reverse the tuple for our lookup because the advetisement format is from them to us
+				}
+				if(p2.popCosts.get(tuple) + linklatency + p2WiserCost/p2Normalization < p2LowestCost){
+					p2LowestCost = p2.popCosts.get(tuple) + linklatency + p2WiserCost/p2Normalization ;
 					p2Tuple = new AS.PoPTuple(tuple.pop2, tuple.pop1); //reverse it because we find latencies via pop (in us) to pop (in them)
 				}
 			}
@@ -1138,8 +1187,8 @@ public class Wiser_AS extends AS {
 			}
 			else
 			{
-				int p1TotalCost = neighborLatency.get(p1.getFirstHop()).get(p1Tuple) + p1LowestCost; 
-				int p2TotalCost = neighborLatency.get(p2.getFirstHop()).get(p2Tuple) + p2LowestCost;
+				int p1TotalCost = p1LowestCost;//neighborLatency.get(p1.getFirstHop()).get(p1Tuple) + p1LowestCost; 
+				int p2TotalCost = p2LowestCost;//neighborLatency.get(p2.getFirstHop()).get(p2Tuple) + p2LowestCost;
 				return p1TotalCost < p2TotalCost;
 			}
 		}
@@ -1158,16 +1207,16 @@ public class Wiser_AS extends AS {
 			}
 			else
 			{
-				String[] p1Props = p1WiserProps.split("\\s+");
-				String[] p2Props = p2WiserProps.split("\\s+");
+/*				String[] p1Props = p1WiserProps;
+				String[] p2Props = p2WiserProps;
 				
 				int p1Wisercost = Integer.valueOf(p1Props[0]);
 				int p1Normalization = Integer.valueOf(p1Props[1]);
 				
 				int p2Wisercost = Integer.valueOf(p2Props[0]);
-				int p2Normalization = Integer.valueOf(p2Props[1]);
+				int p2Normalization = Integer.valueOf(p2Props[1]);*/
 				
-				return p1Wisercost/p1Normalization < p2Wisercost/p2Normalization;
+				return p1WiserCost/p1Normalization < p2WiserCost/p2Normalization;
 			}
 		}
 		
@@ -1192,30 +1241,6 @@ public class Wiser_AS extends AS {
 	
 	
 	/**
-	 * method that returns wiser passthrough information in form of string
-	 * @param advert advertisemet to wiser props from
-	 * @return string of wiser props (split), null if none
-	 */
-	private String[] getWiserProps(IA advert)
-	{
-		
-		byte[] pWiserBytes = advert.getProtocolPathAttribute(new Protocol(AS.WISER), advert.getPath());
-		String pWiserProps = null;
-		String[] splitProps = null;
-		if(pWiserBytes[0] != (byte) 0xFF)
-		{
-			try {
-				pWiserProps = new String(pWiserBytes, "UTF-8");
-				return pWiserProps.split("\\s+");
-			} catch (UnsupportedEncodingException e) {
-				// TODO Auto-generated catch block
-				e.printStackTrace();
-			}
-		}
-		return splitProps;
-	}
-	
-	/**
 	 * @param path path to find the cost increment of
 	 * @return the amount to increment the true cost of path
 	 */
@@ -1230,19 +1255,27 @@ public class Wiser_AS extends AS {
 		//if we are talking to a wiser node for path 1, then popCosts will have some elements in it, work with those
 		int p1LowestCost = Integer.MAX_VALUE;
 		AS.PoPTuple p1Tuple = null;
-		//find the lowest costs if we are talking iwth wiser node
+		//find the lowest costs if we are talking iwth wiser node.  That is the summation of the intradomain costs + the latency of the link, the lowest of those
 		if(path.popCosts.size() > 0)
 		{
 			for(AS.PoPTuple tuple : path.popCosts.keySet())
 			{
-				if(path.popCosts.get(tuple) < p1LowestCost){
+				int linkCost = 0;
+				if(neighborLatency.get(path.getFirstHop()).get(new PoPTuple(tuple.pop2, tuple.pop1)) != null){
+					linkCost = neighborLatency.get(path.getFirstHop()).get(new PoPTuple(tuple.pop2, tuple.pop1));
+				}
+				else{
+					System.out.println("wiser_as: getcostinc: no corresponding link cost, shouldn't be here");
+				}
+				
+				if(path.popCosts.get(tuple) + linkCost < p1LowestCost){
 					p1LowestCost = path.popCosts.get(tuple);
 					p1Tuple = new AS.PoPTuple(tuple.pop2, tuple.pop1); //reverse it because we find latencies via pop (in us) to pop (in them)
 				}
 			}
 			tupleChosen.pop1 = p1Tuple.pop1;// = p1Tuple;
 			tupleChosen.pop2 = p1Tuple.pop2;
-			return neighborLatency.get(path.getFirstHop()).get(p1Tuple) + p1LowestCost; //latency of poptuple and wisercost
+			return neighborLatency.get(path.getFirstHop()).get(p1Tuple) + p1LowestCost; //latency of poptuple link cost and wisercost
 		}
 		else
 		{
@@ -1272,7 +1305,6 @@ public class Wiser_AS extends AS {
 			tupleChosen.pop1 = p2Tuple.pop1;
 			tupleChosen.pop2 = p2Tuple.pop2;
 			return trueCostInc;
-			
 		}
 
 

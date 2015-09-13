@@ -4,6 +4,7 @@ package integratedAdvertisement;
  import protobuf.AdvertisementProtos.ProtoValues.Builder;
  import protobuf.AdvertisementProtos.ProtoValues.valueFieldEntry;*/
 
+import java.io.UnsupportedEncodingException;
 import java.util.Hashtable;
 import java.util.Set;
 
@@ -63,7 +64,17 @@ public class Values {
 	}
 
 	public String toString() {
-		return c_protocolValues.toString();
+		String returnString = "";
+		for(Long key : c_protocolValues.keySet())
+		{
+			try {
+				returnString += String.valueOf(key) + " " + new String(c_protocolValues.get(key), "UTF-8") + "| ";
+			} catch (UnsupportedEncodingException e) {
+				// TODO Auto-generated catch block
+				e.printStackTrace();
+			}
+		}
+		return returnString;
 	}
 
 	// OLD PROTOBUF STUFF, may be useful later

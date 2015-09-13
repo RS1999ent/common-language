@@ -1056,7 +1056,7 @@ public class Simulator {
 		    break;
 
 		case 4:
-	//	    runBGPOverheadSimulations();
+			verificationSimulation();
 		    break;
 
 		case 5:
@@ -1272,6 +1272,105 @@ public class Simulator {
 		for(Integer as : asesToRemove)
 		{
 			asMap.remove(as);
+		}
+	}
+	
+	
+	/**
+	 * used to verify the simulator, works on small manual topology
+	 * displays rib and true cost of paths and forwarding table
+	 */
+	public static void verificationSimulation(){
+		ArrayList<Integer> announcedASes = new ArrayList<Integer>();
+		
+		for( Integer asMapKey : asTypeDef.keySet())
+		{
+			
+			if(asTypeDef.get(asMapKey) == AS.WISER){
+				asMap.get(asMapKey).announceSelf();
+				announcedASes.add(asMapKey);
+//				System.out.println("[debug] num neighbors of wiser AS: " + asMap.get(asMapKey).neighborMap.size());
+			}
+		}
+		
+		instrumented = false;
+		run();
+		
+		int costSum = 0;
+		int total = asMap.size();
+		//for all ASes, see how many got the lowest path cost path to the announced ASes.
+		for(Integer as : asMap.keySet())
+		{
+			//for each announced AS, compare their lowest outgoing wiser cost with what was received
+			AS monitoredAS = asMap.get(as); //the AS we are measuring from, should eventually be all but announced
+			for(Integer announcedAS : announcedASes)
+			{
+				//make sure that the we aren't comparing the AS who announced this to itself
+				if(as == announcedAS){
+					continue;
+				}
+				AS compareAS = asMap.get(announcedAS); //the AS that announced
+				
+				//print AS number
+				System.out.println("\nInfo for AS: " + as);
+				System.out.println("forwardnigTable: ");
+				System.out.print(monitoredAS.showFwdTable());
+				System.out.println("RiB in paths for dest: " + announcedAS);
+				// see if monitored AS has that path in the RIB_in, //if it doesn't have a path, that means policy
+				//disconnection, don't include it in our percentage.
+				if (monitoredAS.ribIn.get(announcedAS) != null) {
+					for (IA path : monitoredAS.ribIn.get(announcedAS).values()) {
+						// all paths should have wiser information in them
+						byte[] wiserBytes = path.getProtocolPathAttribute(
+								new Protocol(AS.WISER), path.getPath());
+						String wiserProps = null;
+						int wiserCost = 0;
+						int normalization = 1;
+						// if ther is wiser props
+						if (wiserBytes[0] != (byte) 0xFF) {
+							try {
+								// fill them into our variables
+								wiserProps = new String(wiserBytes, "UTF-8");
+								String[] split = wiserProps.split("\\s+");
+								wiserCost = Integer.valueOf(split[0]);
+								normalization = Integer.valueOf(split[1]);
+							} catch (UnsupportedEncodingException e) {
+								// TODO Auto-generated catch block
+								e.printStackTrace();
+							}
+						} else {
+							if(!monitoredAS.neighborMap.containsKey(announcedAS))
+								System.out.println("[DEBUG] NO WISER PROPS FOR: " + monitoredAS.asn + " "
+									+ announcedAS);
+						}
+						
+						System.out.println(path.getPath().toString() + " cost: " + path.getTrueCost());
+						costSum += path.getTrueCost();
+						System.out.println(path.toString());
+						//debug if statement
+						if(monitoredAS.neighborMap.containsKey(compareAS.asn))
+						{							
+						//	System.out.println("[DEBUG] AS " + monitoredAS.asn + " neighbor of: " + compareAS.asn);
+							//System.out.println("[DEBUG] received lowest cost: " + wiserProps);
+							//System.out.println("[DEBUG] rib of AS is : " + monitoredAS.ribIn.toString());
+						}
+						
+//						System.out.println("[DEBUG] received lowest cost: " + wiserCost);
+						//this is used for percent lowest cost
+			//			if (wiserCost == lowestCost) {
+							
+		//					costSum++;
+		//					break;
+			//			}
+
+					}// endfor
+					
+				}
+				else
+				{
+					total--;
+				}
+			}
 		}
 	}
 	

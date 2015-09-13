@@ -3,6 +3,7 @@
  */
 package simulator;
 
+import java.io.UnsupportedEncodingException;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
@@ -17,6 +18,7 @@ import java.util.Set;
 import simulator.AS.Node;
 import integratedAdvertisement.IA;
 import integratedAdvertisement.PassThrough;
+import integratedAdvertisement.Protocol;
 import integratedAdvertisement.RootCause;
 
 /**
@@ -400,7 +402,29 @@ public abstract class AS {
 		return paths;
 		
 	}*/
-
+/**
+	 * method that returns wiser passthrough information in form of string
+	 * @param advert advertisemet to wiser props from
+	 * @return string of wiser props (split), null if none
+	 */
+	protected String[] getWiserProps(IA advert)
+	{
+		
+		byte[] pWiserBytes = advert.getProtocolPathAttribute(new Protocol(AS.WISER), advert.getPath());
+		String pWiserProps = null;
+		String[] splitProps = null;
+		if(pWiserBytes[0] != (byte) 0xFF)
+		{
+			try {
+				pWiserProps = new String(pWiserBytes, "UTF-8");
+				return pWiserProps.split("\\s+");
+			} catch (UnsupportedEncodingException e) {
+				// TODO Auto-generated catch block
+				e.printStackTrace();
+			}
+		}
+		return splitProps;
+	}
 
 
 }
