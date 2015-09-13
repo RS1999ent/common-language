@@ -135,7 +135,7 @@ def computeTier1(largestCC):
     tier1s = []
     for element in largestCC:
         tempAS = asMap[element]
-        if len(tempAS.providers) == 0:
+        if len(tempAS.providers) == 0 and len(tempAS.customers) > 0 :
      #       if len(tempAS.customers) + len(tempAS.peers) > TIER1_THRESHOLD:
             tier1s.append(element)
     return tier1s
@@ -236,10 +236,10 @@ random.seed(transitSeed)
 #print len(largestConnectedComponent)
 #print 'num transits from ', numTransits, 'percent: ', int(numTransits * (len(largestConnectedComponent) - len(wiserAS)))
 
-transitRange = tier1s #list of transits to grab from, will shrink
+transitRange = tier2s #list of transits to grab from, will shrink
 iterations = int(numTransits * len(transitRange)) #number of transits to
                                                  #add (easiliy modifiable to be from any tier)
-print iterations
+#print iterations
 for i in range(iterations):
     #generate random number in range of largestcc, if not in transits, add it if it is, generate another and add
     rNum = random.randrange(0, len(transitRange))
