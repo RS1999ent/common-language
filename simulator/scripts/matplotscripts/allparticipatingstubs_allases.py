@@ -1,7 +1,9 @@
 import numpy
 import pylab
 import matplotlib.pyplot as plt
+from matplotlib.backends.backend_pdf import PdfPages
 
+pp = PdfPages('allparticipatingstubs_allases.pdf')
 arr = numpy.asarray
 
 x = arr([.1, .2, .3, .4, .5, .6, .7, .8, .9, 1])
@@ -30,10 +32,12 @@ c= arr([[ 13.53, 14.6], #.1
 
 #plt.figure()
 plt.errorbar(x, y, yerr=c)
-plt.axis([0,1, 0, 140])
+plt.axis([0,1, 0, 100])
 plt.ylabel('Avereage cost of paths received at all participating stub ASes')
 plt.xlabel('Percentage of stub ASes and transit ASes participating')
 plt.title('Average cost of paths received vs number of ASes participating in new protocol')
+pp.savefig()
+pp.close()
 plt.show()
 
 #pylab.errorbar(x, y, yerr=c)
