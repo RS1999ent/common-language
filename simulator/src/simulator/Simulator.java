@@ -5,6 +5,7 @@ import integratedAdvertisement.RootCause;
 
 import java.util.*;
 import java.io.*;
+import java.lang.reflect.Array;
 
 import simulator.AS.PoPTuple;
 import jdk.nashorn.internal.runtime.regexp.joni.constants.Arguments;
@@ -1052,7 +1053,7 @@ public class Simulator {
 		    break;
 
 		case 3:
-	//	    runOverheadSimulations();
+			iaBasicSimulationStubsOnly();
 		    break;
 
 		case 4:
@@ -1373,6 +1374,129 @@ public class Simulator {
 			}
 		}
 	}
+	
+	public static void iaBasicSimulationStubsOnly(){
+		
+		
+		//ases that will be used for observation
+		ArrayList<Integer> monitorASes = new ArrayList<Integer>();
+	//	tier1ASes = computeTier1();
+
+
+		// We first announce all the tier-1 ASes and save 
+		// the paths from each of our failure-provider to the tier1
+		simTime = 0;
+		upstreamASes.clear();
+		r = new Random(seedVal);
+		ArrayList<Integer> announcedASes = new ArrayList<Integer>();
+		
+		//Find AS to use as monitor
+		//monitorASes.add((Integer) asMap.keySet().toArray()[r.nextInt(asMap.size())]); //doesn't check for overlap with special ASes, fix later
+		
+		//go through and have all wiser nodes announce themselves
+		for( Integer asMapKey : asTypeDef.keySet())
+		{
+			
+			if(asTypeDef.get(asMapKey) == AS.WISER){
+				asMap.get(asMapKey).announceSelf();
+				announcedASes.add(asMapKey);
+//				System.out.println("[debug] num neighbors of wiser AS: " + asMap.get(asMapKey).neighborMap.size());
+			}
+			else
+			{
+				monitorASes.add(asMapKey);
+			}
+		}
+//		System.out.println("Number of announced ASes: " + announcedASes.size());
+		instrumented = false;
+		run();
+		
+		int costSum = 0;
+		int total = monitorStubASes.size();
+		//for transit ASes only, see the sum of received paths
+		for(Integer as : monitorStubASes)
+		{
+			//for each monitored AS, compare their lowest outgoing wiser cost with what was received
+			AS monitoredAS = asMap.get(as); //the AS we are measuring from (all transits eventually)
+			for(Integer announcedAS : announcedASes)
+			{
+				//make sure that the we aren't comparing the AS who announced this to itself
+				if(as == announcedAS){
+					total--; //minus the total, because we don't include this one, basically skipping over it
+					continue;
+					
+				}
+				AS compareAS = asMap.get(announcedAS); //the AS that announced
+				//what is the lowest cost outgoing link of announced Node
+				int lowestCost = Integer.MAX_VALUE;
+	//			for(Integer neighbor: compareAS.neighborLatency.keySet())
+	//			{
+	//				if(compareAS.neighborLatency.get(neighbor) < lowestCost)
+	//				{
+	//					lowestCost = compareAS.neighborLatency.get(neighbor);
+	//				}
+	//			}
+				//System.out.println("[DEBUG] lowest cost: " + lowestCost);
+				// see if monitored AS has that path in the RIB_in, //if it doesn't have a path, that means policy
+				//disconnection, don't include it in our percentage.
+				if (monitoredAS.ribIn.get(announcedAS) != null) {
+					for (IA path : monitoredAS.ribIn.get(announcedAS).values()) {
+						// all paths should have wiser information in them
+						byte[] wiserBytes = path.getProtocolPathAttribute(
+								new Protocol(AS.WISER), path.getPath());
+						String wiserProps = null;
+						int wiserCost = 0;
+						int normalization = 1;
+						// if ther is wiser props
+						if (wiserBytes[0] != (byte) 0xFF) {
+							try {
+								// fill them into our variables
+								wiserProps = new String(wiserBytes, "UTF-8");
+								String[] split = wiserProps.split("\\s+");
+								wiserCost = Integer.valueOf(split[0]);
+								normalization = Integer.valueOf(split[1]);
+							} catch (UnsupportedEncodingException e) {
+								// TODO Auto-generated catch block
+								e.printStackTrace();
+							}
+						} else {
+							if(!monitoredAS.neighborMap.containsKey(announcedAS))
+								System.out.println("[DEBUG] NO WISER PROPS FOR: "
+									+ announcedAS);
+						}
+						
+						costSum += path.getTrueCost();
+						
+						//debug if statement
+						if(monitoredAS.neighborMap.containsKey(compareAS.asn))
+						{							
+						//	System.out.println("[DEBUG] AS " + monitoredAS.asn + " neighbor of: " + compareAS.asn);
+							//System.out.println("[DEBUG] received lowest cost: " + wiserProps);
+							//System.out.println("[DEBUG] rib of AS is : " + monitoredAS.ribIn.toString());
+						}
+						
+//						System.out.println("[DEBUG] received lowest cost: " + wiserCost);
+						//this is used for percent lowest cost
+					//	if (wiserCost == lowestCost) {
+							
+				//			costSum++;
+				//			break;
+				//		}
+
+					}// endfor
+					
+				}
+				else
+				{
+					total--;
+				}
+			}
+		}
+		
+		System.out.println("Average cost sum for transit ASes: " + String.valueOf((float) costSum/total));
+	}
+	
+	
 	
 	/**
 	 * runs a basic IA simulation
@@ -2596,6 +2720,7 @@ public class Simulator {
 		}
 	}
 
+	static ArrayList<Integer> monitorStubASes = new ArrayList<Integer>();
 	//method that reads in the types file, puts them in a special types list
 	//this keeps in mind that the default type is BGP.
 	private static void readTypes(String typesFile) throws Exception{
@@ -2604,6 +2729,10 @@ public class Simulator {
 			String[] token = br.readLine().split("\\s+");
 			int as = Integer.parseInt(token[0]);
 			int type = Integer.parseInt(token[1]);
+			if(Array.getLength(token) == 2) //HACKISH FOR THE TRANSIT MEASUREMENT ONLY
+			{
+				monitorStubASes.add(as);
+			}
 			asTypeDef.put(as, type);
 		}
 		br.close();

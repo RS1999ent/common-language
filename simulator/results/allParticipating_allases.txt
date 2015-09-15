@@ -1,0 +1,164 @@
+
+Testing for stub/transit percentage: 0.100000
+
+Testing on Transit seed 1
+Average cost sum for transit ASes: 116.06958
+
+Testing on Transit seed 2
+Average cost sum for transit ASes: 87.13323
+
+Testing on Transit seed 3
+Average cost sum for transit ASes: 109.1604
+
+Testing on Transit seed 4
+Average cost sum for transit ASes: 100.47217
+
+Testing on Transit seed 5
+Average cost sum for transit ASes: 127.96041
+
+Testing for stub/transit percentage: 0.200000
+
+Testing on Transit seed 1
+Average cost sum for transit ASes: 97.56366
+
+Testing on Transit seed 2
+Average cost sum for transit ASes: 57.1933
+
+Testing on Transit seed 3
+Average cost sum for transit ASes: 85.959335
+
+Testing on Transit seed 4
+Average cost sum for transit ASes: 102.15679
+
+Testing on Transit seed 5
+Average cost sum for transit ASes: 101.70852
+
+Testing for stub/transit percentage: 0.300000
+
+Testing on Transit seed 1
+Average cost sum for transit ASes: 99.44995
+
+Testing on Transit seed 2
+Average cost sum for transit ASes: 55.223927
+
+Testing on Transit seed 3
+Average cost sum for transit ASes: 94.076965
+
+Testing on Transit seed 4
+Average cost sum for transit ASes: 74.33732
+
+Testing on Transit seed 5
+Average cost sum for transit ASes: 66.844185
+
+Testing for stub/transit percentage: 0.400000
+
+Testing on Transit seed 1
+Average cost sum for transit ASes: 38.00971
+
+Testing on Transit seed 2
+Average cost sum for transit ASes: 47.560234
+
+Testing on Transit seed 3
+Average cost sum for transit ASes: 72.790184
+
+Testing on Transit seed 4
+Average cost sum for transit ASes: 88.92779
+
+Testing on Transit seed 5
+Average cost sum for transit ASes: 62.49098
+
+Testing for stub/transit percentage: 0.500000
+
+Testing on Transit seed 1
+Average cost sum for transit ASes: 30.203978
+
+Testing on Transit seed 2
+Average cost sum for transit ASes: 42.546585
+
+Testing on Transit seed 3
+Average cost sum for transit ASes: 66.83117
+
+Testing on Transit seed 4
+Average cost sum for transit ASes: 66.14415
+
+Testing on Transit seed 5
+Average cost sum for transit ASes: 47.03358
+
+Testing for stub/transit percentage: 0.600000
+
+Testing on Transit seed 1
+Average cost sum for transit ASes: 31.157122
+
+Testing on Transit seed 2
+Average cost sum for transit ASes: 48.678635
+
+Testing on Transit seed 3
+Average cost sum for transit ASes: 58.73998
+
+Testing on Transit seed 4
+Average cost sum for transit ASes: 64.315674
+
+Testing on Transit seed 5
+Average cost sum for transit ASes: 41.27163
+
+Testing for stub/transit percentage: 0.700000
+
+Testing on Transit seed 1
+Average cost sum for transit ASes: 21.6152
+
+Testing on Transit seed 2
+Average cost sum for transit ASes: 33.93808
+
+Testing on Transit seed 3
+Average cost sum for transit ASes: 36.026524
+
+Testing on Transit seed 4
+Average cost sum for transit ASes: 29.42047
+
+Testing on Transit seed 5
+Average cost sum for transit ASes: 32.617706
+
+Testing for stub/transit percentage: 0.800000
+
+Testing on Transit seed 1
+Average cost sum for transit ASes: 19.045353
+
+Testing on Transit seed 2
+Average cost sum for transit ASes: 52.67638
+
+Testing on Transit seed 3
+Average cost sum for transit ASes: 22.464012
+
+Testing on Transit seed 4
+Average cost sum for transit ASes: 22.701431
+
+Testing on Transit seed 5
+Average cost sum for transit ASes: 26.20234
+
+Testing for stub/transit percentage: 0.900000
+
+Testing on Transit seed 1
+Average cost sum for transit ASes: 14.152772
+
+Testing on Transit seed 2
+Average cost sum for transit ASes: 23.315413
+
+Testing on Transit seed 3
+Average cost sum for transit ASes: 15.392371
+
+Testing on Transit seed 4
+Average cost sum for transit ASes: 18.748213
+
+Testing on Transit seed 5
+Average cost sum for transit ASes: 13.191135
+
+Testing for stub/transit percentage: 1.000000
+
+Testing on Transit seed 1
+Average cost sum for transit ASes: 9.821049
+
+Testing on Transit seed 2
+Average cost sum for transit ASes: 9.821049
+
+Testing on Transit seed 3
+Average cost sum for transit ASes: 9.821049

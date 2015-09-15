@@ -2,6 +2,8 @@ import argparse
 import random
 import math
 
+DEBUG = False
+
 parser = argparse.ArgumentParser(description='generates AStypes for initial experiment')
 parser.add_argument('annotatedData', metavar='annotatedIplane', nargs = 1, help = 'annotated data, generated from annotateIplaneData.py or annotateCAIDAData.py')
 parser.add_argument('outFile', metavar='outputFile', nargs=1, help = 'file to output astypes')
@@ -184,18 +186,21 @@ def largestStub():
     return largestSoFar
     
 parseIplane()
-print '[debug] number of ases: ', len(asMap)
+if DEBUG:
+    print '[debug] number of ases: ', len(asMap)
 largestConnectedComponent = asMap.keys()
 #largestConnectedComponent = largestConnectedComponent()
-print '[debug] largestcc: ', len(largestConnectedComponent)
+if DEBUG:
+    print '[debug] largestcc: ', len(largestConnectedComponent)
 fillStubs(largestConnectedComponent)
 fillTransit(largestConnectedComponent)
 tier1s = computeTier1(largestConnectedComponent)
 tier2s = computeTier2(largestConnectedComponent)
-print 'number of stubs: ',len(stubASes)
-print 'num transits: ' , len(transitASes)
-print 'num tier1s: ', len(tier1s)
-print 'num tier2s: ', len(tier2s)
+if DEBUG:
+    print 'number of stubs: ',len(stubASes)
+    print 'num transits: ' , len(transitASes)
+    print 'num tier1s: ', len(tier1s)
+    print 'num tier2s: ', len(tier2s)
 
 ##################
 #check
@@ -204,7 +209,8 @@ i = 0
 for element in tier1s:
     if element  in stubASes:
         i+=1
-print i        
+if DEBUG:
+    print i        
 
 ###########
 #endcheck
@@ -217,9 +223,10 @@ transits = []
 wiserAS = []
 random.seed(wiserSeed)
 
-tempAS = largestStub() #use largest stub as wiser as
+#tempAS = largestStub() #use largest stub as wiser as
 #print '[debug] number of neighbors largest stub has', len(asMap[tempAS].neighborMap)
-#rNum = random.randrange(0, len(largestConnectedComponent)-1)
+rNum = random.randrange(0, len(stubASes)-1)
+tempAS = stubASes.keys()[rNum]
 #tempAS = largestConnectedComponent[rNum]
 #while tempAS in transits:
 #    rNum = random.randrange(0, len(largestConnectedComponent)-1)
@@ -236,7 +243,7 @@ random.seed(transitSeed)
 #print len(largestConnectedComponent)
 #print 'num transits from ', numTransits, 'percent: ', int(numTransits * (len(largestConnectedComponent) - len(wiserAS)))
 
-transitRange = tier2s #list of transits to grab from, will shrink
+transitRange = transitASes #list of transits to grab from, will shrink
 iterations = int(numTransits * len(transitRange)) #number of transits to
                                                  #add (easiliy modifiable to be from any tier)
 #print iterations
@@ -250,8 +257,23 @@ for i in range(iterations):
     transitRange.pop(rNum)
     transits.append(tempAS)
 
+stubsChosen = []
+stubKeys = stubASes.keys()
+iterations = int(numTransits * (len(stubKeys)-1))
+if DEBUG:
+    print "stub interations: ", iterations
+random.seed(transitSeed)
+for i in range(iterations):
+    rNum = random.randrange(0, len(stubKeys)) #for the stub ases - the announcing as
+    tempAS = stubKeys[rNum]
+    while tempAS in stubsChosen or tempAS in wiserAS:
+        rNum = random.randrange(0, len(stubKeys))
+        tempAS = stubKeys[rNum]
+    stubKeys.pop(rNum)
+    stubsChosen.append(tempAS)
 
 putToOutput(transits, TRANSIT_NUMBER)
+putToOutput(stubsChosen, str(TRANSIT_NUMBER) + " STUB")
 putToOutput(wiserAS, WISER_NUMBER)
 #print transits
 #print wiserAS
