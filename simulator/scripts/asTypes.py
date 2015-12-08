@@ -272,8 +272,8 @@ for i in range(iterations):
     stubKeys.pop(rNum)
     stubsChosen.append(tempAS)
 
-putToOutput(transits, TRANSIT_NUMBER)
-putToOutput(stubsChosen, str(TRANSIT_NUMBER) + " STUB")
+putToOutput(transits, WISER_NUMBER)   #putToOutput(transits, TRANSIT_NUMBER)
+putToOutput(stubsChosen, WISER_NUMBER) #putToOutput(stubsChosen, str(TRANSIT_NUMBER) + " STUB") 
 putToOutput(wiserAS, WISER_NUMBER)
 #print transits
 #print wiserAS

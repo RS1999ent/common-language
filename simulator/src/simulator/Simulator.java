@@ -988,14 +988,110 @@ public class Simulator {
 	} // end function run()
 
 	/**
+		 * Reads input files to figure out topology. Initializes all the ASes
+		 * @param args
+		 */
+		public static void main(String[] args) throws Exception {
+			/*if( args.length != 5 ) {
+				System.err.println("Usage:\n\t java Simulator <topology-file> <link-failure-file> <single-homed-parents-file> <seed-value> <mode>\n");
+				System.exit(-1);
+			}*/
+			
+			ArgumentParser parser = ArgumentParsers.newArgumentParser("Simulator")
+					.defaultHelp(true)
+					.description("Simulator to simulate integrated advertisements and passthroughs");
+			parser.addArgument("ASRelationships").metavar("ASRel").type(String.class);
+			parser.addArgument("ASTypesFile").metavar("ASTypes").type(String.class);
+			parser.addArgument("--IntraDomainFile").metavar("IntraDomain").type(String.class);
+			parser.addArgument("outFile").metavar("file to output results").type(String.class);
+			parser.addArgument("--failLinksFile").metavar("FailLinks").type(String.class);
+			parser.addArgument("--parentsFile").metavar("ParentsFile").type(String.class);
+			parser.addArgument("--seed").required(true).metavar("seed").type(Long.class);
+			parser.addArgument("--sim").required(true).metavar("sim").type(Integer.class);
+			Namespace arguments = null;
+			try{
+	//			System.out.println(parser.parseArgs(args));
+				arguments = parser.parseArgs(args);				
+			}
+			catch(ArgumentParserException e){
+				parser.handleError(e);
+				System.exit(1);
+			}
+				
+			
+			
+			out = new BufferedWriter(new FileWriter("output.log"));
+			outFile = new BufferedWriter(new FileWriter(arguments.getString("outFile")));
+			seedVal = arguments.getLong("seed");
+			String topologyFile = arguments.getString("ASRelationships");
+			//file for AStypes
+			String typeFile = arguments.getString("ASTypesFile");
+			String intraFile = arguments.getString("IntraDomainFile");
+			String linkFile = arguments.getString("--failLinksFile");
+			String parentsFile = arguments.getString("--parentsFile");
+			simMode = arguments.getInt("sim");
+			readTypes(typeFile); //reading types must go before readtopology, otherwise allnodes will be bgp
+			readTopology(topologyFile);
+		//	readIntraDomain(intraFile);
+			//readLinks(linkFile);
+			//readParents(parentsFile);
+			
+			r = new Random(seedVal);
+			trimASMap(largestConnectedComponent()); //trims the AS map to be one connected component
+			numAses = asMap.size();
+			switch(simMode) {
+			case 0:
+		//	    runFCPSimulations();
+			    break;
+	
+			case 1:
+		//	    runFCPRandomSimulations();
+			    break;
+	
+			case 2:
+		//	    runNewRegularSimulations();
+			    break;
+	
+			case 3:
+				iaBasicSimulationStubsOnly();
+			    break;
+	
+			case 4:
+				verificationSimulation();
+			    break;
+	
+			case 5:
+			//    runTAASSimulations();
+				iaBasicSimulationTransitsOnly();
+			    break;
+	
+			case 6:
+				iaBasicSimulation();
+			    break;
+			  
+			case 7:
+	//			System.out.println("Number of connected components: " + numConnectedComponents() + "\n");
+	//			System.out.println("Number of connected components: " + numConnectedComponents() + "\n");
+			//	iaBasicSimulation();
+				iaSumSimulation();
+				break;
+	
+			default:
+			    System.err.println("Invalid simulation mode!");
+			    break;
+			}
+			out.close();
+		}
+
+	/**
 	 * Reads input files to figure out topology. Initializes all the ASes
 	 * @param args
 	 */
-	public static void main(String[] args) throws Exception {
-		/*if( args.length != 5 ) {
+	/*public static void main(String[] args) throws Exception {
+		if( args.length != 5 ) {
 			System.err.println("Usage:\n\t java Simulator <topology-file> <link-failure-file> <single-homed-parents-file> <seed-value> <mode>\n");
 			System.exit(-1);
-		}*/
+		}
 		
 		ArgumentParser parser = ArgumentParsers.newArgumentParser("Simulator")
 				.defaultHelp(true)
@@ -1081,7 +1177,7 @@ public class Simulator {
 		    break;
 		}
 		out.close();
-	}
+	}*/
 
 	/**
 	 * method that figures via breadthfirst search the number of connected components in the 
@@ -1527,6 +1623,7 @@ public class Simulator {
 			if(asTypeDef.get(asMapKey) == AS.WISER){
 				asMap.get(asMapKey).announceSelf();
 				announcedASes.add(asMapKey);
+				monitorASes.add(asMapKey);
 //				System.out.println("[debug] num neighbors of wiser AS: " + asMap.get(asMapKey).neighborMap.size());
 			}
 			else
