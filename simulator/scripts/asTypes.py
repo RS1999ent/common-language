@@ -188,8 +188,8 @@ def largestStub():
 parseIplane()
 if DEBUG:
     print '[debug] number of ases: ', len(asMap)
-largestConnectedComponent = asMap.keys()
-#largestConnectedComponent = largestConnectedComponent()
+#largestConnectedComponent = asMap.keys()
+largestConnectedComponent = largestConnectedComponent()
 if DEBUG:
     print '[debug] largestcc: ', len(largestConnectedComponent)
 fillStubs(largestConnectedComponent)
