@@ -1593,6 +1593,7 @@ public class Simulator {
 	}
 	
 	
+	private static float BATCH_PERCENT = (float) .1; //PERCENT OF ASES TO ANNOUNCE AT A TIME
 	
 	/**
 	 * runs a basic IA simulation
@@ -1616,22 +1617,32 @@ public class Simulator {
 		//Find AS to use as monitor
 		//monitorASes.add((Integer) asMap.keySet().toArray()[r.nextInt(asMap.size())]); //doesn't check for overlap with special ASes, fix later
 		
-		//go through and have all wiser nodes announce themselves
+		//go through and have all wiser nodes announce themselves, only announce some constant at a time, let the sim go.
+		int batchSize = (int) (asTypeDef.size() * BATCH_PERCENT);
+		int counter= 0;
 		for( Integer asMapKey : asTypeDef.keySet())
 		{
-			
+			counter++;
 			if(asTypeDef.get(asMapKey) == AS.WISER){
 				asMap.get(asMapKey).announceSelf();
 				announcedASes.add(asMapKey);
 				monitorASes.add(asMapKey);
 //				System.out.println("[debug] num neighbors of wiser AS: " + asMap.get(asMapKey).neighborMap.size());
 			}
-			else
+			//else
+			//{
+//				monitorASes.add(asMapKey);
+//			}
+			if(batchSize == counter)
 			{
-				monitorASes.add(asMapKey);
+				counter = 0;
+				instrumented = false;
+				run();
+				System.out.println("iteration complete");
 			}
 		}
 //		System.out.println("Number of announced ASes: " + announcedASes.size());
+		//run for any missing ASes
 		instrumented = false;
 		run();
 		
