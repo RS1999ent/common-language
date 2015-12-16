@@ -232,7 +232,7 @@ tempAS = stubASes.keys()[rNum]
 #    rNum = random.randrange(0, len(largestConnectedComponent)-1)
 #    tempAS = largestConnectedComponent[rNum]
 
-wiserAS.append(tempAS)
+#wiserAS.append(tempAS) COMMENTED THIS OUT, ANOUNCING FROM ALL STUBS NOW
 
 
 #going to do percentage
@@ -272,8 +272,13 @@ for i in range(iterations):
     stubKeys.pop(rNum)
     stubsChosen.append(tempAS)
 
-putToOutput(transits, WISER_NUMBER)   #putToOutput(transits, TRANSIT_NUMBER)
-putToOutput(stubsChosen, WISER_NUMBER) #putToOutput(stubsChosen, str(TRANSIT_NUMBER) + " STUB") 
-putToOutput(wiserAS, WISER_NUMBER)
+putToOutput(transits, TRANSIT_NUMBER)
+putToOutput(stubsChosen, WISER_NUMBER) #putToOutput(stubsChosen,
+                                       #str(TRANSIT_NUMBER) + " STUB")
+                                       #this has implications in code,
+                                       #+ "stub" used for monitoring
+                                       #from stubs only
+
+#putToOutput(wiserAS, WISER_NUMBER) #commented this out, we announce from the stubs
 #print transits
 #print wiserAS
