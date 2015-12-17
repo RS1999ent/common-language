@@ -1723,6 +1723,10 @@ public class Simulator {
 //			    System.out.println("iteration START");
 			    instrumented = false;
 			    run();
+			    for(Integer key : asMap.keySet())
+			    {
+			    	asMap.get(key).clearBookKeeping();
+			    }
 			    //System.out.println("iteration complete");
 			}
 		}
@@ -1731,6 +1735,11 @@ public class Simulator {
 		//run for any missing ASes
 		instrumented = false;
 		run();
+		for(Integer key : asMap.keySet())
+		{
+			asMap.get(key).clearBookKeeping();
+		}
+		
 		
 		int costSum = 0;
 		int total = monitorASes.size();

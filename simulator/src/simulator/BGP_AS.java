@@ -1282,6 +1282,14 @@ public class BGP_AS extends AS {
 		}
 		return table;
 	}
+	
+	public void clearBookKeeping(){
+		pendingUpdates.clear();
+		dstRIBHistMap.clear();
+	//	mraiRunning.clear();
+	//	ribIn.clear();
+		super.passThrough.clear();
+	}
 
 
 }

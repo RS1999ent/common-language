@@ -109,7 +109,7 @@ public abstract class AS {
 	// adjacency list for intradomain pop adjacencies. Goes Pop -> hash adjacentpop -> latency
 	HashMap<Integer, HashMap<Integer, Integer>> intraD = new HashMap<Integer, HashMap<Integer, Integer>>();
 	
-	PassThrough passThrough = new PassThrough(); //enable passthroughfunctionality for AS
+	protected PassThrough passThrough = new PassThrough(); //enable passthroughfunctionality for AS
 	
 	/** Mapping of neighbor to relationship */
 	HashMap<Integer, Integer> neighborMap = new HashMap<Integer, Integer>();
@@ -426,5 +426,11 @@ public abstract class AS {
 		return splitProps;
 	}
 
+	
+	/**
+	 * method that clears the bookkeeping structures of an AS to conserve memory
+	 * pendingupdates, dstribhist, ribin, 
+	 */
+	protected abstract void clearBookKeeping();
 
 }

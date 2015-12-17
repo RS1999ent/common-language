@@ -22,6 +22,10 @@ public class PassThrough {
 	public PassThrough() {
 
 	}
+	
+	public void clear(){
+		passThroughDatabase.clear();
+	}
 
 	// attach passthrough information based on an advertisement that is about to
 	// go out
