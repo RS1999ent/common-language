@@ -503,7 +503,7 @@ public class Wiser_AS extends AS {
 	 * 
 	 * @param e The event that is to be handled
 	 */
-	public void handleEvent(Event e) {
+	public synchronized void handleEvent(Event e) {
 		assert(e.eventFor == asn);
 		if(e.eventType == Event.MRAI_EVENT) {
 			int peer = e.timerExpiredForPeer;

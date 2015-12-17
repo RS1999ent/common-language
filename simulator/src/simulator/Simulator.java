@@ -524,21 +524,21 @@ public class Simulator {
 	}
 	
 	public static void changedPath(int as, int dst, IA oldPath, IA newPath) {
-//		System.out.println(as + " " + dst);
-	    switch(simMode) {
-	    case 0:
-	    case 1:
-	    case 5:
-	    case 6:
-	    case 7: //CHANGED
-	    	changedPathLoopCheck(as, dst, oldPath, newPath);
-		break;
+		//		System.out.println(as + " " + dst);
+		switch(simMode) {
+		case 0:
+		case 1:
+		case 5:
+		case 6:
+		case 7: //CHANGED
+			changedPathLoopCheck(as, dst, oldPath, newPath);
+			break;
 
-	    default:
-	    	//changedPathCheck(as, dst, oldPath, newPath);
-	    	changedPathLoopCheck(as, dst, oldPath, newPath);		
-		break;
-	    }
+		default:
+			//changedPathCheck(as, dst, oldPath, newPath);
+			changedPathLoopCheck(as, dst, oldPath, newPath);		
+			break;
+		}
 	}
 
 	public static void changedPathLoopCheck(int as, int dst, IA oldPath, IA newPath) {
@@ -832,6 +832,27 @@ public class Simulator {
 		return allIncompleteUpdates;
 	}
 
+	//thread to have AS asynchronosly process events.
+	public class HandleEventThread implements Runnable
+	{
+		public AS targetAS;
+		public Event e;
+		
+		public HandleEventThread(AS targetAS, Event e)
+		{
+			this.targetAS = targetAS;
+			this.e = e;
+		}
+		@Override
+		public void run() {
+			targetAS.handleEvent(e);
+			
+		}
+		
+	};
+	
+	private static int NUMTHREADS = 16;
+	
 	/**
 	 * This is the main function which runs the simulation. It picks events out of the queue
 	 * and updates the current time, and sends the events to the correct AS to handle.
@@ -887,7 +908,10 @@ public class Simulator {
 					System.err.println("Invalid target AS: " + asn);
 					System.exit(-1);
 				}
+				
+
 				targetAS.handleEvent(e);
+
 				// system is stable once all updates have been processed
 				// however, we want it to run one more flood!
 //				if(numBGPEnqueued == 0 && numUpdatesEnqueued == 0) {
@@ -1593,7 +1617,7 @@ public class Simulator {
 	}
 	
 	
-	private static int BATCH_PERCENT = 50; //PERCENT OF ASES TO ANNOUNCE AT A TIME
+	private static int BATCH_PERCENT = 2; //PERCENT OF ASES TO ANNOUNCE AT A TIME
 	
 	/**
 	 * runs a basic IA simulation
