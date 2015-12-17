@@ -273,7 +273,7 @@ for i in range(iterations):
     stubsChosen.append(tempAS)
 
 putToOutput(transits, TRANSIT_NUMBER)
-#putToOutput(stubsChosen, WISER_NUMBER) #putToOutput(stubsChosen,
+putToOutput(stubsChosen, WISER_NUMBER) #putToOutput(stubsChosen,
                                        #str(TRANSIT_NUMBER) + " STUB")
                                        #this has implications in code,
                                        #+ "stub" used for monitoring

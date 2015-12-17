@@ -29,7 +29,7 @@ import net.sourceforge.argparse4j.inf.Namespace;
  */
 public class Simulator {
 
-	private static final int MRAI_TIMER_VALUE = 30000; // 30 seconds
+	private static final int MRAI_TIMER_VALUE = 0; // 30000 30 seconds
     	private static final int TIER1_THRESHOLD = 50;
     //	private static final int TIER1_THRESHOLD = 0;
 	private static final int MIN_LOOP_DURATION = 500;
@@ -665,12 +665,13 @@ public class Simulator {
 
 	public static void addEvent(Event e) {
 		e.setTieBreaker(tieBreaker++);
-		eventQueue.add(e);
+		synchronized(eventQueue){
+			eventQueue.add(e);
+		}
 		if(e.eventType == Event.MSG_EVENT) {
 			if(e.msg.messageType == Message.UPDATE_MSG || e.msg.messageType == Message.WITHDRAW_MSG) {
 				numUpdatesEnqueued++;
 				numBGPEnqueued++;
-
 			}
 			else if(e.msg.messageType == Message.CONTROL_MSG) {
 				numUpdatesEnqueued++;
@@ -833,11 +834,15 @@ public class Simulator {
 	}
 
 	//thread to have AS asynchronosly process events.
-	public class HandleEventThread implements Runnable
+	public static class HandleEventThread implements Runnable
 	{
 		public AS targetAS;
 		public Event e;
+		public boolean running;
 		
+		public HandleEventThread(){
+			running = false;
+		}
 		public HandleEventThread(AS targetAS, Event e)
 		{
 			this.targetAS = targetAS;
@@ -845,13 +850,17 @@ public class Simulator {
 		}
 		@Override
 		public void run() {
+			running = true;
+			System.out.println("threadstart");
 			targetAS.handleEvent(e);
+			running = false;
+			System.out.println("threadend");
 			
 		}
 		
 	};
 	
-	private static int NUMTHREADS = 16;
+	private static int NUMTHREADS = 1; //specify number of threads for the threadpool of run()
 	
 	/**
 	 * This is the main function which runs the simulation. It picks events out of the queue
@@ -864,19 +873,42 @@ public class Simulator {
 //		HashSet<Short> disconnected = new HashSet<Short>();
 		numUpdateMessages = 0;
 		numWithdrawMessages = 0;
+		HandleEventThread[] threadPool = new HandleEventThread[NUMTHREADS]; 
+		for(int i = 0; i < NUMTHREADS; i++)
+		{
+			threadPool[i] =  new HandleEventThread();
+		}
+		boolean slept = false; //have we gotten to an empty event queue once and slept?
 		while(true) {
 		//	if(eventQueue.size() % 100 == 0)
 			//	System.out.println("eventqueue size: " + eventQueue.size());
-			Event e = eventQueue.poll();
+			Event e = null;
+			synchronized(eventQueue){ //get lock on eventQueue
+			//	System.out.println(eventQueue.size());
+				e = eventQueue.poll();
+			}
+			
 			if( e == null) {
 				// system is in a stable state
 				// however, this might not happen if we have snapshot messages periodically
-//				System.out.println("Queue Empty!");
-				return;
+				//				System.out.println("Queue Empty!");
+				if(!slept){ //if we get here, try sleeping to allow threads to finish if we haven't already done so.
+					try {
+						Thread.sleep(4000);
+					} catch (InterruptedException e1) {
+						// TODO Auto-generated catch block
+						e1.printStackTrace();
+					}
+					slept = true;
+				}
+				else{ //we slept once and no new thread have been added since, we're done
+					return;
+				}
 
 
 			}
-			else {
+			else { //got a thread, make sure slept is false
+				slept = false;
 				// the message is printed first and then processed!
 				if(e.eventType == Event.MSG_EVENT) {
 					debug(e.toString());
@@ -909,7 +941,25 @@ public class Simulator {
 					System.exit(-1);
 				}
 				
-
+				//get a thread off the thread pool, continue looping until a thread is not running
+				boolean foundThread = false;
+				HandleEventThread availableThread = null;
+				while(!foundThread)
+				{
+					for(int i = 0; i < NUMTHREADS; i++)
+					{
+						availableThread = threadPool[i];
+						if(!availableThread.running) //found a thread that isn't running
+						{
+							foundThread = true;
+							break; //break
+						}
+						
+					}
+				}
+			//	availableThread.e = e;
+			//	availableThread.targetAS = targetAS;
+			//	new Thread(availableThread).start();
 				targetAS.handleEvent(e);
 
 				// system is stable once all updates have been processed
