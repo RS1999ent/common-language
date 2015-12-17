@@ -29,7 +29,7 @@ import net.sourceforge.argparse4j.inf.Namespace;
  */
 public class Simulator {
 
-	private static final int MRAI_TIMER_VALUE = 0; // 30000 30 seconds
+    private static final int MRAI_TIMER_VALUE = 30000; //30 seconds
     	private static final int TIER1_THRESHOLD = 50;
     //	private static final int TIER1_THRESHOLD = 0;
 	private static final int MIN_LOOP_DURATION = 500;
