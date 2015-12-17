@@ -1719,7 +1719,7 @@ public class Simulator {
 			if(counter == batchSize)
 			{	
 			    counter = 0;			    
-			    System.out.printf("\r%i", globalCounter);
+			    System.out.printf("\r%d", globalCounter);
 //			    System.out.println("iteration START");
 			    instrumented = false;
 			    run();
