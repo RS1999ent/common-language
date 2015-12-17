@@ -1593,7 +1593,7 @@ public class Simulator {
 	}
 	
 	
-	private static float BATCH_PERCENT = (float) .1; //PERCENT OF ASES TO ANNOUNCE AT A TIME
+	private static int BATCH_PERCENT = 50; //PERCENT OF ASES TO ANNOUNCE AT A TIME
 	
 	/**
 	 * runs a basic IA simulation
@@ -1634,17 +1634,19 @@ public class Simulator {
 		}
 		
 		//go through and have all wiser nodes announce themselves, only announce some constant at a time, let the sim go.
-		int batchSize = (int) (asTypeDef.size() * BATCH_PERCENT);
+		int batchSize = BATCH_PERCENT;//(int) (asTypeDef.size() * BATCH_PERCENT);
 		int counter= 0;
 		for(int i = 0; i < announcedASes.size(); i++)
 		{
 			counter++; 
 			asMap.get(announcedASes.get(i)).announceSelf(); //announce an AS off our announced list			
 			if(counter == batchSize)
-			{				
-				instrumented = false;
-				run();
-				System.out.println("iteration complete");
+			{	
+			    counter = 0;
+			    System.out.println("iteration START");
+			    instrumented = false;
+			    run();
+			    System.out.println("iteration complete");
 			}
 		}
 		
@@ -2965,13 +2967,13 @@ public class Simulator {
 
 	public static void debug(String str){
 	    if(true) return;
-		try {
-			out.write(str);
-			out.newLine();
-			out.flush();
-		} catch (IOException e) {
-			e.printStackTrace();
-		}
+	    try {
+		out.write(str);
+		out.newLine();
+		out.flush();
+	    } catch (IOException e) {
+		e.printStackTrace();
+	    }
 	}
 
 	/**
