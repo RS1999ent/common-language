@@ -1710,17 +1710,20 @@ public class Simulator {
 		//go through and have all wiser nodes announce themselves, only announce some constant at a time, let the sim go.
 		int batchSize = BATCH_PERCENT;//(int) (asTypeDef.size() * BATCH_PERCENT);
 		int counter= 0;
+		int globalCounter = 0;
 		for(int i = 0; i < announcedASes.size(); i++)
 		{
 			counter++; 
+			globalCounter++;
 			asMap.get(announcedASes.get(i)).announceSelf(); //announce an AS off our announced list			
 			if(counter == batchSize)
 			{	
-			    counter = 0;
-			    System.out.println("iteration START");
+			    counter = 0;			    
+			    System.out.printf("\r%i", globalCounter);
+//			    System.out.println("iteration START");
 			    instrumented = false;
 			    run();
-			    System.out.println("iteration complete");
+			    //System.out.println("iteration complete");
 			}
 		}
 		
