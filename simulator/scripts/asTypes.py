@@ -2,7 +2,7 @@ import argparse
 import random
 import math
 
-DEBUG = False
+DEBUG = 1
 
 parser = argparse.ArgumentParser(description='generates AStypes for initial experiment')
 parser.add_argument('annotatedData', metavar='annotatedIplane', nargs = 1, help = 'annotated data, generated from annotateIplaneData.py or annotateCAIDAData.py')
