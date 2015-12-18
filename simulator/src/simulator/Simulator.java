@@ -2979,7 +2979,7 @@ public class Simulator {
 			int as1 = Integer.parseInt(token[0]);
 			int as2 = Integer.parseInt(token[1]);
 			int relation = Integer.parseInt(token[2]);
-			int latency = Integer.parseInt(token[3]);
+			int latency = Math.round(Float.parseFloat(token[3])); //working with bandwidth maybe temporary, so parse float Integer.parseInt(token[3]);
 			int pop1 = Integer.parseInt(token[4]);
 			int pop2 = Integer.parseInt(token[5]);
 //			int as1Type = Integer.parseInt(token[4]);
