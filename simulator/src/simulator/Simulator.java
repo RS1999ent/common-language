@@ -1711,7 +1711,7 @@ public class Simulator {
 		int batchSize = BATCH_PERCENT;//(int) (asTypeDef.size() * BATCH_PERCENT);
 		int counter= 0;
 		int globalCounter = 0;
-		for(int i = 0; i < announcedASes.size(); i++)
+		for(int i = 0; i < announcedASes.size() && i < 4; i++)
 		{
 			counter++; 
 			globalCounter++;
@@ -2979,7 +2979,7 @@ public class Simulator {
 			int as1 = Integer.parseInt(token[0]);
 			int as2 = Integer.parseInt(token[1]);
 			int relation = Integer.parseInt(token[2]);
-			int latency = Math.round(Float.parseFloat(token[3])); //working with bandwidth maybe temporary, so parse float Integer.parseInt(token[3]);
+			int latency = Math.round((1/Float.parseFloat(token[3])) * 100); //working with bandwidth maybe temporary, so parse float Integer.parseInt(token[3]);
 			int pop1 = Integer.parseInt(token[4]);
 			int pop2 = Integer.parseInt(token[5]);
 //			int as1Type = Integer.parseInt(token[4]);
