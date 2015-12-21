@@ -665,9 +665,8 @@ public class Simulator {
 
 	public static void addEvent(Event e) {
 		e.setTieBreaker(tieBreaker++);
-		synchronized(eventQueue){
-			eventQueue.add(e);
-		}
+		eventQueue.add(e);
+		
 		if(e.eventType == Event.MSG_EVENT) {
 			if(e.msg.messageType == Message.UPDATE_MSG || e.msg.messageType == Message.WITHDRAW_MSG) {
 				numUpdatesEnqueued++;
@@ -873,26 +872,25 @@ public class Simulator {
 //		HashSet<Short> disconnected = new HashSet<Short>();
 		numUpdateMessages = 0;
 		numWithdrawMessages = 0;
-		HandleEventThread[] threadPool = new HandleEventThread[NUMTHREADS]; 
+/*		HandleEventThread[] threadPool = new HandleEventThread[NUMTHREADS]; 
 		for(int i = 0; i < NUMTHREADS; i++)
 		{
 			threadPool[i] =  new HandleEventThread();
-		}
+		}*/
 		boolean slept = false; //have we gotten to an empty event queue once and slept?
 		while(true) {
 		//	if(eventQueue.size() % 100 == 0)
 			//	System.out.println("eventqueue size: " + eventQueue.size());
-			Event e = null;
-			synchronized(eventQueue){ //get lock on eventQueue
+	//		synchronized(eventQueue){ //get lock on eventQueue
 			//	System.out.println(eventQueue.size());
-				e = eventQueue.poll();
-			}
+			Event e = eventQueue.poll();
+	//		}
 			
 			if( e == null) {
 				// system is in a stable state
 				// however, this might not happen if we have snapshot messages periodically
 				//				System.out.println("Queue Empty!");
-				if(!slept){ //if we get here, try sleeping to allow threads to finish if we haven't already done so.
+			/*	if(!slept){ //if we get here, try sleeping to allow threads to finish if we haven't already done so.
 					try {
 						Thread.sleep(4000);
 					} catch (InterruptedException e1) {
@@ -903,8 +901,8 @@ public class Simulator {
 				}
 				else{ //we slept once and no new thread have been added since, we're done
 					return;
-				}
-
+				}*/
+				return;
 
 			}
 			else { //got a thread, make sure slept is false
@@ -944,7 +942,7 @@ public class Simulator {
 				//get a thread off the thread pool, continue looping until a thread is not running
 				boolean foundThread = false;
 				HandleEventThread availableThread = null;
-				while(!foundThread)
+			/*	while(!foundThread)
 				{
 					for(int i = 0; i < NUMTHREADS; i++)
 					{
@@ -956,7 +954,7 @@ public class Simulator {
 						}
 						
 					}
-				}
+				}*/
 			//	availableThread.e = e;
 			//	availableThread.targetAS = targetAS;
 			//	new Thread(availableThread).start();
