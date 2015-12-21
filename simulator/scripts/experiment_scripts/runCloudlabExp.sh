@@ -1,5 +1,5 @@
 #!/bin/bash
-javac -g -cp ../../../deps/argparse4j-0.6.0.jar ../../src/integratedAdvertisement/*.java ../../src/simulator/*.java
+#javac -g -cp ../../../deps/argparse4j-0.6.0.jar ../../src/integratedAdvertisement/*.java ../../src/simulator/*.java
 
 java -Xmx120000M -Dcom.sun.management.jmxremote.port=9999 \
 -Dcom.sun.management.jmxremote.authenticate=false \
