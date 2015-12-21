@@ -2,7 +2,7 @@ import argparse
 import random
 import math
 
-DEBUG = 1
+DEBUG = 0
 
 parser = argparse.ArgumentParser(description='generates AStypes for initial experiment')
 parser.add_argument('annotatedData', metavar='annotatedIplane', nargs = 1, help = 'annotated data, generated from annotateIplaneData.py or annotateCAIDAData.py')
@@ -259,7 +259,8 @@ for i in range(iterations):
 
 stubsChosen = []
 stubKeys = stubASes.keys()
-iterations = int(numTransits * (len(stubKeys)-1))
+#iterations = int(numTransits * (len(stubKeys)-1)) changing so all stubs chosen
+iterations = int(1 * (len(stubKeys)-1)) 
 if DEBUG:
     print "stub interations: ", iterations
 random.seed(transitSeed)
