@@ -29,16 +29,15 @@ public class IA {
 	// hash map of paths. should be keyed on the pathToKey method in this class
 	private HashMap<String, LinkedList<Integer>> paths = new HashMap<String, LinkedList<Integer>>();
 
-	// stores path attributes. should be keyed on pathToKey method
-	private HashMap<String, Values> pathValues = new HashMap<String, Values>();
 
+	
 	private RootCause rc; // stores root cause of this integrated advertisement
 	
-	//used to simulate the information that three adverts will contain for wiser nodes
+	//used to simulate the information that three adverts will contain for different PoPs
 	//inforamtion about the intradomain costs for each pop pair needs to be in single advert
 	//so we need this
 	//should be cleared after use, is used for processing only
-	public HashMap<AS.PoPTuple, Integer> popCosts = new HashMap<AS.PoPTuple, Integer>();
+	public HashMap<AS.PoPTuple, IAInfo> popCosts = new HashMap<AS.PoPTuple, IAInfo>();
 
 	//bookkeepign for true cost of as path. like the popcosts, only all nodes use this for true cost updates
 	//should be cleared after use used for local processing only.  This represents the intradomain cost that must be added if 
@@ -106,10 +105,10 @@ public class IA {
 		// we might be able to just call pathValues.clone(). Since it doesn't,
 		// just
 		// use Values copy constructor
-		for (String pathValuesKey : toCopy.pathValues.keySet()) {
+	/*	for (String pathValuesKey : toCopy.pathValues.keySet()) {
 			Values copyValues = new Values(toCopy.pathValues.get(pathValuesKey));
 			pathValues.put(pathValuesKey, copyValues);
-		}
+		}*/
 		// pathValues = (HashMap<String, Values>) toCopy.pathValues.clone();
 		rc = new RootCause(toCopy.rc.rcAsn, toCopy.rc.updateNum,
 				toCopy.rc.getDest());
@@ -125,7 +124,7 @@ public class IA {
 		String key = pathToKey(legacyPath);
 		getPath().addFirst(as);
 		paths.remove(key);
-		pathValues.remove(key);
+		removePathAttributes(legacyPath);//pathValues.remove(key);
 		paths.put(pathToKey(legacyPath), legacyPath);
 
 	}
@@ -244,9 +243,9 @@ public class IA {
 	 *            the path to get all path attributes for
 	 * @return the path attributes for that path (null if none exist)
 	 */
-	public Values getPathAttributes(LinkedList<Integer> path) {
+/*	public Values getPathAttributes(LinkedList<Integer> path) {
 		return pathValues.get(pathToKey(path));
-	}
+	}*/
 
 	// returns null if a path has no path attributes yet
 	/**
@@ -256,8 +255,8 @@ public class IA {
 	 *            the key of the path to get the values for
 	 * @return the path values for a given path key (null if none)
 	 */
-	public Values getPathAttributes(String key) {
-		return pathValues.get(key);
+	public Values getPathAttributes(PoPTuple tuple, String key) {
+		return popCosts.get(tuple).pathValues.get(key);
 	}
 
 	/**
@@ -268,34 +267,11 @@ public class IA {
 	 * @param path
 	 *            the path for the values to be associated with
 	 */
-	public void setPathAttributes(Values value, LinkedList<Integer> path) {
-		pathValues.put(pathToKey(path), value);
+	public void setPathAttributes(PoPTuple tuple, Values value, LinkedList<Integer> path) {
+		popCosts.get(tuple).pathValues.put(pathToKey(path), value);
 	}
 
-	/**
-	 * method that sets the path attribute for a particular protocol with the
-	 * associated path
-	 * 
-	 * @param setBytes
-	 *            the path attribute associated with the protocol
-	 * @param protocol
-	 *            the protocol these attributes are associated with
-	 * @param path
-	 *            the path the path attributes are associated with
-	 */
-	public void setProtocolPathAttribute(byte[] setBytes, Protocol protocol,
-			LinkedList<Integer> path) {
-		// get path attributes based on key of path, if null, create one for the
-		// protocol.
-		Values pathAttributes = pathValues.get(pathToKey(path));
-		if (pathAttributes == null) {
-			pathAttributes = new Values();
-		}
-		pathAttributes.putValue(protocol, setBytes.clone());
-		pathValues.put(pathToKey(path), pathAttributes);
-	}
-
-	// removes the path attributes of the passed in path
+		// removes the path attributes of the passed in path
 	/**
 	 * method that removes all path attributes associated with a path
 	 * 
@@ -305,28 +281,18 @@ public class IA {
 	public void removePathAttributes(LinkedList<Integer> path) {
 		// remove pathValues entrie based on the corresponding key of the path
 		// (with pathToKey)
-		pathValues.remove(pathToKey(path));
-	}
-
-	/**
-	 * method to get the path attributes of a protocol associated with a path
-	 * 
-	 * @param protocol
-	 *            - the protocol to get the attribtues from
-	 * @param path
-	 *            the path these attributes are associated with
-	 * @return the path attribute associated with the protocol
-	 */
-	public byte[] getProtocolPathAttribute(Protocol protocol,
-			LinkedList<Integer> path) {
-		if (pathValues.containsKey(pathToKey(path)))
-			return pathValues.get(pathToKey(path)).getValue(protocol);
-		else {
-			byte arr[] = new byte[1];
-			arr[0] = (byte) 0xFF;
-			return arr;
+		
+		//removes pathvalues form all points of presence in advertisement
+		for(IAInfo values : popCosts.values())
+		{
+			values.pathValues.remove(IA.pathToKey(path));
 		}
-
+		//pathValues.remove(IA.pathToKey(path));
 	}
+	
+
+
+
+
 
 }

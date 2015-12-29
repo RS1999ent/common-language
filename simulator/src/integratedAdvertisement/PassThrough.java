@@ -6,6 +6,8 @@ package integratedAdvertisement;
 import java.util.HashMap;
 import java.util.LinkedList;
 
+import simulator.AS.PoPTuple;
+
 /**
  * Class that holds passthrough information and attaches passthrough information
  * to advertisements
@@ -17,7 +19,7 @@ public class PassThrough {
 
 	// keyed on pathTokey. links to aggregated values that were received. IA
 	// value contains info for a single path
-	HashMap<String, IA> passThroughDatabase = new HashMap<String, IA>();
+	HashMap<String, IAInfo> passThroughDatabase = new HashMap<String, IAInfo>();
 
 	public PassThrough() {
 
@@ -39,7 +41,7 @@ public class PassThrough {
 	 * @return advertisement with passthrough information attached, this is
 	 *         redundant given how java does references
 	 */
-	public IA attachPassthrough(IA advertisement) {
+	public IA attachPassthrough(IA advertisement, PoPTuple chosenTuple) {
 		// for each path, attach values from passthroughdatabase
 		for (String pathKey : advertisement.getPathKeys()) {
 			// grab the path, and attach passthrough informatin based on next
@@ -54,9 +56,9 @@ public class PassThrough {
 			// only does it for path attributes, can be extended to do edge and
 			// as descriptors
 			if (passThroughDatabase.containsKey(passThroughPathKey)) {
-				IA passThroughInfo = passThroughDatabase
+				IAInfo passThroughInfo = passThroughDatabase
 						.get(passThroughPathKey);
-				Values val1 = advertisement.getPathAttributes(pathKey);
+				Values val1 = advertisement.getPathAttributes(chosenTuple, pathKey);
 				// if there was no path attribute values set for the
 				// advertisement, then make a new values
 				if (val1 == null) {
@@ -66,7 +68,7 @@ public class PassThrough {
 						.getPathAttributes(passThroughPathKey);
 				Values mergedVal = mergeValues(val1, val2);
 
-				advertisement.setPathAttributes(mergedVal,
+				advertisement.setPathAttributes(chosenTuple, mergedVal,
 						advertisement.getPath(pathKey));
 
 			}
