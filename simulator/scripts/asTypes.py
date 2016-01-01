@@ -10,6 +10,7 @@ parser.add_argument('outFile', metavar='outputFile', nargs=1, help = 'file to ou
 parser.add_argument('--numTransits', metavar='numberTransits', help = 'number of transits to specify (random', default = .1)
 parser.add_argument('--seedTransit', metavar='rgenerator seed',  help = 'seed for random number generator for generating transits', default=1)
 parser.add_argument('--seedWiser', metavar='seed', help = 'seed for random number generator for generating wiser', default=2)
+parser.add_argument('--sim', metavar='sim', help = 'what type are transits and stubs (501=wiser, 504 = sbgp)', default=501)
 
 #open files based on arguments
 args = parser.parse_args()
@@ -19,6 +20,8 @@ outFile = open(args.outFile[0], 'w')
 #number annotation for node types.  This is wellknown value found in the simulator AS.java file
 WISER_NUMBER = 501
 TRANSIT_NUMBER = 502
+SBGP_NUMBER = 504
+SBGP_TRANSIT = 503
 
 #relatinship constants
 CUSTOMER_PROVIDER = -1
@@ -38,6 +41,9 @@ transitSeed = args.seedTransit
 
 #number of transits
 numTransits =  float(args.numTransits)
+
+#simtype
+sim = args.sim;
 
 #print numTransits
 
@@ -232,7 +238,7 @@ tempAS = stubASes.keys()[rNum]
 #    rNum = random.randrange(0, len(largestConnectedComponent)-1)
 #    tempAS = largestConnectedComponent[rNum]
 
-wiserAS.append(tempAS) # COMMENTED THIS OUT, ANOUNCING FROM ALL STUBS NOW
+#wiserAS.append(tempAS) # COMMENTED THIS OUT, ANOUNCING FROM ALL STUBS NOW
 
 
 #going to do percentage
@@ -272,14 +278,18 @@ for i in range(iterations):
         tempAS = stubKeys[rNum]
     stubKeys.pop(rNum)
     stubsChosen.append(tempAS)
-
-putToOutput(transits, TRANSIT_NUMBER)
-putToOutput(stubsChosen, WISER_NUMBER) #putToOutput(stubsChosen,
+    
+if int(sim) == WISER_NUMBER:
+    putToOutput(transits, TRANSIT_NUMBER)
+    putToOutput(stubsChosen, WISER_NUMBER) #putToOutput(stubsChosen,
                                        #str(TRANSIT_NUMBER) + " STUB")
                                        #this has implications in code,
                                        #+ "stub" used for monitoring
                                        #from stubs only
-
-putToOutput(wiserAS, WISER_NUMBER) #commented this out, we announce from the stubs
+if SBGP_NUMBER == int(sim):
+    putToOutput(transits, SBGP_TRANSIT)
+    putToOutput(stubsChosen, SBGP_NUMBER)
+    
+#putToOutput(wiserAS, WISER_NUMBER) #commented this out, we announce from the stubs
 #print transits
 #print wiserAS

@@ -1169,20 +1169,20 @@ public class Wiser_AS extends AS {
 		}
 		
 		//always choose low cost paths with wiser nodes over low cost paths that are passed through
-		if(p1Tuple != null || p2Tuple != null)
+		/*if(p1Tuple != null || p2Tuple != null)
 		{
 			if(p1Tuple != null && p2Tuple == null)
 			{
-				/*String[] p2wiserProps = getWiserProps(p2);
+				String[] p2wiserProps = getWiserProps(p2);
 				int p1TotalCost = neighborLatency.get(p1.getFirstHop()).get(p1Tuple) + p1LowestCost;
-				int p2Cost = Integer.valueOf(p2wiserProps[0]) / Integer.valueOf(p2wiserProps[1]);*/
+				int p2Cost = Integer.valueOf(p2wiserProps[0]) / Integer.valueOf(p2wiserProps[1]);
 				return true;
 			}
 			else if(p1Tuple == null && p2Tuple != null)
 			{
-	/*			String[] p1wiserProps = getWiserProps(p1);
+				String[] p1wiserProps = getWiserProps(p1);
 				int p1Cost = Integer.valueOf(p1wiserProps[0]) / Integer.valueOf(p1wiserProps[1]);
-				int p2TotalCost = neighborLatency.get(p2.getFirstHop()).get(p2Tuple) + p2LowestCost;*/
+				int p2TotalCost = neighborLatency.get(p2.getFirstHop()).get(p2Tuple) + p2LowestCost;
 				return false;
 			}
 			else
@@ -1191,7 +1191,7 @@ public class Wiser_AS extends AS {
 				int p2TotalCost = p2LowestCost;//neighborLatency.get(p2.getFirstHop()).get(p2Tuple) + p2LowestCost;
 				return p1TotalCost < p2TotalCost;
 			}
-		}
+		}*/
 		
 		//if there is a propagated wiser cost, then we will choose one of them
 		//this is a very coarse policy with regards to this, but it can be changed later

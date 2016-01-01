@@ -292,10 +292,10 @@ public class BGP_AS extends AS {
 				trueCostInc += wisercost;
 				if(p.popCosts.get(advertisementTuple) == null) 
 				{
-					System.out.println("there is no point of presence from them to us in advertisement, shouldn't happen");
+	//				System.out.println("there is no point of presence from them to us in advertisement, shouldn't happen");
 				}
 				if(wisercost == 9999){
-					System.out.println("bgp_as wisercost 9999");
+	//				System.out.println("bgp_as wisercost 9999");
 				}
 				
 				String[] wiserProps = getWiserProps(p);
@@ -321,7 +321,7 @@ public class BGP_AS extends AS {
 				PoPTuple advertisementTuple = new PoPTuple(tupleChosen.pop2, tupleChosen.pop1);
 				if(p.truePoPCosts.get(advertisementTuple) == null)
 				{
-					System.out.println("bgp_as, no point of presence from them to us, shouldn't happen");
+//					System.out.println("bgp_as, no point of presence from them to us, shouldn't happen");
 				}
 				else{
 					//		System.out.println("HERE");
@@ -333,7 +333,7 @@ public class BGP_AS extends AS {
 			newPath.setTrueCost(newPath.getTrueCost() + trueCostInc);
 		}
 
-		
+		newPath.secure = false;
 		passThrough.attachPassthrough(newPath); //attach passthrough info before sending to neighbors
 		if(nhType == PROVIDER || nhType == PEER) { // announce it only to customers .. and to nextHop in the path 
 			for(int i=0; i<customers.size(); i++) {
