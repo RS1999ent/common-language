@@ -1832,14 +1832,18 @@ public class Simulator {
 		//run for any missing ASes
 		instrumented = false;
 		run();
+//		monitorASes.clear(); //REMOVE LATER, ADDING ALL MONITOR ASES
 		for(Integer key : asMap.keySet())
 		{
 			asMap.get(key).clearBookKeeping();
-		}
-		
+	//		monitorASes.add(key); //ADDING ALL MONITOR ASES, REMOVE LATER
+		}		
 		
 		int costSum = 0;
+		int totalRIBSize = 0;
 		int total = monitorASes.size();
+		int totalBestPathNodes = 0;
+		int bestpathTruecost = 0;
 		//for transit ASes only, see the sum of received paths
 		for(Integer as : monitorASes)
 		{
@@ -1861,25 +1865,32 @@ public class Simulator {
 	//					lowestCost = compareAS.neighborLatency.get(neighbor);
 	//				}
 	//			}
+				if(monitoredAS.bestPath.get(announcedAS) != null)
+				{
+					totalBestPathNodes+= monitoredAS.bestPath.get(announcedAS).getPath().size();
+					bestpathTruecost += monitoredAS.bestPath.get(announcedAS).getTrueCost();	// 
+				}	// 
+					// 
 				//System.out.println("[DEBUG] lowest cost: " + lowestCost);
 				// see if monitored AS has that path in the RIB_in, //if it doesn't have a path, that means policy
 				//disconnection, don't include it in our percentage.
-				if (monitoredAS.ribIn.get(announcedAS) != null) {
-					for (IA path : monitoredAS.ribIn.get(announcedAS).values()) {
-						// all paths should have wiser information in them
-						byte[] wiserBytes = path.getProtocolPathAttribute(
-								new Protocol(AS.WISER), path.getPath());
-						String wiserProps = null;
-						int wiserCost = 0;
-						int normalization = 1;
+				if (monitoredAS.ribIn.get(announcedAS) != null) {	// 
+					totalRIBSize += monitoredAS.ribIn.get(announcedAS).size();	// 
+					for (IA path : monitoredAS.ribIn.get(announcedAS).values()) {	// 
+//not true						// all paths should have wiser information in them
+						/*byte[] wiserBytes = path.getProtocolPathAttribute(	// 
+								new Protocol(AS.WISER), path.getPath());	// 
+						String wiserProps = null;	// 
+						int wiserCost = 0;	// 
+						int normalization = 1;	// 
 						// if ther is wiser props
-						if (wiserBytes[0] != (byte) 0xFF) {
-							try {
+						if (wiserBytes[0] != (byte) 0xFF) {	// 
+							try {	// 
 								// fill them into our variables
-								wiserProps = new String(wiserBytes, "UTF-8");
-								String[] split = wiserProps.split("\\s+");
-								wiserCost = Integer.valueOf(split[0]);
-								normalization = Integer.valueOf(split[1]);
+								wiserProps = new String(wiserBytes, "UTF-8");	// 
+								String[] split = wiserProps.split("\\s+");	// 
+								wiserCost = Integer.valueOf(split[0]);	// 
+								normalization = Integer.valueOf(split[1]);	// 
 							} catch (UnsupportedEncodingException e) {
 								// TODO Auto-generated catch block
 								e.printStackTrace();
@@ -1888,7 +1899,7 @@ public class Simulator {
 							if(!monitoredAS.neighborMap.containsKey(announcedAS))
 								System.out.println("[DEBUG] NO WISER PROPS FOR: "
 									+ announcedAS);
-						}
+						}*/
 						
 						costSum += path.getTrueCost();
 						
@@ -1919,6 +1930,9 @@ public class Simulator {
 		}
 		
 		System.out.println("Average cost sum for transit ASes: " + String.valueOf((float) costSum/total));
+		System.out.println("totalRIbsize: " + totalRIBSize);
+		System.out.println("totla bestpath nodes: " + totalBestPathNodes);
+		System.out.println("totla bestpath tcost: " + bestpathTruecost );
 	}
 	/**
 	 * runs a basic IA simulation

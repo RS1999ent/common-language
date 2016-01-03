@@ -325,6 +325,7 @@ public class BGP_AS extends AS {
 				}
 				else{
 					//		System.out.println("HERE");
+		//			System.out.println("tpopcosts: " + p.truePoPCosts.get(advertisementTuple));
 					trueCostInc += p.truePoPCosts.get(advertisementTuple);
 				}
 				//		System.out.println("true cost inc: " + trueCostInc);
@@ -1083,6 +1084,12 @@ public class BGP_AS extends AS {
 				return false;
 			}
 			// else .. break tie using BGP_AS number
+			else if (p1.getFirstHop() < p2.getFirstHop())
+			{
+				return true;
+			}
+				
+			
 		}
 		return false;
 	}
@@ -1285,7 +1292,7 @@ public class BGP_AS extends AS {
 	
 	public void clearBookKeeping(){
 		pendingUpdates.clear();
-		dstRIBHistMap.clear();
+	//	dstRIBHistMap.clear();
 	//	mraiRunning.clear();
 	//	ribIn.clear();
 		super.passThrough.clear();
