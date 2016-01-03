@@ -321,7 +321,7 @@ public class BGP_AS extends AS {
 				PoPTuple advertisementTuple = new PoPTuple(tupleChosen.pop2, tupleChosen.pop1);
 				if(p.truePoPCosts.get(advertisementTuple) == null)
 				{
-//					System.out.println("bgp_as, no point of presence from them to us, shouldn't happen");
+					System.out.println("bgp_as, no point of presence from them to us, shouldn't happen");
 				}
 				else{
 					//		System.out.println("HERE");

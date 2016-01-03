@@ -1087,8 +1087,38 @@ public class Wiser_AS extends AS {
 		// and in case of a tie, shortest path length
 		// and then break tie by lowest BGP_AS number for next hop
 
-		
 		if(p2 == null || p2.getPath() == null) 
+			return true;
+		if(p1 == null || p1.getPath() == null)
+			return false;
+
+		int p1nh = p1.getFirstHop();
+		int p2nh = p2.getFirstHop();
+		
+		int p1nhType = neighborMap.get(p1nh);
+		int p2nhType = neighborMap.get(p2nh);
+
+		if( p1nhType < p2nhType ) { //
+			return true;
+		}
+		else if(p1nhType > p2nhType) {
+			return false;
+		}
+		else { // both are similar, so look at path length
+			if(p1.getPath().size() < p2.getPath().size()) {
+				return true;
+			}
+			else if( p1.getPath().size() > p2.getPath().size() ) {
+				return false;
+			}
+			// else .. break tie using BGP_AS number
+		}
+		return false;
+		
+////////////////
+// BEGIN BLOCK/
+/////////////////		
+	/*	if(p2 == null || p2.getPath() == null) 
 			return true;
 		if(p1 == null || p1.getPath() == null)
 			return false;
@@ -1109,7 +1139,7 @@ public class Wiser_AS extends AS {
 		int p1Normalization = p1WiserProps != null ? Integer.valueOf(p1WiserProps[1]) : 0; //pull normalization out, if the advert has one
 		int p2Normalization = p2WiserProps != null ? Integer.valueOf(p2WiserProps[1]) : 0; //pull normalization out, if the advert has one
 
-		/*if(p1WiserBytes[0] != (byte) 0xFF)
+		if(p1WiserBytes[0] != (byte) 0xFF)
 		{
 			try {
 				p1WiserProps = new String(p1WiserBytes, "UTF-8");
@@ -1126,7 +1156,7 @@ public class Wiser_AS extends AS {
 				// TODO Auto-generated catch block
 				e.printStackTrace();
 			}
-		}*/
+		}
 		
 		//if we are talking to a wiser node for path 1, then popCosts will have some elements in it, work with those
 		int p1LowestCost = Integer.MAX_VALUE;
@@ -1169,7 +1199,7 @@ public class Wiser_AS extends AS {
 		}
 		
 		//always choose low cost paths with wiser nodes over low cost paths that are passed through
-		/*if(p1Tuple != null || p2Tuple != null)
+		if(p1Tuple != null || p2Tuple != null)
 		{
 			if(p1Tuple != null && p2Tuple == null)
 			{
@@ -1191,7 +1221,7 @@ public class Wiser_AS extends AS {
 				int p2TotalCost = p2LowestCost;//neighborLatency.get(p2.getFirstHop()).get(p2Tuple) + p2LowestCost;
 				return p1TotalCost < p2TotalCost;
 			}
-		}*/
+		}
 		
 		//if there is a propagated wiser cost, then we will choose one of them
 		//this is a very coarse policy with regards to this, but it can be changed later
@@ -1207,14 +1237,14 @@ public class Wiser_AS extends AS {
 			}
 			else
 			{
-/*				String[] p1Props = p1WiserProps;
+				String[] p1Props = p1WiserProps;
 				String[] p2Props = p2WiserProps;
 				
 				int p1Wisercost = Integer.valueOf(p1Props[0]);
 				int p1Normalization = Integer.valueOf(p1Props[1]);
 				
 				int p2Wisercost = Integer.valueOf(p2Props[0]);
-				int p2Normalization = Integer.valueOf(p2Props[1]);*/
+				int p2Normalization = Integer.valueOf(p2Props[1]);
 				
 				return p1WiserCost/p1Normalization < p2WiserCost/p2Normalization;
 			}
@@ -1236,7 +1266,7 @@ public class Wiser_AS extends AS {
 			}
 			// else .. break tie using BGP_AS number
 		}
-		return false;
+		return false;*/
 	}
 	
 	
