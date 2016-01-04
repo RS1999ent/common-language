@@ -1080,7 +1080,7 @@ public class Simulator {
 			parser.addArgument("--parentsFile").metavar("ParentsFile").type(String.class);
 			parser.addArgument("--seed").required(true).metavar("seed").type(Long.class);
 			parser.addArgument("--sim").required(true).metavar("sim").type(Integer.class);
-			parser.addArgument("--allMonitor").required(true).metavar("monitoring").type(Boolean.class);
+			parser.addArgument("--allMonitor").required(true).metavar("monitoring").type(Integer.class);
 			Namespace arguments = null;
 			try{
 	//			System.out.println(parser.parseArgs(args));
@@ -1102,7 +1102,7 @@ public class Simulator {
 			String intraFile = arguments.getString("IntraDomainFile");
 			String linkFile = arguments.getString("--failLinksFile");
 			String parentsFile = arguments.getString("--parentsFile");
-			boolean allInclusiveMonitoring = arguments.getBoolean("--allMonitor");
+			boolean allInclusiveMonitoring = (arguments.getInt("allMonitor") == 1) ? true : false;
 			simMode = arguments.getInt("sim");
 			readTypes(typeFile); //reading types must go before readtopology, otherwise allnodes will be bgp
 			readTopology(topologyFile);
@@ -1141,7 +1141,7 @@ public class Simulator {
 	
 			case 6:
 			//	iaBasicSimulation();
-				iaBasicSimulationTransitsOnlyWiserCost();
+				iaBasicSimulationTransitsOnlyWiserCost(allInclusiveMonitoring);
 			    break;
 			  
 			case 7:
@@ -1149,7 +1149,7 @@ public class Simulator {
 	//			System.out.println("Number of connected components: " + numConnectedComponents() + "\n");
 			//	iaBasicSimulation();
 				//iaSumSimulation();
-				iaBasicSimulationTransitsOnlySBGP();
+				iaBasicSimulationTransitsOnlySBGP(allInclusiveMonitoring);
 				break;
 	
 			default:
@@ -1790,7 +1790,7 @@ public class Simulator {
 			}
 		}
 		
-		System.out.println("total stubs: " + computeStubs().size());
+	//	System.out.println("total stubs: " + computeStubs().size());
 		for(Integer key : computeStubs())
 		{
 			announcedASes.add(key);
@@ -1955,7 +1955,7 @@ public class Simulator {
 	 * runs a basic IA simulation
 	 * benefit measured at transit only
 	 */
-	public static void iaBasicSimulationTransitsOnlyWiserCost(){
+	public static void iaBasicSimulationTransitsOnlyWiserCost(boolean allInclusiveMonitoring){
 		
 		
 		//ases that will be used for observation
@@ -1974,53 +1974,7 @@ public class Simulator {
 		//monitorASes.add((Integer) asMap.keySet().toArray()[r.nextInt(asMap.size())]); //doesn't check for overlap with special ASes, fix later
 		
 
-		for( Integer asMapKey : asTypeDef.keySet())
-		{
-			if(asTypeDef.get(asMapKey) == AS.WISER){
-	//			asMap.get(asMapKey).announceSelf();
-				announcedASes.add(asMapKey);
-				monitorASes.add(asMapKey);
-//				System.out.println("[debug] num neighbors of wiser AS: " + asMap.get(asMapKey).neighborMap.size());
-			}
-			else
-			{
-				monitorASes.add(asMapKey);
-			}
-			
-		}
-		
-		//go through and have all wiser nodes announce themselves, only announce some constant at a time, let the sim go.
-		int batchSize = BATCH_PERCENT;//(int) (asTypeDef.size() * BATCH_PERCENT);
-		int counter= 0;
-		int globalCounter = 0;
-		for(int i = 0; i < announcedASes.size(); i++)
-		{
-			counter++; 
-			globalCounter++;
-			asMap.get(announcedASes.get(i)).announceSelf(); //announce an AS off our announced list			
-			if(counter == batchSize)
-			{	
-			    counter = 0;			    
-			    System.out.printf("\r%d", globalCounter);
-//			    System.out.println("iteration START");
-			    instrumented = false;
-			    run();
-			    for(Integer key : asMap.keySet())
-			    {
-			    	asMap.get(key).clearBookKeeping();
-			    }
-			    //System.out.println("iteration complete");
-			}
-		}
-		
-//		System.out.println("Number of announced ASes: " + announcedASes.size());
-		//run for any missing ASes
-		instrumented = false;
-		run();
-		for(Integer key : asMap.keySet())
-		{
-			asMap.get(key).clearBookKeeping();
-		}
+		runSimulation(monitorASes, announcedASes, allInclusiveMonitoring);
 		
 		
 		float costSum = 0;
@@ -2058,7 +2012,7 @@ public class Simulator {
 						int wiserCost = 0;
 						int normalization = 1;
 						// if ther is wiser props
-						if (wiserBytes[0] != (byte) 0xFF) {
+						if (wiserBytes != null && wiserBytes[0] != (byte) 0xFF) {
 							try {
 								// fill them into our variables
 								wiserProps = new String(wiserBytes, "UTF-8");
@@ -2069,13 +2023,15 @@ public class Simulator {
 								// TODO Auto-generated catch block
 								e.printStackTrace();
 							}
+							costSum += (float)wiserCost/(float)normalization;
 						} else {
 							if(!monitoredAS.neighborMap.containsKey(announcedAS))
-								System.out.println("[DEBUG] NO WISER PROPS FOR: "
+								debug("[DEBUG] NO WISER PROPS FOR: "
 									+ announcedAS);
+//								System.out.println();
 						}
 						
-						costSum += (float)wiserCost/(float)normalization;
+//						costSum += (float)wiserCost/(float)normalization;
 						
 						//debug if statement
 						if(monitoredAS.neighborMap.containsKey(compareAS.asn))
@@ -2110,7 +2066,7 @@ public class Simulator {
 	 * runs a basic IA simulation
 	 * benefit measured at transit only
 	 */
-	public static void iaBasicSimulationTransitsOnlySBGP(){
+	public static void iaBasicSimulationTransitsOnlySBGP(boolean allInclusiveMonitoring){
 		
 		
 		//ases that will be used for observation
@@ -2129,54 +2085,7 @@ public class Simulator {
 		//monitorASes.add((Integer) asMap.keySet().toArray()[r.nextInt(asMap.size())]); //doesn't check for overlap with special ASes, fix later
 		
 
-		for( Integer asMapKey : asTypeDef.keySet())
-		{
-			if(asTypeDef.get(asMapKey) == AS.SBGP){
-	//			asMap.get(asMapKey).announceSelf();
-				announcedASes.add(asMapKey);
-				monitorASes.add(asMapKey);
-//				System.out.println("[debug] num neighbors of wiser AS: " + asMap.get(asMapKey).neighborMap.size());
-			}
-			else
-			{
-				monitorASes.add(asMapKey);
-			}
-			
-		}
-		
-		//go through and have all wiser nodes announce themselves, only announce some constant at a time, let the sim go.
-		int batchSize = BATCH_PERCENT;//(int) (asTypeDef.size() * BATCH_PERCENT);
-		int counter= 0;
-		int globalCounter = 0;
-		for(int i = 0; i < announcedASes.size(); i++)
-		{
-			counter++; 
-			globalCounter++;
-			asMap.get(announcedASes.get(i)).announceSelf(); //announce an AS off our announced list			
-			if(counter == batchSize)
-			{	
-			    counter = 0;			    
-			    System.out.printf("\r%d", globalCounter);
-//			    System.out.println("iteration START");
-			    instrumented = false;
-			    run();
-			    for(Integer key : asMap.keySet())
-			    {
-			    	asMap.get(key).clearBookKeeping();
-			    }
-			    //System.out.println("iteration complete");
-			}
-		}
-		
-//		System.out.println("Number of announced ASes: " + announcedASes.size());
-		//run for any missing ASes
-		instrumented = false;
-		run();
-		for(Integer key : asMap.keySet())
-		{
-			asMap.get(key).clearBookKeeping();
-		}
-		
+		runSimulation(monitorASes, announcedASes, allInclusiveMonitoring);
 		
 		float percentSecure = 0; //transit ases add the percent of paths that are secure to announcing ASes
 		int total = monitorASes.size(); 

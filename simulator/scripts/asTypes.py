@@ -265,7 +265,7 @@ for i in range(iterations):
 
 stubsChosen = []
 stubKeys = stubASes.keys()
-iterations = int(numTransits * (len(stubKeys)-1)) 
+iterations = int(numTransits * (len(stubKeys))) 
 #iterations = int(1 * (len(stubKeys)-1)) this is if you want all stubs chosen
 if DEBUG:
     print "stub interations: ", iterations
