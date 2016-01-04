@@ -193,6 +193,7 @@ public class BGP_AS extends AS {
 	 */
 	public void announceSelf() {
 		addPathToUpdates(new IA(new RootCause(asn, currentUpdate++, asn)), Simulator.otherTimers);
+		this.announced = true;
 	}
 
 	/**
@@ -321,7 +322,7 @@ public class BGP_AS extends AS {
 				PoPTuple advertisementTuple = new PoPTuple(tupleChosen.pop2, tupleChosen.pop1);
 				if(p.truePoPCosts.get(advertisementTuple) == null)
 				{
-					System.out.println("bgp_as, no point of presence from them to us, shouldn't happen");
+//					System.out.println("bgp_as, no point of presence from them to us, shouldn't happen from non announcing");
 				}
 				else{
 					//		System.out.println("HERE");

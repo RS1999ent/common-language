@@ -355,7 +355,7 @@ public class Wiser_AS extends AS {
 				PoPTuple advertisementTuple = new PoPTuple(tupleChosen.pop2, tupleChosen.pop1);
 				if(p.truePoPCosts.get(advertisementTuple) == null)
 				{
-					System.out.println("wiser_as, no point of presence from them to us, shouldn't happen");
+//					System.out.println("wiser_as, no point of presence from them to us, shouldn't happen from non announcing ases");
 				}
 				else{
 				//			System.out.println("HERE");
@@ -1140,8 +1140,8 @@ public class Wiser_AS extends AS {
 		String[] p2WiserProps = getWiserProps(p2);
 		int p1WiserCost = p1WiserProps != null ? Integer.valueOf(p1WiserProps[0]) : 0; //pull wisercost out, if the advert has one
 		int p2WiserCost = p2WiserProps != null ? Integer.valueOf(p2WiserProps[0]) : 0; //pull wisercost out, if the advert has one
-		int p1Normalization = p1WiserProps != null ? Integer.valueOf(p1WiserProps[1]) : 0; //pull normalization out, if the advert has one
-		int p2Normalization = p2WiserProps != null ? Integer.valueOf(p2WiserProps[1]) : 0; //pull normalization out, if the advert has one
+		int p1Normalization = p1WiserProps != null ? Integer.valueOf(p1WiserProps[1]) : 1; //pull normalization out, if the advert has one
+		int p2Normalization = p2WiserProps != null ? Integer.valueOf(p2WiserProps[1]) : 1; //pull normalization out, if the advert has one
 
 		/*if(p1WiserBytes[0] != (byte) 0xFF)
 		{
@@ -1173,13 +1173,13 @@ public class Wiser_AS extends AS {
 			for(AS.PoPTuple tuple : p1.popCosts.keySet())
 			{
 				//get the link latency of the path based on the tuple that we are analyzing in the path
-				int linklatency = 0;
-				if(neighborLatency.get(p1.getFirstHop()).get(new PoPTuple(tuple.pop2, tuple.pop1)) != null)
-				{
-					linklatency = neighborLatency.get(p1.getFirstHop()).get(new PoPTuple(tuple.pop2, tuple.pop1));//reverse the tuple for our lookup because the advetisement format is from them to us
-				}
-				if(p1.popCosts.get(tuple) + linklatency + p1WiserCost/p1Normalization < p1LowestCost){
-					p1LowestCost = p1.popCosts.get(tuple) + linklatency + p1WiserCost/p1Normalization ;
+			//	int linklatency = 0;
+		//		if(neighborLatency.get(p1.getFirstHop()).get(new PoPTuple(tuple.pop2, tuple.pop1)) != null)
+	//			{
+		//			linklatency = neighborLatency.get(p1.getFirstHop()).get(new PoPTuple(tuple.pop2, tuple.pop1));//reverse the tuple for our lookup because the advetisement format is from them to us
+		//		}
+				if(p1.popCosts.get(tuple) + p1WiserCost/p1Normalization < p1LowestCost){
+					p1LowestCost = p1.popCosts.get(tuple) + p1WiserCost/p1Normalization ;
 					p1Tuple = new AS.PoPTuple(tuple.pop2, tuple.pop1); //reverse it because we find latencies via pop (in us) to pop (in them)
 				}
 			}
@@ -1190,13 +1190,13 @@ public class Wiser_AS extends AS {
 			for(AS.PoPTuple tuple : p2.popCosts.keySet())
 			{
 				//get the link latency of the path based on the tuple that we are analyzing in the path
-				int linklatency = 0;
-				if(neighborLatency.get(p2.getFirstHop()).get(new PoPTuple(tuple.pop2, tuple.pop1)) != null)
-				{
-					linklatency = neighborLatency.get(p2.getFirstHop()).get(new PoPTuple(tuple.pop2, tuple.pop1));//reverse the tuple for our lookup because the advetisement format is from them to us
-				}
-				if(p2.popCosts.get(tuple) + linklatency + p2WiserCost/p2Normalization < p2LowestCost){
-					p2LowestCost = p2.popCosts.get(tuple) + linklatency + p2WiserCost/p2Normalization ;
+	//			int linklatency = 0;
+		//		if(neighborLatency.get(p2.getFirstHop()).get(new PoPTuple(tuple.pop2, tuple.pop1)) != null)
+		//		{
+		//			linklatency = neighborLatency.get(p2.getFirstHop()).get(new PoPTuple(tuple.pop2, tuple.pop1));//reverse the tuple for our lookup because the advetisement format is from them to us
+		//		}
+				if(p2.popCosts.get(tuple) + p2WiserCost/p2Normalization < p2LowestCost){
+					p2LowestCost = p2.popCosts.get(tuple) + p2WiserCost/p2Normalization ;
 					p2Tuple = new AS.PoPTuple(tuple.pop2, tuple.pop1); //reverse it because we find latencies via pop (in us) to pop (in them)
 				}
 			}
