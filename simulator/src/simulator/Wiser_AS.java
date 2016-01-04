@@ -217,14 +217,16 @@ public class Wiser_AS extends AS {
 			getCostInc(oldPath, tupleChosen); //get the downstream poptuple that we choose
 			for(AS.PoPTuple poptuple : neighborLatency.get(advertisedToAS).keySet())
 			{
-		//		cost = neighborLatency.get(advertisedToAS).get(poptuple);
+				cost += neighborLatency.get(advertisedToAS).get(poptuple);
 				//			int cost = getTrueCostInc(oldPath); //the true cost inc, will be the wiser cost advertised for now
 				if(tupleChosen.pop1 != -1){
-					cost = getIntraDomainCost(tupleChosen.pop1, poptuple.pop1, advertisedToAS); //cost is equal to just intradomain cost, because we are filling popcosts
+					cost += getIntraDomainCost(tupleChosen.pop1, poptuple.pop1, advertisedToAS); //cost is equal to just intradomain cost, because we are filling popcosts
 				}
 				newPath.popCosts.put(poptuple, cost);
 			}
-			
+	
+			//not adding wiser cost incoming, will happen when it reaches the next node (wiser or bgp)
+			/*
 			String[] wiserProps = getWiserProps(newPath);
 			int wisercost = 0;
 			int normalization = 1;
@@ -242,7 +244,7 @@ public class Wiser_AS extends AS {
 				// TODO Auto-generated catch block
 				e.printStackTrace();
 			}
-			
+			*/
 			
 /* block 1		
 		if(pWiserBytes[0] != (byte) 0xFF)
@@ -1297,16 +1299,16 @@ public class Wiser_AS extends AS {
 		{
 			for(AS.PoPTuple tuple : path.popCosts.keySet())
 			{
-				int linkCost = 0;
-				if(neighborLatency.get(path.getFirstHop()).get(new PoPTuple(tuple.pop2, tuple.pop1)) != null){
-					linkCost = neighborLatency.get(path.getFirstHop()).get(new PoPTuple(tuple.pop2, tuple.pop1));
-				}
-				else{
-					System.out.println("wiser_as: getcostinc: no corresponding link cost, shouldn't be here");
-				}
+//				int linkCost = 0;
+//				if(neighborLatency.get(path.getFirstHop()).get(new PoPTuple(tuple.pop2, tuple.pop1)) != null){
+//					linkCost = neighborLatency.get(path.getFirstHop()).get(new PoPTuple(tuple.pop2, tuple.pop1));
+//				}
+//				else{
+//					System.out.println("wiser_as: getcostinc: no corresponding link cost, shouldn't be here");
+//				}
 				
-				if(path.popCosts.get(tuple) + linkCost < p1LowestCost){
-					p1LowestCost = path.popCosts.get(tuple) + linkCost; //cost of intradomain to exiting pop + link cost to that pop
+				if(path.popCosts.get(tuple) < p1LowestCost){
+					p1LowestCost = path.popCosts.get(tuple); //cost of intradomain to exiting pop + link cost to that pop
 					p1Tuple = new AS.PoPTuple(tuple.pop2, tuple.pop1); //reverse it because we find latencies via pop (in us) to pop (in them)
 				}
 			}
@@ -1330,6 +1332,7 @@ public class Wiser_AS extends AS {
 			
 			//choose path with lowest outbound latency, simulates lowest med value; wrong, should be lowest passedthrough
 			//wiser value
+			//note: does not take into account bgp true intradomain cost.  doesn't matter now because it's always 0
 			int trueCostInc = Integer.MAX_VALUE;
 			PoPTuple p2Tuple = null;
 			for(PoPTuple tuple : neighborLatency.get(path.getFirstHop()).keySet()){				

@@ -267,14 +267,14 @@ public class BGP_AS extends AS {
 			nh = p.getFirstHop(); // this is the BGP_AS that advertised the path to us
 			nhType = neighborMap.get(nh);
 			
-			// update for the true cost of path. This will be the poptuple that has
-			// the lowest latency to simulate choosing the lowest MED value
-			long trueCostInc = Long.MAX_VALUE;			
+			//choose a tuple based on lowest MED
+			long lowestMED = Long.MAX_VALUE;			
+			long trueCostInc = 0;
 			for(PoPTuple tuple : neighborLatency.get(nh).keySet()){
 				int latency = neighborLatency.get(nh).get(tuple);
-				if(latency < trueCostInc)
+				if(latency < lowestMED)
 				{
-					trueCostInc = latency;
+		//			trueCostInc = latency;
 					tupleChosen = tuple;
 				}
 			}
@@ -295,7 +295,7 @@ public class BGP_AS extends AS {
 	//				System.out.println("there is no point of presence from them to us in advertisement, shouldn't happen");
 				}
 				if(wisercost == 9999){
-	//				System.out.println("bgp_as wisercost 9999");
+					System.out.println("bgp_as wisercost 9999");
 				}
 				
 				String[] wiserProps = getWiserProps(p);
@@ -328,6 +328,7 @@ public class BGP_AS extends AS {
 		//			System.out.println("tpopcosts: " + p.truePoPCosts.get(advertisementTuple));
 					trueCostInc += p.truePoPCosts.get(advertisementTuple);
 				}
+				trueCostInc += neighborLatency.get(nh).get(tupleChosen); //add the latency link to true cost
 				//		System.out.println("true cost inc: " + trueCostInc);
 			}
 			newPath.truePoPCosts.clear();
