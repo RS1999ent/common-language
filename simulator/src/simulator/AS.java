@@ -36,7 +36,11 @@ public abstract class AS {
 	static final int BGP = 500;
 	static final int WISER = 501;
 	static final int TRANSIT = 502;
+	static final int SBGP_TRANSIT = 503;
+	static final int SBGP = 504;
 	
+	//did this as announce itself
+	public boolean announced = false;
 		/** Set of neighbors that are customers */
 	ArrayList<Integer> customers = new ArrayList<Integer>();
 
@@ -411,6 +415,10 @@ public abstract class AS {
 	{
 		
 		byte[] pWiserBytes = advert.getProtocolPathAttribute(new Protocol(AS.WISER), advert.getPath());
+		if (pWiserBytes == null)
+		{
+			return null;
+		}
 		String pWiserProps = null;
 		String[] splitProps = null;
 		if(pWiserBytes[0] != (byte) 0xFF)

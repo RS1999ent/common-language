@@ -193,6 +193,7 @@ public class BGP_AS extends AS {
 	 */
 	public void announceSelf() {
 		addPathToUpdates(new IA(new RootCause(asn, currentUpdate++, asn)), Simulator.otherTimers);
+		this.announced = true;
 	}
 
 	/**
@@ -267,14 +268,14 @@ public class BGP_AS extends AS {
 			nh = p.getFirstHop(); // this is the BGP_AS that advertised the path to us
 			nhType = neighborMap.get(nh);
 			
-			// update for the true cost of path. This will be the poptuple that has
-			// the lowest latency to simulate choosing the lowest MED value
-			long trueCostInc = Long.MAX_VALUE;			
+			//choose a tuple based on lowest MED
+			long lowestMED = Long.MAX_VALUE;			
+			long trueCostInc = 0;
 			for(PoPTuple tuple : neighborLatency.get(nh).keySet()){
 				int latency = neighborLatency.get(nh).get(tuple);
-				if(latency < trueCostInc)
+				if(latency < lowestMED)
 				{
-					trueCostInc = latency;
+		//			trueCostInc = latency;
 					tupleChosen = tuple;
 				}
 			}
@@ -292,7 +293,7 @@ public class BGP_AS extends AS {
 				trueCostInc += wisercost;
 				if(p.popCosts.get(advertisementTuple) == null) 
 				{
-					System.out.println("there is no point of presence from them to us in advertisement, shouldn't happen");
+	//				System.out.println("there is no point of presence from them to us in advertisement, shouldn't happen");
 				}
 				if(wisercost == 9999){
 					System.out.println("bgp_as wisercost 9999");
@@ -321,19 +322,21 @@ public class BGP_AS extends AS {
 				PoPTuple advertisementTuple = new PoPTuple(tupleChosen.pop2, tupleChosen.pop1);
 				if(p.truePoPCosts.get(advertisementTuple) == null)
 				{
-					System.out.println("bgp_as, no point of presence from them to us, shouldn't happen");
+//					System.out.println("bgp_as, no point of presence from them to us, shouldn't happen from non announcing");
 				}
 				else{
 					//		System.out.println("HERE");
+		//			System.out.println("tpopcosts: " + p.truePoPCosts.get(advertisementTuple));
 					trueCostInc += p.truePoPCosts.get(advertisementTuple);
 				}
+				trueCostInc += neighborLatency.get(nh).get(tupleChosen); //add the latency link to true cost
 				//		System.out.println("true cost inc: " + trueCostInc);
 			}
 			newPath.truePoPCosts.clear();
 			newPath.setTrueCost(newPath.getTrueCost() + trueCostInc);
 		}
 
-		
+		newPath.secure = false;
 		passThrough.attachPassthrough(newPath); //attach passthrough info before sending to neighbors
 		if(nhType == PROVIDER || nhType == PEER) { // announce it only to customers .. and to nextHop in the path 
 			for(int i=0; i<customers.size(); i++) {
@@ -1083,6 +1086,12 @@ public class BGP_AS extends AS {
 				return false;
 			}
 			// else .. break tie using BGP_AS number
+			else if (p1.getFirstHop() < p2.getFirstHop())
+			{
+				return true;
+			}
+				
+			
 		}
 		return false;
 	}
@@ -1285,7 +1294,7 @@ public class BGP_AS extends AS {
 	
 	public void clearBookKeeping(){
 		pendingUpdates.clear();
-		dstRIBHistMap.clear();
+	//	dstRIBHistMap.clear();
 	//	mraiRunning.clear();
 	//	ribIn.clear();
 		super.passThrough.clear();

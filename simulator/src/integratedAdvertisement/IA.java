@@ -45,6 +45,8 @@ public class IA {
 	public HashMap<AS.PoPTuple, Integer> truePoPCosts = new HashMap<AS.PoPTuple, Integer>();
 	//true cost of path
 	long trueCost;
+	//true iff the every node on path is secure (i.e. sbgp).  
+	public boolean secure;
 	
 	public long getTrueCost() {
 		return trueCost;
@@ -89,6 +91,7 @@ public class IA {
 		legacyPath = (LinkedList<Integer>) toCopy.legacyPath.clone();
 		paths = (HashMap<String, LinkedList<Integer>>) toCopy.paths.clone();
 		this.trueCost = toCopy.trueCost;
+		this.secure = toCopy.secure;
 		//copy poptuples in
 		for(AS.PoPTuple tuple : toCopy.popCosts.keySet())
 		{
