@@ -18,8 +18,9 @@ import simulator.AS.PoPTuple;
 public class PassThrough {
 
 	// keyed on pathTokey. links to aggregated values that were received. IA
-	// value contains info for a single path
-	HashMap<String, IAInfo> passThroughDatabase = new HashMap<String, IAInfo>();
+	// value contains info for a single path, for each poitn of presence that we are connected to 
+	//on the next hop of that path
+	HashMap<String, HashMap<PoPTuple, IAInfo>> passThroughDatabase = new HashMap<String, HashMap<PoPTuple, IAInfo>>();
 
 	public PassThrough() {
 
@@ -57,7 +58,7 @@ public class PassThrough {
 			// as descriptors
 			if (passThroughDatabase.containsKey(passThroughPathKey)) {
 				IAInfo passThroughInfo = passThroughDatabase
-						.get(passThroughPathKey);
+						.get(passThroughPathKey).get(chosenTuple);
 				Values val1 = advertisement.getPathAttributes(chosenTuple, pathKey);
 				// if there was no path attribute values set for the
 				// advertisement, then make a new values
@@ -67,9 +68,11 @@ public class PassThrough {
 				Values val2 = passThroughInfo
 						.getPathAttributes(passThroughPathKey);
 				Values mergedVal = mergeValues(val1, val2);
-
-				advertisement.setPathAttributes(chosenTuple, mergedVal,
-						advertisement.getPath(pathKey));
+				
+				for(PoPTuple usToThemAdvert : advertisement.popCosts.keySet()){
+					advertisement.setPathAttributes(usToThemAdvert, mergedVal,
+							advertisement.getPath(pathKey));
+				}
 
 			}
 		}
@@ -88,24 +91,26 @@ public class PassThrough {
 	 */
 	public void addToDatabase(IA receivedAdvert) {
 		for (String key : receivedAdvert.getPathKeys()) {
-			IA toDatabase = passThroughDatabase.containsKey(key) ? passThroughDatabase
-					.get(key) : new IA(receivedAdvert); // if the passthrogh
-			// database already has an
-			// entry for this path, then
-			// use that as base,
-			// otherwise craete new
-			// entry
-			Values val1 = toDatabase.getPathAttributes(key);
-			Values val2 = receivedAdvert.getPathAttributes(key);
-			// if either val1 or val2 is null, give it a fresh blank vlaues.
-			val1 = val1 == null ? new Values() : val1;
-			val2 = val2 == null ? new Values() : val2;
-			toDatabase.setPathAttributes(mergeValues(val2, val1),
-					toDatabase.getPath()); // merge val2 first because we want
-											// to overwrite old received values
-											// in advert alrady in database
+			HashMap<PoPTuple, IAInfo> toDatabase = passThroughDatabase.containsKey(key) ? passThroughDatabase
+					.get(key) : new HashMap<PoPTuple, IAInfo>(); // if the passthrogh
 
-			passThroughDatabase.put(key, toDatabase);
+					for(PoPTuple themToUs : receivedAdvert.popCosts.keySet()){
+						PoPTuple usToThem = new PoPTuple(themToUs.pop2, themToUs.pop1);
+						// database already has an
+						// entry for this path, then
+						// use that as base,
+						// otherwise craete new
+						// entry
+						Values val1 = toDatabase.get(usToThem).getPathAttributes(key);
+						Values val2 = receivedAdvert.getPathAttributes(themToUs, key);
+						// if either val1 or val2 is null, give it a fresh blank vlaues.
+						val1 = val1 == null ? new Values() : val1;
+						val2 = val2 == null ? new Values() : val2;
+						toDatabase.get(usToThem).pathValues.put(IA.pathToKey(receivedAdvert.getPath()), mergeValues(val2, val1)); // merge val2 first because we want
+						// to overwrite old received values
+						// in advert alrady in database
+					}
+					passThroughDatabase.put(key, toDatabase);
 		}
 
 	}

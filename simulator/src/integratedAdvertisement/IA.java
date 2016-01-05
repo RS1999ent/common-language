@@ -18,7 +18,7 @@ public class IA {
 	@Override
 	public String toString() {
 		return "IA [legacyPath=" + legacyPath + ", paths=" + paths
-				+ ", pathValues=" + pathValues + ", popCosts=" + popCosts
+				+ ", IAInfos=" + popCosts.values() + ", popCosts=" + popCosts
 				+ ",\n truePoPCosts=" + truePoPCosts + ", trueCost=" + trueCost
 				+ "]";
 	}
@@ -29,7 +29,7 @@ public class IA {
 	// hash map of paths. should be keyed on the pathToKey method in this class
 	private HashMap<String, LinkedList<Integer>> paths = new HashMap<String, LinkedList<Integer>>();
 
-
+	public HashMap<String, Float> bookKeepingInfo = new HashMap<String, Float>();
 	
 	private RootCause rc; // stores root cause of this integrated advertisement
 	
@@ -294,7 +294,26 @@ public class IA {
 	}
 	
 
+	/**
+	 * method to get the path attributes of a protocol associated with a path
+	 * 
+	 * @param protocol
+	 *            - the protocol to get the attribtues from
+	 * @param path
+	 *            the path these attributes are associated with
+	 * @return the path attribute associated with the protocol
+	 */
+	public byte[] getProtocolPathAttribute(PoPTuple forTuple, Protocol protocol,
+			LinkedList<Integer> path) {
+		if (popCosts.get(forTuple).pathValues.containsKey(IA.pathToKey(path)))
+			return popCosts.get(forTuple).pathValues.get(IA.pathToKey(path)).getValue(protocol);
+		else {
+			byte arr[] = new byte[1];
+			arr[0] = (byte) 0xFF;
+			return arr;
+		}
 
+	}
 
 
 

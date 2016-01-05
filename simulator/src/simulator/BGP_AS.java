@@ -6,6 +6,7 @@ package simulator;
  */
 
 import integratedAdvertisement.IA;
+import integratedAdvertisement.IAInfo;
 import integratedAdvertisement.Protocol;
 import integratedAdvertisement.RootCause;
 import integratedAdvertisement.Values;
@@ -216,13 +217,14 @@ public class BGP_AS extends AS {
 
 	
 	/**
-	 * method that fills true pop cost with information
+	 * method that fills the pop information with info (that is, what information is being advertised across differnet pops)
+	 * also attaches the passthrough
 	 * @param advert the advertisement we need to fill with info
 	 * @param advertisedToAS the as we are advertising to
 	 * @param tupleChosen the pop tuple we chose for the downstream as
 	 * 
 	 */
-	public void intraDomainCost(IA advert, Integer advertisedToAS, PoPTuple tupleChosen)
+	public void fillAdvertisementPoP(IA advert, Integer advertisedToAS, PoPTuple tupleChosen)
 	{
 		if(tupleChosen.pop1 == -1)
 		{
@@ -233,11 +235,34 @@ public class BGP_AS extends AS {
 			{
 				int intraDomainCost = getIntraDomainCost(tupleChosen.pop1, poptuple.pop1, advertisedToAS);
 				advert.truePoPCosts.put(poptuple, intraDomainCost);
-			}	
+			}
+			
+			//initialize our pop to pop advertisement info.  That is, initialize a blank IA info for each place we're advertising to
+			//a little hackish using neighborlatency to get this, but it works
+			for(AS.PoPTuple popTuple : neighborLatency.get(advertisedToAS).keySet())
+			{
+				advert.popCosts.put(popTuple, new IAInfo());
+			}
+			
+			passThrough.attachPassthrough(advert, tupleChosen);
+		}
+		
+	}
+
+	
+	@Override 
+	protected void updateBookKeeping(IA advert, PoPTuple chosenTuple)
+	{
+		if(neighborLatency.containsKey(chosenTuple))
+		{
+			advert.setTrueCost(advert.getTrueCost() + neighborLatency.get(advert.getFirstHop()).get(chosenTuple));
+		}
+		else
+		{
+			System.out.println("bgp_as, can't update costs");
 		}
 	}
 	
-
 	/**
 	 * This function adds a path to the set of path
 	 * updates. Uses outbound filtering to decide which
@@ -268,82 +293,85 @@ public class BGP_AS extends AS {
 			nh = p.getFirstHop(); // this is the BGP_AS that advertised the path to us
 			nhType = neighborMap.get(nh);
 			
+			tupleChosen(p, tupleChosen);
 			//choose a tuple based on lowest MED
-			long lowestMED = Long.MAX_VALUE;			
-			long trueCostInc = 0;
-			for(PoPTuple tuple : neighborLatency.get(nh).keySet()){
-				int latency = neighborLatency.get(nh).get(tuple);
-				if(latency < lowestMED)
-				{
-		//			trueCostInc = latency;
-					tupleChosen = tuple;
-				}
-			}
+//			long lowestMED = Long.MAX_VALUE;			
+//			long trueCostInc = 0;
+//			for(PoPTuple tuple : neighborLatency.get(nh).keySet()){
+//				int latency = neighborLatency.get(nh).get(tuple);
+//				if(latency < lowestMED)
+//				{
+//		//			trueCostInc = latency;
+//					tupleChosen = tuple;
+//				}
+//			}
 			//put the wiser information that would have been there if we weren't hacking a solution here
 			//this is only if our neighbor is a wiser node, simulates the advertisemetns received from multiple pops
 			//COMPUTES WHAT THE POINT OF PRESENCE THAT WE CHOOSE WOULD HAVE ADVETISED. hackish, i know.
 			if(p.popCosts.size() > 0)
 			{
-				int wisercost = 9999; //debug, shows something is wrong if this shows up
-				int normalization = 1;
-				//reversed because we chose a tuple from us to them, in the advertisement the tuple
-				//will be in form from them to us.
-				PoPTuple advertisementTuple = new PoPTuple(tupleChosen.pop2, tupleChosen.pop1);
-				wisercost = p.popCosts.get(advertisementTuple); //this is also the true cost (intradomain of wisernode)
-				trueCostInc += wisercost;
-				if(p.popCosts.get(advertisementTuple) == null) 
-				{
-	//				System.out.println("there is no point of presence from them to us in advertisement, shouldn't happen");
-				}
-				if(wisercost == 9999){
-					System.out.println("bgp_as wisercost 9999");
-				}
-				
-				String[] wiserProps = getWiserProps(p);
-				if(wiserProps != null){
-					wisercost += Integer.valueOf(wiserProps[0]); //add the wiser props
-				}
-				//would compute normalization here
-				String pathAttribute = String.valueOf(wisercost) + " " + String.valueOf(normalization);
-				try {
-					newPath.setProtocolPathAttribute(pathAttribute.getBytes("UTF-8"), new Protocol(AS.WISER), newPath.getPath());
-				} catch (UnsupportedEncodingException e) {
-					// TODO Auto-generated catch block
-					e.printStackTrace();
-				}
-				
-				//clear the popcosts from newpath, this is a bgp node
+				updateBookKeeping(p, tupleChosen); //update the bookkeeping on p, (getfirsthop is used in method so we use p instead of newpath)
+//				int wisercost = 9999; //debug, shows something is wrong if this shows up
+//				int normalization = 1;
+//				//reversed because we chose a tuple from us to them, in the advertisement the tuple
+//				//will be in form from them to us.
+//				PoPTuple advertisementTuple = new PoPTuple(tupleChosen.pop2, tupleChosen.pop1);
+//				wisercost = p.popCosts.get(advertisementTuple); //this is also the true cost (intradomain of wisernode)
+//				trueCostInc += wisercost;
+//				if(p.popCosts.get(advertisementTuple) == null) 
+//				{
+//	//				System.out.println("there is no point of presence from them to us in advertisement, shouldn't happen");
+//				}
+//				if(wisercost == 9999){
+//					System.out.println("bgp_as wisercost 9999");
+//				}
+//				
+//				String[] wiserProps = getWiserProps(p);
+//				if(wiserProps != null){
+//					wisercost += Integer.valueOf(wiserProps[0]); //add the wiser props
+//				}
+//				//would compute normalization here
+//				String pathAttribute = String.valueOf(wisercost) + " " + String.valueOf(normalization);
+//				try {
+//					newPath.setProtocolPathAttribute(pathAttribute.getBytes("UTF-8"), new Protocol(AS.WISER), newPath.getPath());
+//				} catch (UnsupportedEncodingException e) {
+//					// TODO Auto-generated catch block
+//					e.printStackTrace();
+//				}
+//				
+//				//clear the popcosts from newpath, this is a bgp node
 				newPath.popCosts.clear();
 			}
 			else{
-				//grab the intradomian true cost based on the tuple we chose, add it to true cost
-				//pops reversed because they created advert with inforamtion from them to us, so we
-				//convert our us to them poptuple to them to us
-				PoPTuple advertisementTuple = new PoPTuple(tupleChosen.pop2, tupleChosen.pop1);
-				if(p.truePoPCosts.get(advertisementTuple) == null)
-				{
-//					System.out.println("bgp_as, no point of presence from them to us, shouldn't happen from non announcing");
-				}
-				else{
-					//		System.out.println("HERE");
-		//			System.out.println("tpopcosts: " + p.truePoPCosts.get(advertisementTuple));
-					trueCostInc += p.truePoPCosts.get(advertisementTuple);
-				}
-				trueCostInc += neighborLatency.get(nh).get(tupleChosen); //add the latency link to true cost
-				//		System.out.println("true cost inc: " + trueCostInc);
+				System.out.println("AS advertising?: " + asn);
+//				//grab the intradomian true cost based on the tuple we chose, add it to true cost
+//				//pops reversed because they created advert with inforamtion from them to us, so we
+//				//convert our us to them poptuple to them to us
+//				PoPTuple advertisementTuple = new PoPTuple(tupleChosen.pop2, tupleChosen.pop1);
+//				if(p.truePoPCosts.get(advertisementTuple) == null)
+//				{
+////					System.out.println("bgp_as, no point of presence from them to us, shouldn't happen from non announcing");
+//				}
+//				else{
+//					//		System.out.println("HERE");
+//		//			System.out.println("tpopcosts: " + p.truePoPCosts.get(advertisementTuple));
+//					trueCostInc += p.truePoPCosts.get(advertisementTuple);
+//				}
+//				trueCostInc += neighborLatency.get(nh).get(tupleChosen); //add the latency link to true cost
+//				//		System.out.println("true cost inc: " + trueCostInc);
 			}
 			newPath.truePoPCosts.clear();
-			newPath.setTrueCost(newPath.getTrueCost() + trueCostInc);
+			newPath.setTrueCost(p.getTrueCost());
 		}
 
 		newPath.secure = false;
-		passThrough.attachPassthrough(newPath); //attach passthrough info before sending to neighbors
+//		passThrough.attachPassthrough(newPath, tupleChosen); //attach passthrough info before sending to neighbors (put into another method)
 		if(nhType == PROVIDER || nhType == PEER) { // announce it only to customers .. and to nextHop in the path 
 			for(int i=0; i<customers.size(); i++) {
 				IA overwrite = new IA(newPath);
 				Integer customer = customers.get(i);
 				if(tupleChosen != null){
-					intraDomainCost(overwrite, customers.get(i), tupleChosen);
+					fillAdvertisementPoP(overwrite, customers.get(i), tupleChosen);
 				}
 				addPathToPendingUpdatesForPeer(overwrite, customers.get(i));
 				if(simulateTimers) {
@@ -358,7 +386,7 @@ public class BGP_AS extends AS {
 			
 			IA overwrite = new IA(newPath);
 				if(tupleChosen != null){
-					intraDomainCost(overwrite, nh, tupleChosen);
+					fillAdvertisementPoP(overwrite, nh, tupleChosen);
 				}
 			addPathToPendingUpdatesForPeer(overwrite, nh);
 			if(simulateTimers) {
@@ -374,7 +402,7 @@ public class BGP_AS extends AS {
 			for(int i=0; i<customers.size(); i++) {
 				IA overwrite = new IA(newPath);
 				if(tupleChosen != null){
-					intraDomainCost(overwrite, customers.get(i), tupleChosen);
+					fillAdvertisementPoP(overwrite, customers.get(i), tupleChosen);
 				}
 				addPathToPendingUpdatesForPeer(overwrite, customers.get(i));
 				if(simulateTimers) {
@@ -389,7 +417,7 @@ public class BGP_AS extends AS {
 			for(int i=0; i<providers.size(); i++) {
 				IA overwrite = new IA(newPath);
 				if(tupleChosen != null){
-					intraDomainCost(overwrite, providers.get(i), tupleChosen);
+					fillAdvertisementPoP(overwrite, providers.get(i), tupleChosen);
 				}
 				addPathToPendingUpdatesForPeer(overwrite, providers.get(i));
 				if(simulateTimers) {
@@ -404,7 +432,7 @@ public class BGP_AS extends AS {
 			for(int i=0; i<peers.size(); i++) {
 				IA overwrite = new IA(newPath);
 				if(tupleChosen != null){
-					intraDomainCost(overwrite, peers.get(i), tupleChosen);
+					fillAdvertisementPoP(overwrite, peers.get(i), tupleChosen);
 				}
 				addPathToPendingUpdatesForPeer(overwrite, peers.get(i));
 				if(simulateTimers) {
@@ -514,6 +542,8 @@ public class BGP_AS extends AS {
 	 * the BGP_AS to send out an update or a withdrawal for some destination to a
 	 * particular peer.
 	 * 
+	 * these are broken, passthrough information nnot pasthed through, we don't use that for our experiments it doesn't matter
+	 * just know this
 	 * @param message The control message
 	 */
 	private void processControlMsg(ControlMessage m) {
@@ -539,7 +569,7 @@ public class BGP_AS extends AS {
 			IA copy = new IA(p);//new IA(p.getPath(), p.getRootCause());
 			// need to always send a copy!
 			copy.prepend(asn);
-			passThrough.attachPassthrough(copy); //[ADDED]
+	//		passThrough.attachPassthrough(copy); //[ADDED]
 			uwMsg = new UpdateMessage(asn, prefix, copy); // TODO: Do we need to change root cause?
 		}
 		else { // WITHDRAW
@@ -1298,6 +1328,23 @@ public class BGP_AS extends AS {
 	//	mraiRunning.clear();
 	//	ribIn.clear();
 		super.passThrough.clear();
+	}
+
+	@Override
+	public void tupleChosen(IA advert, PoPTuple chosenTuple) {
+		//choose a tuple based on lowest MED
+		int nh = advert.getFirstHop();
+		long lowestMED = Long.MAX_VALUE;			
+		long trueCostInc = 0;
+		for(PoPTuple tuple : neighborLatency.get(nh).keySet()){
+			int latency = neighborLatency.get(nh).get(tuple);
+			if(latency < lowestMED)
+			{
+				//			trueCostInc = latency;
+				chosenTuple = tuple;
+			}
+		}
+		
 	}
 
 

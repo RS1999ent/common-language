@@ -103,6 +103,10 @@ public abstract class AS {
 			return true;
 		}
 		
+		public PoPTuple reverse(){
+			return new PoPTuple(pop2, pop1);
+		}
+		
 	
 	}
 
@@ -411,10 +415,16 @@ public abstract class AS {
 	 * @param advert advertisemet to wiser props from
 	 * @return string of wiser props (split), null if none
 	 */
-	protected String[] getWiserProps(IA advert)
+	/**
+	 * method that returns wiser passthrough information in form of string
+	 * @param advert advertisement to get wiser props from
+	 * @param forTuple, which point of presence tuple this information is associated with
+	 * @return string of wiser props (split), null if none
+	 */
+	public static String[] getWiserProps(IA advert, PoPTuple forTuple)
 	{
 		
-		byte[] pWiserBytes = advert.getProtocolPathAttribute(new Protocol(AS.WISER), advert.getPath());
+		byte[] pWiserBytes = advert.getProtocolPathAttribute(forTuple, new Protocol(AS.WISER), advert.getPath());
 		if (pWiserBytes == null)
 		{
 			return null;
@@ -441,4 +451,14 @@ public abstract class AS {
 	 */
 	protected abstract void clearBookKeeping();
 
+
+	/**
+	 * updates bookKeeping information in an advertisement
+	 * @param advert - advert to update
+	 * @param chosenTuple - what tuple we are choicing from us to them
+	 */
+	protected abstract void updateBookKeeping(IA advert, PoPTuple chosenTuple);
+	
+	public abstract void tupleChosen(IA advert, PoPTuple chosenTuple);
+	
 }
