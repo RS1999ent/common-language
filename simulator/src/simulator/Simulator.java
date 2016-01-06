@@ -1833,7 +1833,7 @@ public class Simulator {
 
 	}
 	
-	private static int BATCH_PERCENT = 2; //PERCENT OF ASES TO ANNOUNCE AT A TIME
+	private static int BATCH_PERCENT = 1; //PERCENT OF ASES TO ANNOUNCE AT A TIME
 	
 	/**
 	 * runs a basic IA simulation
@@ -2007,7 +2007,7 @@ public class Simulator {
 					for (IA path : monitoredAS.ribIn.get(announcedAS).values()) {
 						// all paths should have wiser information in them
 						PoPTuple tupleChosen = null;
-						monitoredAS.tupleChosen(path, tupleChosen);
+						tupleChosen = monitoredAS.tupleChosen(path);
 						String[] wiserProps = AS.getWiserProps(path, tupleChosen.reverse());
 						
 //						byte[] wiserBytes = path.getProtocolPathAttribute(

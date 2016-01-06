@@ -39,6 +39,7 @@ public class PassThrough {
 	 * @param advertisement
 	 *            the advertisement to attach passthrough information to (this
 	 *            object is mutated)
+	 * @param infoChosen 
 	 * @return advertisement with passthrough information attached, this is
 	 *         redundant given how java does references
 	 */
@@ -59,17 +60,28 @@ public class PassThrough {
 			if (passThroughDatabase.containsKey(passThroughPathKey)) {
 				IAInfo passThroughInfo = passThroughDatabase
 						.get(passThroughPathKey).get(chosenTuple);
-				Values val1 = advertisement.getPathAttributes(chosenTuple, pathKey);
+				
+	//			Values val1 = advertisement.getPathAttributes(chosenTuple.reverse(), pathKey);
+				//if(infoChosen != null){
+//					val1 = infoChosen.pathValues.get(pathKey);//advertisement.getPathAttributes(chosenTuple, pathKey);
+//				}
 				// if there was no path attribute values set for the
 				// advertisement, then make a new values
-				if (val1 == null) {
-					val1 = new Values();
-				}
-				Values val2 = passThroughInfo
-						.getPathAttributes(passThroughPathKey);
-				Values mergedVal = mergeValues(val1, val2);
-				
+//				if (val1 == null) {
+//					val1 = new Values();
+//				}
+//				Values val2 = passThroughInfo
+//						.getPathAttributes(passThroughPathKey);
+				//				Values mergedVal = mergeValues(val1, val2);
+				//				
 				for(PoPTuple usToThemAdvert : advertisement.popCosts.keySet()){
+					Values val1 = advertisement.getPathAttributes(usToThemAdvert, pathKey);
+					if (val1 == null) {
+						val1 = new Values();
+					}
+					Values val2 = passThroughInfo
+							.getPathAttributes(passThroughPathKey);
+					Values mergedVal = mergeValues(val1, val2);
 					advertisement.setPathAttributes(usToThemAdvert, mergedVal,
 							advertisement.getPath(pathKey));
 				}
@@ -96,12 +108,18 @@ public class PassThrough {
 
 					for(PoPTuple themToUs : receivedAdvert.popCosts.keySet()){
 						PoPTuple usToThem = new PoPTuple(themToUs.pop2, themToUs.pop1);
+						//if we don't have a tuple for this, insert a blank one
+						if(!toDatabase.containsKey(usToThem))
+						{
+							toDatabase.put(usToThem, new IAInfo());
+						}
 						// database already has an
 						// entry for this path, then
 						// use that as base,
 						// otherwise craete new
 						// entry
-						Values val1 = toDatabase.get(usToThem).getPathAttributes(key);
+						
+						Values val1 = toDatabase.get(usToThem).getPathAttributes(key);				
 						Values val2 = receivedAdvert.getPathAttributes(themToUs, key);
 						// if either val1 or val2 is null, give it a fresh blank vlaues.
 						val1 = val1 == null ? new Values() : val1;

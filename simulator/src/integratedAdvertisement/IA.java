@@ -305,15 +305,18 @@ public class IA {
 	 */
 	public byte[] getProtocolPathAttribute(PoPTuple forTuple, Protocol protocol,
 			LinkedList<Integer> path) {
-		if (popCosts.get(forTuple).pathValues.containsKey(IA.pathToKey(path)))
-			return popCosts.get(forTuple).pathValues.get(IA.pathToKey(path)).getValue(protocol);
-		else {
-			byte arr[] = new byte[1];
-			arr[0] = (byte) 0xFF;
-			return arr;
+		if(popCosts.containsKey(forTuple)){
+			if (popCosts.get(forTuple).pathValues.containsKey(IA.pathToKey(path))){
+				return popCosts.get(forTuple).pathValues.get(IA.pathToKey(path)).getValue(protocol);
+			}
+			else {
+				byte arr[] = new byte[1];
+				arr[0] = (byte) 0xFF;
+				return arr;
+			}
 		}
-
-	}
+		return null;
+}
 
 
 

@@ -226,26 +226,31 @@ public class BGP_AS extends AS {
 	 */
 	public void fillAdvertisementPoP(IA advert, Integer advertisedToAS, PoPTuple tupleChosen)
 	{
-		if(tupleChosen.pop1 == -1)
-		{
-			System.out.println("[debug] intradomaintruecost: shouldn't be here (maybe(");		
-		}
-		else{
+//		if(tupleChosen.pop1 == -1)
+//		{
+//			System.out.println("[debug] intradomaintruecost: shouldn't be here (maybe(");		
+//		}
+//		else{
+		IAInfo infoChosen = null;
+		if(tupleChosen != null){
+			infoChosen = advert.popCosts.get(tupleChosen.reverse()); //get the info that we chose because we are going to clear the costs
 			for(AS.PoPTuple poptuple : neighborLatency.get(advertisedToAS).keySet())
 			{
 				int intraDomainCost = getIntraDomainCost(tupleChosen.pop1, poptuple.pop1, advertisedToAS);
 				advert.truePoPCosts.put(poptuple, intraDomainCost);
 			}
-			
-			//initialize our pop to pop advertisement info.  That is, initialize a blank IA info for each place we're advertising to
-			//a little hackish using neighborlatency to get this, but it works
-			for(AS.PoPTuple popTuple : neighborLatency.get(advertisedToAS).keySet())
-			{
-				advert.popCosts.put(popTuple, new IAInfo());
-			}
-			
-			passThrough.attachPassthrough(advert, tupleChosen);
 		}
+				
+		advert.popCosts.clear();
+		//initialize our pop to pop advertisement info.  That is, initialize a blank IA info for each place we're advertising to
+		//a little hackish using neighborlatency to get this, but it works
+		for(AS.PoPTuple popTuple : neighborLatency.get(advertisedToAS).keySet())
+		{
+			advert.popCosts.put(popTuple, new IAInfo());
+		}
+
+		passThrough.attachPassthrough(advert, tupleChosen);
+//		}
 		
 	}
 
@@ -253,7 +258,7 @@ public class BGP_AS extends AS {
 	@Override 
 	protected void updateBookKeeping(IA advert, PoPTuple chosenTuple)
 	{
-		if(neighborLatency.containsKey(chosenTuple))
+		if(neighborLatency.containsKey(advert.getFirstHop()))
 		{
 			advert.setTrueCost(advert.getTrueCost() + neighborLatency.get(advert.getFirstHop()).get(chosenTuple));
 		}
@@ -293,7 +298,7 @@ public class BGP_AS extends AS {
 			nh = p.getFirstHop(); // this is the BGP_AS that advertised the path to us
 			nhType = neighborMap.get(nh);
 			
-			tupleChosen(p, tupleChosen);
+			tupleChosen = tupleChosen(p);
 			//choose a tuple based on lowest MED
 //			long lowestMED = Long.MAX_VALUE;			
 //			long trueCostInc = 0;
@@ -340,10 +345,10 @@ public class BGP_AS extends AS {
 //				}
 //				
 //				//clear the popcosts from newpath, this is a bgp node
-				newPath.popCosts.clear();
+	//			newPath.popCosts.clear();
 			}
 			else{
-				System.out.println("AS advertising?: " + asn);
+				System.out.println("bgp_as, AS advertising?: " + asn);
 //				//grab the intradomian true cost based on the tuple we chose, add it to true cost
 //				//pops reversed because they created advert with inforamtion from them to us, so we
 //				//convert our us to them poptuple to them to us
@@ -370,9 +375,9 @@ public class BGP_AS extends AS {
 			for(int i=0; i<customers.size(); i++) {
 				IA overwrite = new IA(newPath);
 				Integer customer = customers.get(i);
-				if(tupleChosen != null){
-					fillAdvertisementPoP(overwrite, customers.get(i), tupleChosen);
-				}
+		//		if(tupleChosen != null){
+				fillAdvertisementPoP(overwrite, customers.get(i), tupleChosen);
+	//			}
 				addPathToPendingUpdatesForPeer(overwrite, customers.get(i));
 				if(simulateTimers) {
 					if(!mraiRunning.get(customers.get(i))) {
@@ -385,9 +390,9 @@ public class BGP_AS extends AS {
 			}
 			
 			IA overwrite = new IA(newPath);
-				if(tupleChosen != null){
-					fillAdvertisementPoP(overwrite, nh, tupleChosen);
-				}
+		//		if(tupleChosen != null){
+			fillAdvertisementPoP(overwrite, nh, tupleChosen);
+	//			}
 			addPathToPendingUpdatesForPeer(overwrite, nh);
 			if(simulateTimers) {
 				if(!mraiRunning.get(nh)) {
@@ -401,9 +406,9 @@ public class BGP_AS extends AS {
 		else { // customer path, so announce to all
 			for(int i=0; i<customers.size(); i++) {
 				IA overwrite = new IA(newPath);
-				if(tupleChosen != null){
-					fillAdvertisementPoP(overwrite, customers.get(i), tupleChosen);
-				}
+//				if(tupleChosen != null){
+				fillAdvertisementPoP(overwrite, customers.get(i), tupleChosen);
+//				}
 				addPathToPendingUpdatesForPeer(overwrite, customers.get(i));
 				if(simulateTimers) {
 					if(!mraiRunning.get(customers.get(i))) {
@@ -416,9 +421,9 @@ public class BGP_AS extends AS {
 			}
 			for(int i=0; i<providers.size(); i++) {
 				IA overwrite = new IA(newPath);
-				if(tupleChosen != null){
-					fillAdvertisementPoP(overwrite, providers.get(i), tupleChosen);
-				}
+//				if(tupleChosen != null){
+				fillAdvertisementPoP(overwrite, providers.get(i), tupleChosen);
+//				}
 				addPathToPendingUpdatesForPeer(overwrite, providers.get(i));
 				if(simulateTimers) {
 					if(!mraiRunning.get(providers.get(i))) {
@@ -431,9 +436,9 @@ public class BGP_AS extends AS {
 			}
 			for(int i=0; i<peers.size(); i++) {
 				IA overwrite = new IA(newPath);
-				if(tupleChosen != null){
-					fillAdvertisementPoP(overwrite, peers.get(i), tupleChosen);
-				}
+//				if(tupleChosen != null){
+				fillAdvertisementPoP(overwrite, peers.get(i), tupleChosen);
+//				}
 				addPathToPendingUpdatesForPeer(overwrite, peers.get(i));
 				if(simulateTimers) {
 					if(!mraiRunning.get(peers.get(i))) {
@@ -1331,11 +1336,12 @@ public class BGP_AS extends AS {
 	}
 
 	@Override
-	public void tupleChosen(IA advert, PoPTuple chosenTuple) {
+	public PoPTuple tupleChosen(IA advert) {
 		//choose a tuple based on lowest MED
 		int nh = advert.getFirstHop();
 		long lowestMED = Long.MAX_VALUE;			
 		long trueCostInc = 0;
+		PoPTuple chosenTuple = null;
 		for(PoPTuple tuple : neighborLatency.get(nh).keySet()){
 			int latency = neighborLatency.get(nh).get(tuple);
 			if(latency < lowestMED)
@@ -1344,6 +1350,7 @@ public class BGP_AS extends AS {
 				chosenTuple = tuple;
 			}
 		}
+		return chosenTuple;
 		
 	}
 

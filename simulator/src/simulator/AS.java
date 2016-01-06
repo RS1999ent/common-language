@@ -459,6 +459,11 @@ public abstract class AS {
 	 */
 	protected abstract void updateBookKeeping(IA advert, PoPTuple chosenTuple);
 	
-	public abstract void tupleChosen(IA advert, PoPTuple chosenTuple);
+	/**
+	 * returns the puptuple of us to them that we choose as the point of presenes used on the path
+	 * @param advert the advertisement that has the infomration to make this decision
+	 * @return the tuple ponit of presence touble that we chose
+	 */
+	public abstract PoPTuple tupleChosen(IA advert);
 	
 }
