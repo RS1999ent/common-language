@@ -211,7 +211,7 @@ public class Wiser_AS extends AS {
 		PoPTuple tupleChosen = null;
 		tupleChosen = tupleChosen(oldPath); //get the downstream poptuple that we choose
 		tupleChosen = tupleChosen == null ? new PoPTuple(-1, -1) : tupleChosen;
-		String[] pWiserBytes = getWiserProps(oldPath, tupleChosen);//oldPath.getProtocolPathAttribute(new Protocol(AS.WISER), oldPath.getPath());
+		String[] pWiserBytes = getWiserProps(oldPath, tupleChosen.reverse());//oldPath.getProtocolPathAttribute(new Protocol(AS.WISER), oldPath.getPath());
 		String pWiserProps = null;
 		int pWisercost = pWiserBytes == null ? 0 : Integer.valueOf(pWiserBytes[0]);
 		int pNormalization = 1;
@@ -1165,10 +1165,10 @@ public class Wiser_AS extends AS {
 			//byte[] p2WiserBytes = p2.getProtocolPathAttribute(new Protocol(AS.WISER), p2.getPath());
 			String[] p1WiserProps = getWiserProps(p1, p1Tuple.reverse());
 			String[] p2WiserProps = getWiserProps(p2, p2Tuple.reverse());
-			int p1WiserCost = p1WiserProps != null ? Integer.valueOf(p1WiserProps[0]) : 0; //pull wisercost out, if the advert has one
-			int p2WiserCost = p2WiserProps != null ? Integer.valueOf(p2WiserProps[0]) : 0; //pull wisercost out, if the advert has one
-			int p1Normalization = p1WiserProps != null ? Integer.valueOf(p1WiserProps[1]) : 1; //pull normalization out, if the advert has one
-			int p2Normalization = p2WiserProps != null ? Integer.valueOf(p2WiserProps[1]) : 1; //pull normalization out, if the advert has one
+			float p1WiserCost = p1WiserProps != null ? Integer.valueOf(p1WiserProps[0]) : 0; //pull wisercost out, if the advert has one
+			float p2WiserCost = p2WiserProps != null ? Integer.valueOf(p2WiserProps[0]) : 0; //pull wisercost out, if the advert has one
+			float p1Normalization = p1WiserProps != null ? Integer.valueOf(p1WiserProps[1]) : 1; //pull normalization out, if the advert has one
+			float p2Normalization = p2WiserProps != null ? Integer.valueOf(p2WiserProps[1]) : 1; //pull normalization out, if the advert has one
 	
 			/*if(p1WiserBytes[0] != (byte) 0xFF)
 			{
@@ -1275,7 +1275,21 @@ public class Wiser_AS extends AS {
 					
 					int p2Wisercost = Integer.valueOf(p2Props[0]);
 					int p2Normalization = Integer.valueOf(p2Props[1]);*/
-					
+					if(p1WiserCost/p1Normalization == p2WiserCost / p2Normalization)
+					{
+						if (p1.getPath().size() < p2.getPath().size())
+						{
+							return true;
+						}	
+//						else
+//						{
+//							if(p1.getPath().size() == p2.getPath().size())
+//							{
+//								return p1.getFirstHop() < p2.getFirstHop();
+//							}
+							return false;
+//						}
+					}
 					return p1WiserCost/p1Normalization < p2WiserCost/p2Normalization;
 				}
 			}

@@ -860,6 +860,7 @@ public class Simulator {
 	};
 	
 	private static int NUMTHREADS = 1; //specify number of threads for the threadpool of run()
+	private static long timeout = 10000;
 	
 	/**
 	 * This is the main function which runs the simulation. It picks events out of the queue
@@ -877,8 +878,13 @@ public class Simulator {
 		{
 			threadPool[i] =  new HandleEventThread();
 		}*/
-		boolean slept = false; //have we gotten to an empty event queue once and slept?
+		long currentTime = System.currentTimeMillis();
 		while(true) {
+//			if(System.currentTimeMillis() - currentTime > timeout)
+//			{
+//				System.out.println("taking longer than: " + timeout/1000 + "secs exiting");
+//				System.exit(1);
+//			}
 		//	if(eventQueue.size() % 100 == 0)
 			//	System.out.println("eventqueue size: " + eventQueue.size());
 	//		synchronized(eventQueue){ //get lock on eventQueue
@@ -906,7 +912,6 @@ public class Simulator {
 
 			}
 			else { //got a thread, make sure slept is false
-				slept = false;
 				// the message is printed first and then processed!
 				if(e.eventType == Event.MSG_EVENT) {
 					debug(e.toString());
@@ -3284,7 +3289,7 @@ public class Simulator {
 			int as1 = Integer.parseInt(token[0]);
 			int as2 = Integer.parseInt(token[1]);
 			int relation = Integer.parseInt(token[2]);
-			int latency = Math.round((1/Float.parseFloat(token[3])) * 1000); //working with bandwidth maybe temporary, so parse float Integer.parseInt(token[3]);
+			int latency = Math.round((1/Float.parseFloat(token[3])) * 100000); //working with bandwidth maybe temporary, so parse float Integer.parseInt(token[3]);
 			int pop1 = Integer.parseInt(token[4]);
 			int pop2 = Integer.parseInt(token[5]);
 //			int as1Type = Integer.parseInt(token[4]);
