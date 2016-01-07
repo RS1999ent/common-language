@@ -239,11 +239,11 @@ public class Wiser_AS extends AS {
 			newPath.popCosts.put(poptuple, popInfo);
 		}
 		
-		if(newPath.getTrueCost() != cost)
-		{
-			System.out.println("HERE");
-		}
-		
+//		if(newPath.getTrueCost() != cost)
+//		{
+//			System.out.println("HERE");
+//		}
+//		
 		passThrough.attachPassthrough(newPath, tupleChosen);
 
 		//not adding wiser cost incoming, will happen when it reaches the next node (wiser or bgp)

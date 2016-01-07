@@ -862,7 +862,7 @@ public class Simulator {
 	};
 	
 	private static int NUMTHREADS = 1; //specify number of threads for the threadpool of run()
-	private static long timeout = 10000;
+	private static long timeout = 20000;
 	
 	/**
 	 * This is the main function which runs the simulation. It picks events out of the queue
@@ -882,11 +882,11 @@ public class Simulator {
 		}*/
 		long currentTime = System.currentTimeMillis();
 		while(true) {
-//			if(System.currentTimeMillis() - currentTime > timeout)
-//			{
-//				System.out.println("taking longer than: " + timeout/1000 + "secs exiting");
-//				System.exit(1);
-//			}
+			if(System.currentTimeMillis() - currentTime > timeout)
+			{
+				System.out.println("taking longer than: " + timeout/1000 + "secs exiting");
+				System.exit(1);
+			}
 		//	if(eventQueue.size() % 100 == 0)
 			//	System.out.println("eventqueue size: " + eventQueue.size());
 	//		synchronized(eventQueue){ //get lock on eventQueue

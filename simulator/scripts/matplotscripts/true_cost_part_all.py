@@ -2,20 +2,20 @@ import numpy
 import pylab
 import matplotlib.pyplot as plt
 from matplotlib.backends.backend_pdf import PdfPages
-pp = PdfPages('truecost_part_transits.pdf')
+pp = PdfPages('truecost_part_all.pdf')
 arr = numpy.asarray
 
 x = arr([0, .1, .2, .3, .4, .5, .6, .7, .8, .9, 1])
 y = arr([[1457270.5],
-         [1491185],
-         [1511494.513],
-         [1481874.9],
-         [1372096.32],
-         [1304643.55],
-         [1197282.45],
-         [1144478.056],
-         [1019992.644],
-         [864517.1311],
+         [1479158.9],
+         [1476073.413],
+         [1444782.44],
+         [1372953.26],
+         [1308710.05],
+         [1187560.917],
+         [1141159.451],
+         [1018126.513],
+         [863181.1922],
          [698950.2]]).flatten()
 
 c= arr([[ 49.81, 34.67], #.1
@@ -33,7 +33,7 @@ c= arr([[ 49.81, 34.67], #.1
 #plt.figure()
 plt.errorbar(x, y, yerr=0)
 plt.axis([0,1, 0, 1520000])
-plt.ylabel('Average true cost of paths received at all participating ASes')
+plt.ylabel('Average true cost of paths received at all ASes')
 plt.xlabel('Percentage of transit ASes participating')
 plt.title('Average cost of paths received vs number of ASes participating in new protocol')
 pp.savefig()
