@@ -231,6 +231,7 @@ public class BGP_AS extends AS {
 //			System.out.println("[debug] intradomaintruecost: shouldn't be here (maybe(");		
 //		}
 //		else{
+		updateBookKeepingOutward(advert, advertisedToAS);
 		IAInfo infoChosen = null;
 		if(tupleChosen != null){
 			infoChosen = advert.popCosts.get(tupleChosen.reverse()); //get the info that we chose because we are going to clear the costs
@@ -315,7 +316,7 @@ public class BGP_AS extends AS {
 			//COMPUTES WHAT THE POINT OF PRESENCE THAT WE CHOOSE WOULD HAVE ADVETISED. hackish, i know.
 			if(p.popCosts.size() > 0)
 			{
-				updateBookKeeping(p, tupleChosen); //update the bookkeeping on p, (getfirsthop is used in method so we use p instead of newpath)
+	//			updateBookKeeping(p, tupleChosen); //update the bookkeeping on p, (getfirsthop is used in method so we use p instead of newpath)
 //				int wisercost = 9999; //debug, shows something is wrong if this shows up
 //				int normalization = 1;
 //				//reversed because we chose a tuple from us to them, in the advertisement the tuple
@@ -1103,6 +1104,8 @@ public class BGP_AS extends AS {
 
 		int p1nh = p1.getFirstHop();
 		int p2nh = p2.getFirstHop();
+	//	updateBookKeeping(p1, tupleChosen(p1));
+	//	updateBookKeeping(p2, tupleChosen(p2));
 		
 		int p1nhType = neighborMap.get(p1nh);
 		int p2nhType = neighborMap.get(p2nh);

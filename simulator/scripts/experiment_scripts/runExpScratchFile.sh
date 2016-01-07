@@ -6,7 +6,7 @@ do
     for i in $(seq 1 5);
     do
 	printf "\nTesting on Transit seed %s\n" $i
-	python ../asTypes.py --seedWiser 1 ../../formattedData/annotatedBrite.txt ../../formattedData/asTypes.txt --numTransits $test --seedTransit $i --sim 501
-	java -Xmx6000M -Dfile.encoding=Cp1252 -classpath "C:\cygwin64\home\David\repos\commonlanguage\simulator\src;C:\Users\spart\.m2\repository\net\sourceforge\argparse4j\argparse4j\0.6.0\argparse4j-0.6.0.jar;C:\Users\spart\.m2\repository" simulator.Simulator ../../formattedData/annotatedBrite.txt ../../formattedData/asTypes.txt ../../results/delete.txt --seed 1 --sim 5 --allMonitor 0
+	python ../asTypes.py --seedWiser 1 ../../formattedData/annotatedBrite.txt ../../formattedData/asTypes.txt --numTransits $test --seedTransit $i --sim 504
+	java -Xmx6000M -Dfile.encoding=Cp1252 -classpath "C:\cygwin64\home\David\repos\commonlanguage\simulator\src;C:\Users\spart\.m2\repository\net\sourceforge\argparse4j\argparse4j\0.6.0\argparse4j-0.6.0.jar;C:\Users\spart\.m2\repository" simulator.Simulator ../../formattedData/annotatedBrite.txt ../../formattedData/asTypes.txt ../../results/delete.txt --seed 1 --sim 7 --allMonitor 0 --useBandwidth 0
     done
 done

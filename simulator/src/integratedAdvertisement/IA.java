@@ -93,7 +93,7 @@ public class IA {
 		legacyPath = (LinkedList<Integer>) toCopy.legacyPath.clone();
 		paths = (HashMap<String, LinkedList<Integer>>) toCopy.paths.clone();
 		
-		this.bookKeepingInfo = toCopy.bookKeepingInfo;
+		this.bookKeepingInfo = (HashMap<String, Float>)toCopy.bookKeepingInfo.clone();
 		this.trueCost = toCopy.trueCost;
 		this.secure = toCopy.secure;
 		//copy poptuples in

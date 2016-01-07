@@ -503,6 +503,30 @@ public abstract class AS {
 		}
 	}	
 	
+	//DOES NOT WORK WITH MULTIPLUE POPS
+	protected void updateBookKeepingOutward(IA advert, int toAS){
+		if(neighborLatency.containsKey(toAS))
+		{
+			for(PoPTuple neighborTuple : neighborLatency.get(toAS).keySet())
+			{
+				advert.setTrueCost(advert.getTrueCost() + neighborLatency.get(toAS).get(neighborTuple));
+				if(!advert.bookKeepingInfo.containsKey(IA.BNBW_KEY))
+				{				
+					advert.bookKeepingInfo.put(IA.BNBW_KEY, Float.MAX_VALUE);
+				}
+				float currBNBW = Float.valueOf(advert.bookKeepingInfo.get(IA.BNBW_KEY));
+				float neighborBW = neighborLatency.get(toAS).get(neighborTuple); 
+				if( neighborBW < currBNBW)
+				{
+					advert.bookKeepingInfo.put(IA.BNBW_KEY, neighborBW );
+				}
+			}
+		}
+		else
+		{
+			System.out.println("as, can't update costs");
+		}
+	}
 	/**
 	 * returns the puptuple of us to them that we choose as the point of presenes used on the path
 	 * @param advert the advertisement that has the infomration to make this decision

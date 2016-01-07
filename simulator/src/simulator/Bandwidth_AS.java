@@ -207,6 +207,7 @@ public class Bandwidth_AS extends AS {
 	//newpath is mutated
 	void addBottleneckBandwidth(IA newPath, IA oldPath, Integer advertisedToAS)
 	{
+		updateBookKeepingOutward(newPath, advertisedToAS);
 		//PoPTuple tupleChosen = new PoPTuple(-1,-1);
 		PoPTuple tupleChosen = null;
 		tupleChosen = tupleChosen(oldPath); //get the downstream poptuple that we choose
@@ -216,11 +217,11 @@ public class Bandwidth_AS extends AS {
 		int currBottleneckBW = pBandwidthProps == null ? Integer.MAX_VALUE : Integer.valueOf(pBandwidthProps[0]);
 		int pNormalization = 1;
 		newPath.popCosts.clear();//clear popcosts, might contain the old stuff and since we are filling these with new popcosts, then they need to be empty
-		
+		int cost = 0;
 		//add intradomain costs here, instead it is just going to be the same for now		
 		for(AS.PoPTuple poptuple : neighborLatency.get(advertisedToAS).keySet())
 		{
-			int cost = currBottleneckBW;
+			cost = currBottleneckBW;
 			if(neighborLatency.get(advertisedToAS).get(poptuple) < currBottleneckBW)
 			{
 				cost = neighborLatency.get(advertisedToAS).get(poptuple);
@@ -236,7 +237,13 @@ public class Bandwidth_AS extends AS {
 			}
 			newPath.popCosts.put(poptuple, popInfo);
 		}
+//		if(newPath.bookKeepingInfo.get(IA.BNBW_KEY) != cost)
+//		{
+//			System.out.println("HERE");
+//		}
 		
+	//	System.out.println("bookkeeping: " + newPath.bookKeepingInfo.get(IA.BNBW_KEY));
+//		System.out.println("cost: " + cost + "\n");
 		passThrough.attachPassthrough(newPath, tupleChosen);
 
 		//not adding wiser cost incoming, will happen when it reaches the next node (wiser or bgp)
@@ -330,7 +337,7 @@ public class Bandwidth_AS extends AS {
 			if(p.popCosts.size()>0){ //we are talkign to a wiser node, have to do the hackish stuff here (see bgp_as), 
 									//in other words, what is the wiser advertisement that would have been advertised for the
 				  					//PoP pair that we choose as our next hop
-				updateBookKeeping(p, tupleChosen);
+	//			updateBookKeeping(p, tupleChosen);
 				
 //				int normalization = 1;
 //				int wisercost = 9999;
@@ -1152,13 +1159,14 @@ public class Bandwidth_AS extends AS {
 			int p2nhType = neighborMap.get(p2nh);
 	
 			//information used throughout the selection process
-			int p1MaxBW = Integer.MAX_VALUE;
+			//int p1MaxBW = Integer.MAX_VALUE;
 			AS.PoPTuple p1Tuple = new AS.PoPTuple(-1, -1);
 			p1Tuple = tupleChosen(p1);
-			int p2MaxBW = Integer.MAX_VALUE;
+		//	int p2MaxBW = Integer.MAX_VALUE;
 			AS.PoPTuple p2Tuple = new AS.PoPTuple(-1, -1);
 			p2Tuple = tupleChosen(p2);
-			
+	//		updateBookKeeping(p1, p1Tuple);
+//			updateBookKeeping(p2, p2Tuple);
 	
 			//byte[] p1WiserBytes = p1.getProtocolPathAttribute(new Protocol(AS.WISER), p1.getPath());
 			//byte[] p2WiserBytes = p2.getProtocolPathAttribute(new Protocol(AS.WISER), p2.getPath());
@@ -1289,7 +1297,8 @@ public class Bandwidth_AS extends AS {
 							return false;
 //						}
 					}
-					return p1BW/p1Normalization > p2BW/p2Normalization;
+					boolean returnVal =p1BW/p1Normalization > p2BW/p2Normalization; 
+					return returnVal;
 				}
 			}
 			
@@ -1350,6 +1359,7 @@ public class Bandwidth_AS extends AS {
 					if(neighborLatency.get(path.getFirstHop()).get(tuple.reverse()) > p1bottleneckBW)
 					{
 						p1Tuple = tuple.reverse();
+						p1bottleneckBW = neighborLatency.get(path.getFirstHop()).get(tuple.reverse());
 					}
 				}
 				else

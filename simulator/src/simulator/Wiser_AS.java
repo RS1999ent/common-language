@@ -208,6 +208,7 @@ public class Wiser_AS extends AS {
 	void addWiserPathAttribute(IA newPath, IA oldPath, Integer advertisedToAS)
 	{
 		//PoPTuple tupleChosen = new PoPTuple(-1,-1);
+		updateBookKeepingOutward(newPath, advertisedToAS);
 		PoPTuple tupleChosen = null;
 		tupleChosen = tupleChosen(oldPath); //get the downstream poptuple that we choose
 		tupleChosen = tupleChosen == null ? new PoPTuple(-1, -1) : tupleChosen;
@@ -236,6 +237,11 @@ public class Wiser_AS extends AS {
 				e.printStackTrace();
 			}
 			newPath.popCosts.put(poptuple, popInfo);
+		}
+		
+		if(newPath.getTrueCost() != cost)
+		{
+			System.out.println("HERE");
 		}
 		
 		passThrough.attachPassthrough(newPath, tupleChosen);
@@ -331,7 +337,7 @@ public class Wiser_AS extends AS {
 			if(p.popCosts.size()>0){ //we are talkign to a wiser node, have to do the hackish stuff here (see bgp_as), 
 									//in other words, what is the wiser advertisement that would have been advertised for the
 				  					//PoP pair that we choose as our next hop
-				updateBookKeeping(p, tupleChosen);
+		//		updateBookKeeping(p, tupleChosen);
 				
 //				int normalization = 1;
 //				int wisercost = 9999;
