@@ -1,20 +1,25 @@
+/**
+ * 
+ */
 package simulator;
 
 import integratedAdvertisement.IA;
-import integratedAdvertisement.IAInfo;
 import integratedAdvertisement.Protocol;
 import integratedAdvertisement.RootCause;
+import integratedAdvertisement.Values;
 
 import java.io.UnsupportedEncodingException;
-import java.util.ArrayList;
+import java.util.*;
 import java.util.Collection;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.Iterator;
-import java.util.List;
 import java.util.Set;
 
-public class Wiser_AS extends AS {
+/**
+ * @author David
+ *
+ */
+public class SBGP_AS extends AS {
+
+	
 	private static final int LINK_DELAY = 100; // static link delay of 10 ms
 
 	/** The BGP_AS number of this BGP_AS */
@@ -54,7 +59,7 @@ public class Wiser_AS extends AS {
 	 * This is because when the MRAI timer expires for a peer, 
 	 * you want to get all the messages for that peer
 	 */
-	HashMap<Integer, HashMap<Integer,IA>> pendingUpdates = new HashMap<Integer, HashMap<Integer, IA>>();
+	HashMap<Integer, HashMap<Integer, IA>> pendingUpdates = new HashMap<Integer, HashMap<Integer, IA>>();
 
 	/**
 	 * Stores the RIBHist for each destination. The RIBHist contains the history of
@@ -94,19 +99,16 @@ public class Wiser_AS extends AS {
 
 	/** This stores the information on conditionally incomplete updates from all my floods this epoch */ 
 	HashSet<UpdateDependency> floodsConditional = new HashSet<UpdateDependency>();
-	
-	//true if this is a basic transit AS, just means that it doesn't add wiser costs
-	boolean isBasic;
 
 	/**
 	 * The constructor for an BGP_AS
 	 * 
 	 * @param asnum The BGP_AS number of this BGP_AS
 	 */
-	public Wiser_AS(int asnum, int mrai, boolean isBasic) {
+	public SBGP_AS(int asnum, int mrai) {
 		asn = asnum;
 		mraiValue = mrai;
-		this.isBasic = isBasic;
+
 //		// initialize all MRAI timers to false
 //		// set the neighbor type
 //		// announce self to all neighbors
@@ -148,6 +150,7 @@ public class Wiser_AS extends AS {
 		mraiRunning.put(asnum, false);
 	}
 
+	
 	/**
 	 * This function is used to reset the state of the BGP_AS
 	 *
@@ -183,7 +186,9 @@ public class Wiser_AS extends AS {
 	 *
 	 */
 	public void announceSelf() {
-		addPathToUpdates(new IA(new RootCause(asn, currentUpdate++, asn)), Simulator.otherTimers);
+		IA path = new IA(new RootCause(asn, currentUpdate++, asn));
+		path.secure = true;
+		addPathToUpdates(path, Simulator.otherTimers);
 	}
 
 	/**
@@ -202,97 +207,32 @@ public class Wiser_AS extends AS {
 		temp.put(nextHop, p);
 		passThrough.addToDatabase(p); //add path and information to passthrough database
 	}
+	
 
-	//adds wiser path attributes to newPath based on what's in oldpath
-	//newpath is mutated
-	void addWiserPathAttribute(IA newPath, IA oldPath, Integer advertisedToAS)
+	
+	/**
+	 * method that fills true pop cost with information
+	 * @param advert the advertisement we need to fill with info
+	 * @param advertisedToAS the as we are advertising to
+	 * @param tupleChosen the pop tuple we chose for the downstream as
+	 * 
+	 */
+	public void intraDomainCost(IA advert, Integer advertisedToAS, PoPTuple tupleChosen)
 	{
-		//PoPTuple tupleChosen = new PoPTuple(-1,-1);
-		PoPTuple tupleChosen = null;
-		tupleChosen = tupleChosen(oldPath); //get the downstream poptuple that we choose
-		tupleChosen = tupleChosen == null ? new PoPTuple(-1, -1) : tupleChosen;
-		String[] pWiserBytes = getWiserProps(oldPath, tupleChosen.reverse());//oldPath.getProtocolPathAttribute(new Protocol(AS.WISER), oldPath.getPath());
-		String pWiserProps = null;
-		int pWisercost = pWiserBytes == null ? 0 : Integer.valueOf(pWiserBytes[0]);
-		int pNormalization = 1;
-		newPath.popCosts.clear();//clear popcosts, might contain the old stuff and since we are filling these with new popcosts, then they need to be empty
-		
-		//add intradomain costs here, instead it is just going to be the same for now
-		int cost = 0;
-		for(AS.PoPTuple poptuple : neighborLatency.get(advertisedToAS).keySet())
+		if(tupleChosen.pop1 == -1)
 		{
-			cost += neighborLatency.get(advertisedToAS).get(poptuple);
-			//			int cost = getTrueCostInc(oldPath); //the true cost inc, will be the wiser cost advertised for now
-			if(tupleChosen.pop1 != -1){
-				cost += getIntraDomainCost(tupleChosen.pop1, poptuple.pop1, advertisedToAS); //cost is equal to just intradomain cost, because we are filling popcosts
-			}
-			cost+= pWisercost;
-			IAInfo popInfo = new IAInfo();
-			String pathAttribute = String.valueOf(cost) + " " + String.valueOf(pNormalization);
-			try {
-				popInfo.setProtocolPathAttribute(pathAttribute.getBytes("UTF-8"), new Protocol(AS.WISER), newPath.getPath());
-			} catch (UnsupportedEncodingException e) {
-				// TODO Auto-generated catch block
-				e.printStackTrace();
-			}
-			newPath.popCosts.put(poptuple, popInfo);
+			System.out.println("[debug] intradomaintruecost: shouldn't be here (maybe(");		
 		}
-		
-		passThrough.attachPassthrough(newPath, tupleChosen);
-
-		//not adding wiser cost incoming, will happen when it reaches the next node (wiser or bgp)
-		/*
-			String[] wiserProps = getWiserProps(newPath);
-			int wisercost = 0;
-			int normalization = 1;
-			if(wiserProps != null){
-				wisercost += Integer.valueOf(wiserProps[0]); //add the wiser props
-				normalization = Integer.valueOf(wiserProps[1]);
-			}
-			if(oldPath.getPath().size() > 0){
-				wisercost += neighborLatency.get(oldPath.getFirstHop()).get(tupleChosen);
-			}
-			String pathAttribute = String.valueOf(wisercost) + " " + String.valueOf(normalization);
-			try {
-				newPath.setProtocolPathAttribute(pathAttribute.getBytes("UTF-8"), new Protocol(AS.WISER), newPath.getPath());
-			} catch (UnsupportedEncodingException e) {
-				// TODO Auto-generated catch block
-				e.printStackTrace();
-			}
-		 */
-
-		/* block 1		
-		if(pWiserBytes[0] != (byte) 0xFF)
-		{
-			try {
-				pWiserProps = new String(pWiserBytes, "UTF-8");
-				String[] pProps = pWiserProps.split("\\s+");
-
-				pWisercost = Integer.valueOf(pProps[0]);
-//uncomment				pNormalization = Integer.valueOf(pProps[1]);
-			} catch (UnsupportedEncodingException e) {
-				// TODO Auto-generated catch block
-				e.printStackTrace();
-			}
+		else{
+			for(AS.PoPTuple poptuple : neighborLatency.get(advertisedToAS).keySet())
+			{
+				int intraDomainCost = getIntraDomainCost(tupleChosen.pop1, poptuple.pop1, advertisedToAS);
+				advert.truePoPCosts.put(poptuple, intraDomainCost);
+			}	
 		}
-		//get the latency between the two points of presence
-	//	int latency = neighborLatency.get(advertisedToAS).get(newPath.getPoPTuple());
-
-		//wiser cost is just the wisercost received so far (normalized) + the
-		int wiserCost = pWisercost/pNormalization + cost;	// 
-		//normalization is just the wiser cost that came in (normalized) or 1 if we are the first to advertise, since there will only be one advertised path with the same next hops.
-//uncomment		pNormalization = pWisercost == 0 ? 1 : pWisercost/pNormalization;
-		//convert these two things to string (easier to work with) combine and add the bytes to the path attribute.
-		String pathAttribute = String.valueOf(wiserCost) + " " + String.valueOf(pNormalization);
-		try {
-			newPath.setProtocolPathAttribute(pathAttribute.getBytes("UTF-8"), new Protocol(AS.WISER), newPath.getPath());
-		} catch (UnsupportedEncodingException e) {
-			// TODO Auto-generated catch block
-			e.printStackTrace();
-		}
-		 */ //endblock 1	
 	}
 	
+
 	/**
 	 * This function adds a path to the set of path
 	 * updates. Uses outbound filtering to decide which
@@ -310,10 +250,7 @@ public class Wiser_AS extends AS {
 	 */
 	public void addPathToUpdates(IA p, boolean simulateTimers) {
 		// TODO: might have to change the RootCause
-		IA newPath = new IA(p);//new IA(p.getPath(), p.getRootCause());
-
-		
-		
+		IA newPath = new IA(p); //new IA(p.getPath(), p.getRootCause());
 		newPath.prepend(asn);
 		int nhType = CUSTOMER; // paths to self should be announced to all
 		int nh = -1;
@@ -321,82 +258,58 @@ public class Wiser_AS extends AS {
 		int pseudoMraiValue = Math.round(this.mraiValue*Simulator.r.nextFloat()/1000)*1000;
 //		int pseudoMraiValue = this.mraiValue;
 //		int pseudoMraiValue = Math.round(this.mraiValue*Simulator.r.nextFloat());
+		PoPTuple tupleChosen = null;
 		if(p.getPath().size() > 0) {
 			nh = p.getFirstHop(); // this is the BGP_AS that advertised the path to us
 			nhType = neighborMap.get(nh);
-			PoPTuple tupleChosen = new PoPTuple(-1, -1);
-			tupleChosen = tupleChosen(p);
-	//		long newTrueCost = newPath.getTrueCost() + getCostInc(p, tupleChosen); //should add intradomain cost (only should be used as true cost
-			                                                            //for wiser as that is the only way intradomain costs get in
-			if(p.popCosts.size()>0){ //we are talkign to a wiser node, have to do the hackish stuff here (see bgp_as), 
-									//in other words, what is the wiser advertisement that would have been advertised for the
-				  					//PoP pair that we choose as our next hop
-				updateBookKeeping(p, tupleChosen);
-				
-//				int normalization = 1;
-//				int wisercost = 9999;
-//				//long newTrueCost = newPath.getTrueCost() + getCostInc(p, tupleChosen); //should add intradomain cost
-////				newPath.setTrueCost(newTrueCost);
-//				PoPTuple advertisementTuple = new PoPTuple(tupleChosen.pop2, tupleChosen.pop1);
-//				wisercost = p.popCosts.get(advertisementTuple);
-//				if(p.popCosts.get(advertisementTuple) == null) 
-//				{
-//					System.out.println("there is no point of presence from them to us in advertisement, shouldn't happen");
-//				}
-//				if(wisercost == 9999){
-//					System.out.println("wiseras wisercost 9999");
-//				}
-//				//grab the wiser information (that should be filled, remember, we are talking to a wiser node)
-//				String[] wiserProps = getWiserProps(p);
-//				if(wiserProps != null){
-//					wisercost += Integer.valueOf(wiserProps[0]); //add the wiser props
-//				}
-//	//			else
-//		///		{
-//	//				wisercost += neighborLatency.get(nh).get(tupleChosen);
-//		//		}
-//				
-//				//would compute normalization here
-//				String pathAttribute = String.valueOf(wisercost) + " " + String.valueOf(normalization);
-//				try {
-//					newPath.setProtocolPathAttribute(pathAttribute.getBytes("UTF-8"), new Protocol(AS.WISER), newPath.getPath());
-//				} catch (UnsupportedEncodingException e) {
-//					// TODO Auto-generated catch block
-//					e.printStackTrace();
-//				}
+			
+			// update for the true cost of path. This will be the poptuple that has
+			// the lowest latency to simulate choosing the lowest MED value
+			long trueCostInc = Long.MAX_VALUE;			
+			for(PoPTuple tuple : neighborLatency.get(nh).keySet()){
+				int latency = neighborLatency.get(nh).get(tuple);
+				if(latency < trueCostInc)
+				{
+					trueCostInc = latency;
+					tupleChosen = tuple;
+				}
 			}
-			else //its a bgp node, add the true cost bookeeping informaton on its intradomain costs
+			//put the wiser information that would have been there if we weren't hacking a solution here
+			//this is only if our neighbor is a wiser node, simulates the advertisemetns received from multiple pops
+			//COMPUTES WHAT THE POINT OF PRESENCE THAT WE CHOOSE WOULD HAVE ADVETISED. hackish, i know.
+			if(p.popCosts.size() > 0)
 			{
-				System.out.println("AS advertising?: " + asn);
-//				//grab the intradomian true cost based on the tuple we chose, add it to true cost
-//				//pops reversed because they created advert with inforamtion from them to us, so we
-//				//convert our us to them poptuple to them to us
-//				PoPTuple advertisementTuple = new PoPTuple(tupleChosen.pop2, tupleChosen.pop1);
-//				if(p.truePoPCosts.get(advertisementTuple) == null)
-//				{
-////					System.out.println("wiser_as, no point of presence from them to us, shouldn't happen from non announcing ases");
-//				}
-//				else{
-//				//			System.out.println("HERE");
-//					//System.out.println("truepop: " +p.truePoPCosts.get(advertisementTuple));
-//					newTrueCost += p.truePoPCosts.get(advertisementTuple);
-//				}
-//				//		System.out.println("true cost inc: " + trueCostInc);				
+				newPath.popCosts.clear();
 			}
-	//		newPath.popCosts.clear(); //clear popcosts as we've already used them, local, shouldn't be passed on
+			else{
+				//grab the intradomian true cost based on the tuple we chose, add it to true cost
+				//pops reversed because they created advert with inforamtion from them to us, so we
+				//convert our us to them poptuple to them to us
+				PoPTuple advertisementTuple = new PoPTuple(tupleChosen.pop2, tupleChosen.pop1);
+				if(p.truePoPCosts.get(advertisementTuple) == null)
+				{
+//					System.out.println("sbgp_as, no point of presence from them to us, shouldn't happen");
+				}
+				else{
+					//		System.out.println("HERE");
+					trueCostInc += p.truePoPCosts.get(advertisementTuple);
+				}
+				//		System.out.println("true cost inc: " + trueCostInc);
+			}
 			newPath.truePoPCosts.clear();
-			newPath.setTrueCost(p.getTrueCost());	
+			newPath.setTrueCost(newPath.getTrueCost() + trueCostInc);
 		}
 
-	//	passThrough.attachPassthrough(newPath); //attach passthrough before sending to neighbors, done in addwiserpathattribute
+		
+		passThrough.attachPassthrough(newPath); //attach passthrough info before sending to neighbors
 		if(nhType == PROVIDER || nhType == PEER) { // announce it only to customers .. and to nextHop in the path 
 			for(int i=0; i<customers.size(); i++) {
-				//add wiser path attributes if this is a full wiser node
-				//copy newpath because we are adding multiple stuff to it
-				IA overWritePath = new IA(newPath);
-				if(!isBasic) //this is a problem, if basic because we attach passthrough in the next method.  experimetns dont' use basic nodes anymore though
-					addWiserPathAttribute(overWritePath, p, customers.get(i)) ;
-				addPathToPendingUpdatesForPeer(overWritePath, customers.get(i));
+				IA overwrite = new IA(newPath);
+				Integer customer = customers.get(i);
+				if(tupleChosen != null){
+					intraDomainCost(overwrite, customers.get(i), tupleChosen);
+				}
+				addPathToPendingUpdatesForPeer(overwrite, customers.get(i));
 				if(simulateTimers) {
 					if(!mraiRunning.get(customers.get(i))) {
 						mraiRunning.put(customers.get(i), true);
@@ -406,10 +319,12 @@ public class Wiser_AS extends AS {
 				}
 				sendUpdatesToPeer(customers.get(i));
 			}
-			IA overWritePath = new IA(newPath);
-			if(!isBasic) //if this a full wiser node, add costs
-				addWiserPathAttribute(overWritePath, p, nh); //add wiser path attribute.  this is to sending update to peer we received advert from.
-			addPathToPendingUpdatesForPeer(overWritePath, nh);
+			
+			IA overwrite = new IA(newPath);
+				if(tupleChosen != null){
+					intraDomainCost(overwrite, nh, tupleChosen);
+				}
+			addPathToPendingUpdatesForPeer(overwrite, nh);
 			if(simulateTimers) {
 				if(!mraiRunning.get(nh)) {
 					mraiRunning.put(nh, true);
@@ -421,11 +336,11 @@ public class Wiser_AS extends AS {
 		}
 		else { // customer path, so announce to all
 			for(int i=0; i<customers.size(); i++) {
-				//add wiser path attributes if this is a wiser node
-				IA overWritePath = new IA(newPath);	
-				if(!isBasic)
-					addWiserPathAttribute(overWritePath, p, customers.get(i));
-				addPathToPendingUpdatesForPeer(overWritePath, customers.get(i));
+				IA overwrite = new IA(newPath);
+				if(tupleChosen != null){
+					intraDomainCost(overwrite, customers.get(i), tupleChosen);
+				}
+				addPathToPendingUpdatesForPeer(overwrite, customers.get(i));
 				if(simulateTimers) {
 					if(!mraiRunning.get(customers.get(i))) {
 						mraiRunning.put(customers.get(i), true);
@@ -435,12 +350,12 @@ public class Wiser_AS extends AS {
 				}
 				sendUpdatesToPeer(customers.get(i));
 			}
-			for(int i=0; i<providers.size(); i++) {				
-				//add wiser path attributes if this is a wiser node
-				IA overWritePath = new IA(newPath);
-				if(!isBasic)
-					addWiserPathAttribute(overWritePath, p, providers.get(i));
-				addPathToPendingUpdatesForPeer(overWritePath, providers.get(i));
+			for(int i=0; i<providers.size(); i++) {
+				IA overwrite = new IA(newPath);
+				if(tupleChosen != null){
+					intraDomainCost(overwrite, providers.get(i), tupleChosen);
+				}
+				addPathToPendingUpdatesForPeer(overwrite, providers.get(i));
 				if(simulateTimers) {
 					if(!mraiRunning.get(providers.get(i))) {
 						mraiRunning.put(providers.get(i), true);
@@ -451,11 +366,11 @@ public class Wiser_AS extends AS {
 				sendUpdatesToPeer(providers.get(i));
 			}
 			for(int i=0; i<peers.size(); i++) {
-				//add wiser path attributes if this is a wiser node
-				IA overWritePath = new IA(newPath);
-				if(!isBasic)
-					addWiserPathAttribute(overWritePath, p, peers.get(i));
-				addPathToPendingUpdatesForPeer(overWritePath, peers.get(i));
+				IA overwrite = new IA(newPath);
+				if(tupleChosen != null){
+					intraDomainCost(overwrite, peers.get(i), tupleChosen);
+				}
+				addPathToPendingUpdatesForPeer(overwrite, peers.get(i));
 				if(simulateTimers) {
 					if(!mraiRunning.get(peers.get(i))) {
 						mraiRunning.put(peers.get(i), true);
@@ -473,7 +388,7 @@ public class Wiser_AS extends AS {
 	 * @param p The path that is being added.
 	 * @param peer The peer for whom this update is queued
 	 */
-	private void addPathToPendingUpdatesForPeer(IA p, int peer) {
+	private void addPathToPendingUpdatesForPeer(IA p, int peer) {	
 		HashMap<Integer,IA> dstPathMap = new HashMap<Integer,IA>();
 		if(!pendingUpdates.containsKey(peer)) {
 			pendingUpdates.put(peer, dstPathMap);
@@ -587,8 +502,8 @@ public class Wiser_AS extends AS {
 		if(type == ControlMessage.ANNOUNCE) { // need to announce current best path
 			IA copy = new IA(p);//new IA(p.getPath(), p.getRootCause());
 			// need to always send a copy!
-			copy.prepend(asn);		
-		//	passThrough.attachPassthrough(copy); //[ADDED]
+			copy.prepend(asn);
+			passThrough.attachPassthrough(copy); //[ADDED]
 			uwMsg = new UpdateMessage(asn, prefix, copy); // TODO: Do we need to change root cause?
 		}
 		else { // WITHDRAW
@@ -1097,316 +1012,59 @@ public class Wiser_AS extends AS {
 	}
 
 	/**
-		 * This function determines if the first path is better than the second
-		 * @param p1 The first path 
-		 * @param p2 The second path
-		 * 
-		 * @return true 	if p1 is better than p2
-		 * 		   false 	otherwise 
-		 */
-		public boolean isBetter(IA p1, IA p2) {
-			// this is where we can apply the policy
-			// for now, we just follow customer > peer > provider
-			// and in case of a tie, shortest path length
-			// and then break tie by lowest BGP_AS number for next hop
-	
-		/*	if(p2 == null || p2.getPath() == null) 
-				return true;
-			if(p1 == null || p1.getPath() == null)
-				return false;
-	
-			int p1nh = p1.getFirstHop();
-			int p2nh = p2.getFirstHop();
-			
-			int p1nhType = neighborMap.get(p1nh);
-			int p2nhType = neighborMap.get(p2nh);
-	
-			if( p1nhType < p2nhType ) { //
-				return true;
-			}
-			else if(p1nhType > p2nhType) {
-				return false;
-			}
-			else { // both are similar, so look at path length
-				if(p1.getPath().size() < p2.getPath().size()) {
-					return true;
-				}
-				else if( p1.getPath().size() > p2.getPath().size() ) {
-					return false;
-				}
-				// else .. break tie using BGP_AS number
-				else if (p1.getFirstHop() < p2.getFirstHop())
-				{
-					return true;
-				}
-			}
-			return false;*/
-			if(p2 == null || p2.getPath() == null) 
-				return true;
-			if(p1 == null || p1.getPath() == null)
-				return false;
-	
-			int p1nh = p1.getFirstHop();
-			int p2nh = p2.getFirstHop();
-			
-			int p1nhType = neighborMap.get(p1nh);
-			int p2nhType = neighborMap.get(p2nh);
-	
-			//information used throughout the selection process
-			int p1LowestCost = Integer.MAX_VALUE;
-			AS.PoPTuple p1Tuple = new AS.PoPTuple(-1, -1);
-			p1Tuple = tupleChosen(p1);
-			int p2LowestCost = Integer.MAX_VALUE;
-			AS.PoPTuple p2Tuple = new AS.PoPTuple(-1, -1);
-			p2Tuple = tupleChosen(p2);
-			
-	
-			//byte[] p1WiserBytes = p1.getProtocolPathAttribute(new Protocol(AS.WISER), p1.getPath());
-			//byte[] p2WiserBytes = p2.getProtocolPathAttribute(new Protocol(AS.WISER), p2.getPath());
-			String[] p1WiserProps = getWiserProps(p1, p1Tuple.reverse());
-			String[] p2WiserProps = getWiserProps(p2, p2Tuple.reverse());
-			float p1WiserCost = p1WiserProps != null ? Integer.valueOf(p1WiserProps[0]) : 0; //pull wisercost out, if the advert has one
-			float p2WiserCost = p2WiserProps != null ? Integer.valueOf(p2WiserProps[0]) : 0; //pull wisercost out, if the advert has one
-			float p1Normalization = p1WiserProps != null ? Integer.valueOf(p1WiserProps[1]) : 1; //pull normalization out, if the advert has one
-			float p2Normalization = p2WiserProps != null ? Integer.valueOf(p2WiserProps[1]) : 1; //pull normalization out, if the advert has one
-	
-			/*if(p1WiserBytes[0] != (byte) 0xFF)
-			{
-				try {
-					p1WiserProps = new String(p1WiserBytes, "UTF-8");
-				} catch (UnsupportedEncodingException e) {
-					// TODO Auto-generated catch block
-					e.printStackTrace();
-				}
-			}
-			if(p2WiserBytes[0] != (byte) 0xFF)
-			{
-				try {
-					p2WiserProps = new String(p2WiserBytes, "UTF-8");
-				} catch (UnsupportedEncodingException e) {
-					// TODO Auto-generated catch block
-					e.printStackTrace();
-				}
-			}*/
-			
-			//if we are talking to a wiser node for path 1, then popCosts will have some elements in it, work with those
-		
-			
-			
-			//find the lowest costs if we are talking iwth wiser node
-	//		if(p1.popCosts.size() > 0)
-	//		{
-	//			for(AS.PoPTuple tuple : p1.popCosts.keySet())
-	//			{
-	//				//get the link latency of the path based on the tuple that we are analyzing in the path
-	//			//	int linklatency = 0;
-	//		//		if(neighborLatency.get(p1.getFirstHop()).get(new PoPTuple(tuple.pop2, tuple.pop1)) != null)
-	//	//			{
-	//		//			linklatency = neighborLatency.get(p1.getFirstHop()).get(new PoPTuple(tuple.pop2, tuple.pop1));//reverse the tuple for our lookup because the advetisement format is from them to us
-	//		//		}
-	//				if(p1.popCosts.get(tuple) + p1WiserCost/p1Normalization < p1LowestCost){
-	//					p1LowestCost = p1.popCosts.get(tuple) + p1WiserCost/p1Normalization ;
-	//					p1Tuple = new AS.PoPTuple(tuple.pop2, tuple.pop1); //reverse it because we find latencies via pop (in us) to pop (in them)
-	//				}
-	//			}
-	//		}
-			
-	//		if(p2.popCosts.size() > 0)
-	//		{
-	//			for(AS.PoPTuple tuple : p2.popCosts.keySet())
-	//			{
-	//				//get the link latency of the path based on the tuple that we are analyzing in the path
-	//	//			int linklatency = 0;
-	//		//		if(neighborLatency.get(p2.getFirstHop()).get(new PoPTuple(tuple.pop2, tuple.pop1)) != null)
-	//		//		{
-	//		//			linklatency = neighborLatency.get(p2.getFirstHop()).get(new PoPTuple(tuple.pop2, tuple.pop1));//reverse the tuple for our lookup because the advetisement format is from them to us
-	//		//		}
-	//				if(p2.popCosts.get(tuple) + p2WiserCost/p2Normalization < p2LowestCost){
-	//					p2LowestCost = p2.popCosts.get(tuple) + p2WiserCost/p2Normalization ;
-	//					p2Tuple = new AS.PoPTuple(tuple.pop2, tuple.pop1); //reverse it because we find latencies via pop (in us) to pop (in them)
-	//				}
-	//			}
-	//		}
-			
-			//always choose low cost paths with wiser nodes over low cost paths that are passed through
-			/*if(p1Tuple != null || p2Tuple != null)
-			{
-				if(p1Tuple != null && p2Tuple == null)
-				{
-					String[] p2wiserProps = getWiserProps(p2);
-					int p1TotalCost = neighborLatency.get(p1.getFirstHop()).get(p1Tuple) + p1LowestCost;
-					int p2Cost = Integer.valueOf(p2wiserProps[0]) / Integer.valueOf(p2wiserProps[1]);
-					return true;
-				}
-				else if(p1Tuple == null && p2Tuple != null)
-				{
-					String[] p1wiserProps = getWiserProps(p1);
-					int p1Cost = Integer.valueOf(p1wiserProps[0]) / Integer.valueOf(p1wiserProps[1]);
-					int p2TotalCost = neighborLatency.get(p2.getFirstHop()).get(p2Tuple) + p2LowestCost;
-					return false;
-				}
-				else
-				{
-					int p1TotalCost = p1LowestCost;//neighborLatency.get(p1.getFirstHop()).get(p1Tuple) + p1LowestCost; 
-					int p2TotalCost = p2LowestCost;//neighborLatency.get(p2.getFirstHop()).get(p2Tuple) + p2LowestCost;
-					return p1TotalCost < p2TotalCost;
-				}
-			}*/
-			
-			//if there is a propagated wiser cost, then we will choose one of them
-			//this is a very coarse policy with regards to this, but it can be changed later
-			if(p1WiserProps != null || p2WiserProps != null)
-			{
-				if(p1WiserProps != null && p2WiserProps == null)
-				{
-					return true;
-				}
-				else if(p1WiserProps == null && p2WiserProps != null)
-				{
-					return false;
-				}
-				else
-				{
-	/*				String[] p1Props = p1WiserProps;
-					String[] p2Props = p2WiserProps;
-					
-					int p1Wisercost = Integer.valueOf(p1Props[0]);
-					int p1Normalization = Integer.valueOf(p1Props[1]);
-					
-					int p2Wisercost = Integer.valueOf(p2Props[0]);
-					int p2Normalization = Integer.valueOf(p2Props[1]);*/
-					if(p1WiserCost/p1Normalization == p2WiserCost / p2Normalization)
-					{
-						if (p1.getPath().size() < p2.getPath().size())
-						{
-							return true;
-						}	
-//						else
-//						{
-//							if(p1.getPath().size() == p2.getPath().size())
-//							{
-//								return p1.getFirstHop() < p2.getFirstHop();
-//							}
-							return false;
-//						}
-					}
-					return p1WiserCost/p1Normalization < p2WiserCost/p2Normalization;
-				}
-			}
-			
-			
-			if( p1nhType < p2nhType ) { //
-				return true;
-			}
-			else if(p1nhType > p2nhType) {
-				return false;
-			}
-			else { // both are similar, so look at path length
-				if(p1.getPath().size() < p2.getPath().size()) {
-					return true;
-				}
-				else if( p1.getPath().size() > p2.getPath().size() ) {
-					return false;
-				}
-				// else .. break tie using BGP_AS number
-				else if (p1.getFirstHop() < p2.getFirstHop())
-				{
-					return true;
-				}
-			}
+	 * This function determines if the first path is better than the second
+	 * @param p1 The first path
+	 * @param p2 The second path
+	 * 
+	 * @return true 	if p1 is better than p2
+	 * 		   false 	otherwise 
+	 */
+	public boolean isBetter(IA p1, IA p2) {
+		// this is where we can apply the policy
+		// for now, we just follow customer > peer > provider
+		// and in case of a tie, shortest path length
+		// and then break tie by lowest BGP_AS number for next hop
+
+		if(p2 == null || p2.getPath() == null) 
+			return true;
+		if(p1 == null || p1.getPath() == null)
 			return false;
-	
-		}
-
-
-	
-	@Override
-	public PoPTuple tupleChosen(IA path)
-	{
-		if(path.getPath().isEmpty())
+		if(p1.secure)
 		{
-			//tupleChosen.pop1 = -1;
-			return null;
-//			return 0; //this path is empty, so it has no cost
-		}
-		
-		//if we are talking to a wiser node for path 1, then popCosts will have some elements in it, work with those
-		int p1LowestCost = Integer.MAX_VALUE;
-		AS.PoPTuple p1Tuple = null;
-		//find the lowest costs if we are talking iwth wiser node.  That is the summation of the intradomain costs + the latency of the link, the lowest of those
-		if(path.popCosts.size() > 0)
-		{
-			for(AS.PoPTuple tuple : path.popCosts.keySet())
-			{
-//				int linkCost = 0;
-//				if(neighborLatency.get(path.getFirstHop()).get(new PoPTuple(tuple.pop2, tuple.pop1)) != null){
-//					linkCost = neighborLatency.get(path.getFirstHop()).get(new PoPTuple(tuple.pop2, tuple.pop1));
-//				}
-//				else{
-//					System.out.println("wiser_as: getcostinc: no corresponding link cost, shouldn't be here");
-//				}
-				String[] wiserProps = getWiserProps(path, tuple);
-				if (wiserProps == null)
-				{
-					if(neighborLatency.get(path.getFirstHop()).get(tuple.reverse()) < p1LowestCost)
-					{
-						p1Tuple = tuple.reverse();
-					}
-				}
-				else
-				{
-					int wiserCost = wiserProps != null ? Integer.valueOf(wiserProps[0]) : 0; //pull wisercost out, if the advert has one
-					int normalization = wiserProps != null ? Integer.valueOf(wiserProps[1]) : 1; //pull normalization out, if the advert has one
-					if((float)wiserCost/(float)normalization < p1LowestCost)
-					{
-						p1Tuple = tuple.reverse();
-					}
-				}
-//				if(path.popCosts.get(tuple) < p1LowestCost){
-//					p1LowestCost = path.popCosts.get(tuple); //cost of intradomain to exiting pop + link cost to that pop
-//					p1Tuple = new AS.PoPTuple(tuple.pop2, tuple.pop1); //reverse it because we find latencies via pop (in us) to pop (in them)
-//				}
+			if(!p2.secure){
+				return true;
 			}
-		//	tupleChosen.pop1 = p1Tuple.pop1;// = p1Tuple;
-		//	tupleChosen.pop2 = p1Tuple.pop2;
-			return new PoPTuple(p1Tuple.pop1, p1Tuple.pop2);
-	//		return /*neighborLatency.get(path.getFirstHop()).get(p1Tuple) +*/ p1LowestCost; //latency of poptuple link cost and wisercost
 		}
-	//	return 0;
-//		else
-//		{
-//			/*
-//			String[] wiserProps = getWiserProps(path);
-//			if(wiserProps != null)
-//			{
-//				int wiserCost = Integer.valueOf(wiserProps[0]);
-//				int normalization = Integer.valueOf(wiserProps[1]);
-//				//the passthrough is going to be the same on all interpop links, choose the one with lowest cost
-//				//wiser passthrough.  The true cost is just an addition of lowest cost link
-//			}
-//			********/
-//			
-//			
-//			//choose path with lowest outbound latency, simulates lowest med value; wrong, should be lowest passedthrough
-//			//wiser value
-//			//note: does not take into account bgp true intradomain cost.  doesn't matter now because it's always 0
-//			int trueCostInc = Integer.MAX_VALUE;
-//			PoPTuple p2Tuple = null;
-//			for(PoPTuple tuple : neighborLatency.get(path.getFirstHop()).keySet()){				
-//				if(neighborLatency.get(path.getFirstHop()).get(tuple) < trueCostInc)
-//				{
-//					trueCostInc = neighborLatency.get(path.getFirstHop()).get(tuple);
-//					p2Tuple = tuple;
-//				}
-//			}
-//			tupleChosen.pop1 = p2Tuple.pop1;
-//			tupleChosen.pop2 = p2Tuple.pop2;
-//			return trueCostInc;
-//		}
-		return null;
+		if(p2.secure)
+		{
+			if(!p1.secure)
+			{
+				return false;
+			}
+		}
+		int p1nh = p1.getFirstHop();
+		int p2nh = p2.getFirstHop();
+		
+		int p1nhType = neighborMap.get(p1nh);
+		int p2nhType = neighborMap.get(p2nh);
 
+		if( p1nhType < p2nhType ) { //
+			return true;
+		}
+		else if(p1nhType > p2nhType) {
+			return false;
+		}
+		else { // both are similar, so look at path length
+			if(p1.getPath().size() < p2.getPath().size()) {
+				return true;
+			}
+			else if( p1.getPath().size() > p2.getPath().size() ) {
+				return false;
+			}
+			// else .. break tie using BGP_AS number
+		}
+		return false;
 	}
-	
 
 	/**
 	 * This function returns the set of pending updates.
@@ -1437,6 +1095,7 @@ public class Wiser_AS extends AS {
 	 * @return The set of RCs for incomplete updates
 	 */
 	private Collection<RootCause> getPendingUpdatesForPeer(Integer peer) {
+
 		HashSet<RootCause> updatesRC = new HashSet<RootCause>();
 		if(!pendingUpdates.containsKey(peer))
 			return updatesRC;
@@ -1578,36 +1237,40 @@ public class Wiser_AS extends AS {
 		}
 	}
 
-	public String showNeighbors() {
+	/*public String showNeighbors() {
 		String nbrs = "Neighbors of BGP_AS" + asn + " Prov: " + providers + " Cust: " + customers + " Peer: " + peers;
 		return nbrs;
-	}
+	}*/
 
 	public String showFwdTable() {
 		String table = "FWD_TABLE : BGP_AS" + asn + " #paths = " + bestPath.size() + "\n";
 		for(Iterator<IA> it = bestPath.values().iterator(); it.hasNext();) {
-			table += it.next().getPath() + "\n";
+			IA bestPath = it.next();
+			table += bestPath.getPath() +  " cost: " + bestPath.getTrueCost() + "\n";
+		/*	byte[] wiserValues = bestPath.getProtocolPathAttribute(new Protocol(AS.WISER), bestPath.getPath());
+			if(wiserValues[0] != (byte) 0xFF)
+			{
+				try {
+					table += new String(wiserValues, "UTF-8") + '\n';
+				} catch (UnsupportedEncodingException e) {
+					// TODO Auto-generated catch block
+					e.printStackTrace();
+				}
+			}
+			*/
 		}
 		return table;
 	}
 	
 	public void clearBookKeeping(){
 		pendingUpdates.clear();
-	//	dstRIBHistMap.clear();
+		dstRIBHistMap.clear();
 	//	mraiRunning.clear();
-		//ribIn.clear();
+	//	ribIn.clear();
 		super.passThrough.clear();
 	}
 
-//	@Override
-//	protected void updateBookKeeping(IA advert, PoPTuple chosenTuple) {
-//		if(neighborLatency.containsKey(advert.getFirstHop()))
-//		{
-//			advert.setTrueCost(advert.getTrueCost() + neighborLatency.get(advert.getFirstHop()).get(chosenTuple));
-//		}
-//		else
-//		{
-//			System.out.println("wiser_as, can't update costs");
-//		}
-//	}
+
+
+
 }

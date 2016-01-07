@@ -255,18 +255,18 @@ public class BGP_AS extends AS {
 	}
 
 	
-	@Override 
-	protected void updateBookKeeping(IA advert, PoPTuple chosenTuple)
-	{
-		if(neighborLatency.containsKey(advert.getFirstHop()))
-		{
-			advert.setTrueCost(advert.getTrueCost() + neighborLatency.get(advert.getFirstHop()).get(chosenTuple));
-		}
-		else
-		{
-			System.out.println("bgp_as, can't update costs");
-		}
-	}
+//	@Override 
+//	protected void updateBookKeeping(IA advert, PoPTuple chosenTuple)
+//	{
+//		if(neighborLatency.containsKey(advert.getFirstHop()))
+//		{
+//			advert.setTrueCost(advert.getTrueCost() + neighborLatency.get(advert.getFirstHop()).get(chosenTuple));
+//		}
+//		else
+//		{
+//			System.out.println("bgp_as, can't update costs");
+//		}
+//	}
 	
 	/**
 	 * This function adds a path to the set of path

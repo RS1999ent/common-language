@@ -38,6 +38,8 @@ public abstract class AS {
 	static final int TRANSIT = 502;
 	static final int SBGP_TRANSIT = 503;
 	static final int SBGP = 504;
+	static final int BANDWIDTH_AS = 505;
+	static final int BANDWIDTH_TRANSIT = 506;
 	
 	//did this as announce itself
 	public boolean announced = false;
@@ -443,6 +445,29 @@ public abstract class AS {
 		}
 		return splitProps;
 	}
+	
+	public static String[] getBandwidthProps(IA advert, PoPTuple forTuple)
+	{
+		byte[] pBandwidthBytes = advert.getProtocolPathAttribute(forTuple, new Protocol(AS.BANDWIDTH_AS), advert.getPath());
+		String pBandwidthProps = null;
+		String[] splitProps = null;
+		if(pBandwidthBytes == null)
+		{
+			return null;
+		}
+		if(pBandwidthBytes[0] != (byte) 0xFF)
+		{
+			try{
+				pBandwidthProps = new String(pBandwidthBytes, "UTF-8");
+				return pBandwidthProps.split("\\s+");
+			} catch (UnsupportedEncodingException e) {
+				// TODO Auto-generated catch block
+				e.printStackTrace();
+			}
+		}
+		return splitProps;
+		
+	}
 
 	
 	/**
@@ -457,7 +482,26 @@ public abstract class AS {
 	 * @param advert - advert to update
 	 * @param chosenTuple - what tuple we are choicing from us to them
 	 */
-	protected abstract void updateBookKeeping(IA advert, PoPTuple chosenTuple);
+	protected  void updateBookKeeping(IA advert, PoPTuple chosenTuple){
+		if(neighborLatency.containsKey(advert.getFirstHop()))
+		{
+			advert.setTrueCost(advert.getTrueCost() + neighborLatency.get(advert.getFirstHop()).get(chosenTuple));
+			if(!advert.bookKeepingInfo.containsKey(IA.BNBW_KEY))
+			{				
+				advert.bookKeepingInfo.put(IA.BNBW_KEY, Float.MAX_VALUE);
+			}
+			float currBNBW = Float.valueOf(advert.bookKeepingInfo.get(IA.BNBW_KEY));
+			float neighborBW = neighborLatency.get(advert.getFirstHop()).get(chosenTuple); 
+			if( neighborBW < currBNBW)
+			{
+				advert.bookKeepingInfo.put(IA.BNBW_KEY, neighborBW );
+			}
+		}
+		else
+		{
+			System.out.println("BW_as, can't update costs");
+		}
+	}	
 	
 	/**
 	 * returns the puptuple of us to them that we choose as the point of presenes used on the path

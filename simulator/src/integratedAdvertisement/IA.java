@@ -15,12 +15,14 @@ import simulator.AS.PoPTuple;
  */
 public class IA {
 
+	public static final String BNBW_KEY = "BNBW";
+	
 	@Override
 	public String toString() {
 		return "IA [legacyPath=" + legacyPath + ", paths=" + paths
-				+ ", IAInfos=" + popCosts.values() + ", popCosts=" + popCosts
-				+ ",\n truePoPCosts=" + truePoPCosts + ", trueCost=" + trueCost
-				+ "]";
+				+ ", bookKeepingInfo=" + bookKeepingInfo + ", rc=" + rc
+				+ ", popCosts=" + popCosts + ", truePoPCosts=" + truePoPCosts
+				+ ", trueCost=" + trueCost + ", secure=" + secure + "]";
 	}
 
 	// used for returning a default path for legacy support with the rest of sim
@@ -90,6 +92,8 @@ public class IA {
 	public IA(IA toCopy) {
 		legacyPath = (LinkedList<Integer>) toCopy.legacyPath.clone();
 		paths = (HashMap<String, LinkedList<Integer>>) toCopy.paths.clone();
+		
+		this.bookKeepingInfo = toCopy.bookKeepingInfo;
 		this.trueCost = toCopy.trueCost;
 		this.secure = toCopy.secure;
 		//copy poptuples in

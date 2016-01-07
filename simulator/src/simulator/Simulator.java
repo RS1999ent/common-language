@@ -1086,6 +1086,7 @@ public class Simulator {
 			parser.addArgument("--seed").required(true).metavar("seed").type(Long.class);
 			parser.addArgument("--sim").required(true).metavar("sim").type(Integer.class);
 			parser.addArgument("--allMonitor").required(true).metavar("monitoring").type(Integer.class);
+			parser.addArgument("--useBandwidth").required(true).metavar("useBandwidth").type(Integer.class);
 			Namespace arguments = null;
 			try{
 	//			System.out.println(parser.parseArgs(args));
@@ -1108,9 +1109,10 @@ public class Simulator {
 			String linkFile = arguments.getString("--failLinksFile");
 			String parentsFile = arguments.getString("--parentsFile");
 			boolean allInclusiveMonitoring = (arguments.getInt("allMonitor") == 1) ? true : false;
+			boolean useBandwidth = (arguments.getInt("useBandwidth") == 1) ? true : false;
 			simMode = arguments.getInt("sim");
 			readTypes(typeFile); //reading types must go before readtopology, otherwise allnodes will be bgp
-			readTopology(topologyFile);
+			readTopology(topologyFile, useBandwidth);
 		//	readIntraDomain(intraFile);
 			//readLinks(linkFile);
 			//readParents(parentsFile);
@@ -1141,7 +1143,7 @@ public class Simulator {
 	
 			case 5:
 			//    runTAASSimulations();
-				iaBasicSimulationTransitsOnlyTrueCost(allInclusiveMonitoring);
+				iaBasicSimulationTransitsOnlyTrueCost(allInclusiveMonitoring, useBandwidth);
 			    break;
 	
 			case 6:
@@ -1844,7 +1846,7 @@ public class Simulator {
 	 * runs a basic IA simulation
 	 * benefit measured at transit only
 	 */
-	public static void iaBasicSimulationTransitsOnlyTrueCost(boolean allInclusiveMonitoring){
+	public static void iaBasicSimulationTransitsOnlyTrueCost(boolean allInclusiveMonitoring, boolean bwTest){
 		
 		
 		//ases that will be used for observation
@@ -1862,6 +1864,7 @@ public class Simulator {
 		runSimulation(monitorASes, announcedASes, allInclusiveMonitoring);
 		
 		int costSum = 0;
+		float bwSum = 0;
 		int totalRIBSize = 0;
 		int total = monitorASes.size();
 		int totalBestPathNodes = 0;
@@ -1879,7 +1882,7 @@ public class Simulator {
 				}
 				AS compareAS = asMap.get(announcedAS); //the AS that announced
 				//what is the lowest cost outgoing link of announced Node
-				int lowestCost = Integer.MAX_VALUE;
+//				int lowestCost = Integer.MAX_VALUE;
 	//			for(Integer neighbor: compareAS.neighborLatency.keySet())
 	//			{
 	//				if(compareAS.neighborLatency.get(neighbor) < lowestCost)
@@ -1924,6 +1927,7 @@ public class Simulator {
 						}*/
 						
 						costSum += path.getTrueCost();
+						bwSum += path.bookKeepingInfo.get(IA.BNBW_KEY);
 						
 						//debug if statement
 						if(monitoredAS.neighborMap.containsKey(compareAS.asn))
@@ -1951,7 +1955,13 @@ public class Simulator {
 			}
 		}
 		
-		System.out.println("Average cost sum for transit ASes: " + String.valueOf((float) costSum/total));
+		if(!bwTest){
+			System.out.println("Average cost sum for transit ASes: " + String.valueOf((float) costSum/total));
+		}
+		else
+		{
+			System.out.println("Average bottleneck bw sum for transit ases: " + String.valueOf((float) bwSum/total));
+		}
 		System.out.println("totalRIbsize: " + totalRIBSize);
 		System.out.println("totla bestpath nodes: " + totalBestPathNodes);
 		System.out.println("totla bestpath tcost: " + bestpathTruecost );
@@ -3280,7 +3290,7 @@ public class Simulator {
 		
 	}
 	
-	private static void readTopology(String topologyFile) throws Exception {
+	private static void readTopology(String topologyFile, boolean useBandwidth) throws Exception {
 		// remember to initialize seedVal before calling this function.
 
 		BufferedReader br = new BufferedReader(new FileReader(topologyFile));
@@ -3289,7 +3299,15 @@ public class Simulator {
 			int as1 = Integer.parseInt(token[0]);
 			int as2 = Integer.parseInt(token[1]);
 			int relation = Integer.parseInt(token[2]);
-			int latency = Math.round((1/Float.parseFloat(token[3])) * 100000); //working with bandwidth maybe temporary, so parse float Integer.parseInt(token[3]);
+			int linkMetric = 0;
+			//decide whether to use bandwidth or latency
+			if(!useBandwidth){
+				linkMetric = Math.round((1/Float.parseFloat(token[3])) * 100000); //working with bandwidth maybe temporary, so parse float Integer.parseInt(token[3]);
+			}
+			else
+			{
+				linkMetric = Math.round(Float.parseFloat(token[3]));
+			}
 			int pop1 = Integer.parseInt(token[4]);
 			int pop2 = Integer.parseInt(token[5]);
 //			int as1Type = Integer.parseInt(token[4]);
@@ -3309,6 +3327,10 @@ public class Simulator {
 					else if (asTypeDef.get(as1) == AS.SBGP_TRANSIT || asTypeDef.get(as1) == AS.SBGP)
 					{
 						temp1 = new SBGP_AS(as1, mraiVal);
+					}
+					else if (asTypeDef.get(as1) == AS.BANDWIDTH_AS || asTypeDef.get(as1) == AS.BANDWIDTH_TRANSIT)
+					{
+						temp1 = new Bandwidth_AS(as1, mraiVal, false);
 					}
 				}
 					//temp1 = new BGP_AS(as1, mraiVal); //
@@ -3333,6 +3355,10 @@ public class Simulator {
 					else if (asTypeDef.get(as2) == AS.SBGP_TRANSIT || asTypeDef.get(as2) == AS.SBGP)
 					{
 						temp2 = new SBGP_AS(as2, mraiVal);
+					}
+					else if (asTypeDef.get(as2) == AS.BANDWIDTH_AS || asTypeDef.get(as2) == AS.BANDWIDTH_TRANSIT)
+					{
+						temp2 = new Bandwidth_AS(as2, mraiVal, false);
 					}
 				}
 				else
@@ -3359,8 +3385,8 @@ public class Simulator {
 				temp2.addPeer(as1);
 			}
 			
-			temp1.addLatency(temp2.asn, new AS.PoPTuple(pop1, pop2), latency);
-			temp2.addLatency(temp1.asn, new AS.PoPTuple(pop2, pop1) , latency);
+			temp1.addLatency(temp2.asn, new AS.PoPTuple(pop1, pop2), linkMetric);
+			temp2.addLatency(temp1.asn, new AS.PoPTuple(pop2, pop1) , linkMetric);
 //			else { // sibling?
 //			temp1.addCustomer(as2);
 //			temp2.addCustomer(as1);
