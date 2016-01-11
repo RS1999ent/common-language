@@ -16,6 +16,8 @@ import simulator.AS.PoPTuple;
  *
  */
 public class PassThrough {
+	
+	private static final boolean USE_PASSTHROUGH = true;
 
 	// keyed on pathTokey. links to aggregated values that were received. IA
 	// value contains info for a single path, for each poitn of presence that we are connected to 
@@ -44,6 +46,10 @@ public class PassThrough {
 	 *         redundant given how java does references
 	 */
 	public IA attachPassthrough(IA advertisement, PoPTuple chosenTuple) {
+		if(!USE_PASSTHROUGH)
+		{
+			return advertisement;
+		}
 		// for each path, attach values from passthroughdatabase
 		for (String pathKey : advertisement.getPathKeys()) {
 			// grab the path, and attach passthrough informatin based on next
