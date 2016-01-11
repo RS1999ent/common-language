@@ -41,6 +41,8 @@ public abstract class AS {
 	static final int BANDWIDTH_AS = 505;
 	static final int BANDWIDTH_TRANSIT = 506;
 	
+	public int type = 0;
+	
 	//did this as announce itself
 	public boolean announced = false;
 		/** Set of neighbors that are customers */

@@ -107,6 +107,7 @@ public class SBGP_AS extends AS {
 	public SBGP_AS(int asnum, int mrai) {
 		asn = asnum;
 		mraiValue = mrai;
+		super.type = AS.SBGP;
 
 //		// initialize all MRAI timers to false
 //		// set the neighbor type

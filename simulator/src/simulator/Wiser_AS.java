@@ -107,6 +107,7 @@ public class Wiser_AS extends AS {
 		asn = asnum;
 		mraiValue = mrai;
 		this.isBasic = isBasic;
+		super.type = AS.WISER;
 //		// initialize all MRAI timers to false
 //		// set the neighbor type
 //		// announce self to all neighbors

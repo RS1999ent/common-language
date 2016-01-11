@@ -115,6 +115,7 @@ public class BGP_AS extends AS {
 	public BGP_AS(int asnum, int mrai) {
 		asn = asnum;
 		mraiValue = mrai;
+		super.type = AS.BGP;
 
 //		// initialize all MRAI timers to false
 //		// set the neighbor type

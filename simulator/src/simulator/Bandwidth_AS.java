@@ -106,6 +106,7 @@ public class Bandwidth_AS extends AS {
 	public Bandwidth_AS(int asnum, int mrai, boolean isBasic) {
 		asn = asnum;
 		mraiValue = mrai;
+		super.type = AS.BANDWIDTH_AS;
 		this.isBasic = isBasic;
 //		// initialize all MRAI timers to false
 //		// set the neighbor type
