@@ -7,16 +7,22 @@ import random
 import math
 import re
 
-DEBUG = 1
+DEBUG = 0
 
 parser = argparse.ArgumentParser(description='Creates a pdf graph from experimentoutput')
 parser.add_argument('experimentOutput', metavar='expOutput', nargs = 1, help = 'experimental output, relevent info should have GRAPH ')
-parser.add_argument('pdfName', metavar='nameOfPdf', nargs=1, help = 'The name of the pdf')
+#parser.add_argument('pdfName', metavar='nameOfPdf', nargs=1, help = 'The name of the pdf')
+parser.add_argument('--xlabel', metavar='x axis label', help = 'label for the x axis')
+parser.add_argument('--ylabel', metavar='y axis label', help = 'label for the y axis')
+parser.add_argument('--title', metavar = 'graph title', help = 'title for the graph')
 
 #open files based on arguments
 args = parser.parse_args()
 inputData = open(args.experimentOutput[0], 'r')
-pdfName = open(args.pdfName[0], 'w')
+pdfName = args.experimentOutput[0] + '.pdf'
+xlabel = args.xlabel
+ylabel = args.ylabel
+title = args.title
 xyDict = {}
 X = []
 Y = []
@@ -98,12 +104,12 @@ y = arr(Y)
 #plt.errorbar(x, y, yerr=0)
 plt.plot(x,y)
 #plt.axis([0,1, 0, 1520000])
-plt.ylabel('Average true cost of paths received at all ASes')
-plt.xlabel('Percentage of transit ASes participating')
-plt.title('Average cost of paths received vs number of ASes participating in new protocol')
+plt.ylabel(ylabel)
+plt.xlabel(xlabel)
+plt.title(title)
 pp.savefig()
 pp.close()
-plt.show()
+#plt.show()
 
 #pylab.errorbar(x, y, yerr=c)
 #pylab.show()
