@@ -5,6 +5,18 @@ arg4 is whether to use bandwidth numbers in the simulator
 arg5 is what metric to use RIBMETRIC 0, FIBMETRIC 1
 505 5 2 1 1astypes.txt
 
+
+LEGEND gulf, FIB state ENDLEGEND
+
+Testing for stub/transit percentage: 0.000000
+
+Testing on Transit seed 1
+165GRAPH 0.0 43671.98 ENDGRAPH
+totalRIbsize: 175092
+totla bestpath nodes: 446669
+totla bestpath tcost: 232215729
+
+
 Testing for stub/transit percentage: 0.100000
 
 Testing on Transit seed 1

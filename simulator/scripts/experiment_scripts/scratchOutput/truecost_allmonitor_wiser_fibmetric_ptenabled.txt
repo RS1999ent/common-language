@@ -5,6 +5,8 @@ arg4 is whether to use bandwidth numbers in the simulator
 arg5 is what metric to use RIBMETRIC 0, FIBMETRIC 1
 501 5 1 0 1astypes.txt
 
+
+LEGEND all, FIB state ENDLEGEND
 Testing for stub/transit percentage: 0.000000
 
 Testing on Transit seed 1
