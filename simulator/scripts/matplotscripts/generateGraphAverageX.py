@@ -35,7 +35,7 @@ def parseInput():
         expOutput = open(entry, 'r')
         p = re.compile('GRAPH.*ENDGRAPH')
         legendRE = re.compile('LEGEND.*ENDLEGEND')
-        legendName = ''
+        legendName = ' '
         xyDict = {}
         for line in expOutput:
             if p.search(line):
@@ -53,9 +53,13 @@ def parseInput():
             if legendRE.search(line):
                 m = legendRE.search(line)
                 line = m.group()
-                splitLine = line.split()
-                splitLine = splitLine[1:-1]
-                legendName = legendName.join(splitLine)
+                splitLine = line.split(' ', 1)
+                if DEBUG:
+                    print 'splitline: ', splitLine
+                splitLine = splitLine[1].rsplit(' ', 1)[0]
+                if DEBUG:
+                    print 'splitline: ', splitLine
+                legendName = splitLine
         rawData.append((xyDict, legendName))
         if DEBUG:
             print rawData
@@ -72,7 +76,7 @@ def getAverage(list):
         print "Average: ",average
     return average
 
-#return list of y values
+#return list of y values and the best y value (the last one)
 #input dictionary of xyvalues
 def getY(xyDict):
     y = []
@@ -81,7 +85,7 @@ def getY(xyDict):
         y.append(xAverage/float(scalingFactor))
     if DEBUG:
         print "y: ", y
-    return y
+    return y, y[-1]
 
 #get x values associated with this dictionary
 def getX(xyDict):
@@ -91,6 +95,18 @@ def getX(xyDict):
     if DEBUG:
         print 'x: ', x
     return x
+
+#scale y list down to be a percentage
+#return the list
+def scaleY(y, scaler):
+    zeroith = y[0] #bgp status quo, what we scale by
+    dataRange = zeroith -  scaler
+    newY = []
+    for element in y:
+        distance = zeroith - element
+        percentInto = distance/dataRange
+        newY.append(percentInto)
+    return newY
 
 parseInput()
 #fillXY()
@@ -126,12 +142,18 @@ arr = numpy.asarray
 #plt.figure()
 #plt.errorbar(x, y, yerr=0)
 legendHandles = []
+bestY = None
 for tuple in rawData:
     xyDict = tuple[0]
     legendName = tuple[1]
     if DEBUG:
         print 'legendname: ', legendName
-    y = getY(xyDict)
+    y, betterY = getY(xyDict)
+    if not math.isnan(betterY):
+        bestY = betterY
+    y = scaleY(y, bestY)
+    if DEBUG:
+        print 'scaley: ', y
     x = getX(xyDict)
     handle, =plt.plot(arr(x),arr(y), label=legendName)
     legendHandles.append(handle)
@@ -142,7 +164,9 @@ plt.legend(fontsize='small', loc=2)
 plt.ylabel(ylabel)
 plt.xlabel(xlabel)
 plt.xticks(numpy.arange(0, 1.1, .1))
-pylab.ylim(ymin=0)
+plt.yticks(numpy.arange(-.3, 1.01, .1))
+plt.grid(which='major', axis = 'both')
+pylab.ylim(ymin=-.3, ymax=1)
 pp.savefig()
 pp.close()
 plt.show()

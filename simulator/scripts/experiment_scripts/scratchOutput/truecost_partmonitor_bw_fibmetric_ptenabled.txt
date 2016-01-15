@@ -7,6 +7,7 @@ arg5 is what metric to use RIBMETRIC 0, FIBMETRIC 1
 
 
 LEGEND participating, FIB state ENDLEGEND
+LEGEND measured from participating ASes ENDLEGEND
 Testing for stub/transit percentage: 0.000000
 
 Testing on Transit seed 1

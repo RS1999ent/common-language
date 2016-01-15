@@ -6,6 +6,7 @@ arg5 is what metric to use RIBMETRIC 0, FIBMETRIC 1
 501 5 0 0 0astypes.txt
 
 LEGEND participating, RIB_state ENDLEGEND
+LEGEND measured from participating ASes ENDLEGEND
 
 0.00
 Testing on Transit seed 1
