@@ -40,6 +40,8 @@ public abstract class AS {
 	static final int SBGP = 504;
 	static final int BANDWIDTH_AS = 505;
 	static final int BANDWIDTH_TRANSIT = 506;
+	static final int REPLACEMENT_AS = 507;
+	static final int REPLACEMENT_TRANSIT = 506;
 	
 	public int type = 0;
 	
@@ -469,6 +471,28 @@ public abstract class AS {
 		}
 		return splitProps;
 		
+	}
+	
+	public static String[] getProtoProps(IA advert, PoPTuple forTuple, Protocol protocol)
+	{
+		byte[] protoBytes = advert.getProtocolPathAttribute(forTuple, protocol, advert.getPath());
+		String protoProps = null;
+		String[] splitProps = null;
+		if(protoBytes == null)
+		{
+			return null;
+		}
+		if(protoBytes[0] != (byte) 0xFF)
+		{
+			try{
+				protoProps = new String(protoBytes, "UTF-8");
+				return protoProps.split("\\s+");
+			} catch (UnsupportedEncodingException e) {
+				// TODO Auto-generated catch block
+				e.printStackTrace();
+			}
+		}
+		return splitProps;
 	}
 
 	

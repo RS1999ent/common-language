@@ -10,7 +10,7 @@ parser.add_argument('outFile', metavar='outputFile', nargs=1, help = 'file to ou
 parser.add_argument('--numTransits', metavar='numberTransits', help = 'number of transits to specify (random', default = .1)
 parser.add_argument('--seedTransit', metavar='rgenerator seed',  help = 'seed for random number generator for generating transits', default=1)
 parser.add_argument('--seedWiser', metavar='seed', help = 'seed for random number generator for generating wiser', default=2)
-parser.add_argument('--sim', metavar='sim', help = 'what type are transits and stubs (501=wiser, 504 = sbgp, 505=bw)', default=501)
+parser.add_argument('--sim', metavar='sim', help = 'what type are transits and stubs (501=wiser, 504 = sbgp, 505=bw, 507 = replacement)', default=501)
 
 #open files based on arguments
 args = parser.parse_args()
@@ -24,7 +24,7 @@ SBGP_NUMBER = 504
 SBGP_TRANSIT = 503
 BW_NUMBER = 505
 BW_TRANSIT = 506
-
+REPLACEMENT_NUMBER = 507
 #relatinship constants
 CUSTOMER_PROVIDER = -1
 PEER_PEER = 0
@@ -295,6 +295,10 @@ if SBGP_NUMBER == int(sim):
 if BW_NUMBER == int(sim):
     putToOutput(transits, BW_TRANSIT)
     putToOutput(stubsChosen, BW_NUMBER)
+if REPLACEMENT_NUMBER == int(sim):
+    putToOutput(transits, REPLACEMENT_NUMBER)
+    putToOutput(stubsChosen, REPLACEMENT_NUMBER)
+
     
 #putToOutput(wiserAS, WISER_NUMBER) #commented this out, we announce from the stubs
 #print transits

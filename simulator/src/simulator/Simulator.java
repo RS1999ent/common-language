@@ -1119,6 +1119,7 @@ public class Simulator {
 			int metric = arguments.getInt("metric");
 			readTypes(typeFile); //reading types must go before readtopology, otherwise allnodes will be bgp
 			readTopology(topologyFile, useBandwidth);
+			preProcessReplacement();
 		//	readIntraDomain(intraFile);
 			//readLinks(linkFile);
 			//readParents(parentsFile);
@@ -1144,7 +1145,7 @@ public class Simulator {
 			    break;
 	
 			case 4:
-	//			verificationSimulation();
+				iaBasicSimulationReplacementNumPaths(monitorFrom, useBandwidth, xVal, metric);
 			    break;
 	
 			case 5:
@@ -1879,7 +1880,7 @@ public class Simulator {
 		 * runs a basic IA simulation
 		 * benefit measured at transit only
 		 */
-		public static void iaBasicSimulationTransitsOnlyTrueCost(int monitorFrom, boolean bwTest, float forX, int metric){
+	public static void iaBasicSimulationTransitsOnlyTrueCost(int monitorFrom, boolean bwTest, float forX, int metric){
 			
 			
 			//ases that will be used for observation
@@ -2015,7 +2016,112 @@ public class Simulator {
 			System.out.println("totla bestpath tcost: " + bestpathTruecost );
 		}
 
+	/**
+		 * runs a basic IA simulation
+		 * benefit measured at transit only
+		 */
+	public static void iaBasicSimulationReplacementNumPaths(int monitorFrom, boolean bwTest, float forX, int metric){
+			
+			
+			//ases that will be used for observation
+			ArrayList<Integer> monitorASes = new ArrayList<Integer>();
+		//	tier1ASes = computeTier1();
 	
+	
+			// We first announce all the tier-1 ASes and save 
+			// the paths from each of our failure-provider to the tier1
+			simTime = 0;
+			upstreamASes.clear();
+			r = new Random(seedVal);
+			ArrayList<Integer> announcedASes = new ArrayList<Integer>();
+			
+			runSimulation(monitorASes, announcedASes, monitorFrom);
+			
+			int totalRIBPaths = 0;
+			float bwSum = 0;
+			int totalRIBSize = 0;
+			int total = monitorASes.size();
+			long totalBestPaths = 0;
+			int bestpathTruecost = 0;
+			int bestpathBWSum = 0;
+			//for transit ASes only, see the sum of received paths
+			for(Integer as : monitorASes)
+			{
+				//for each monitored AS, compare their lowest outgoing wiser cost with what was received
+				AS monitoredAS = asMap.get(as); //the AS we are measuring from (all transits eventually)
+				for(Integer announcedAS : announcedASes)
+				{
+					//make sure that the we aren't comparing the AS who announced this to itself
+					if(as == announcedAS){
+						continue;
+					}
+					AS compareAS = asMap.get(announcedAS); //the AS that announced
+					if(monitoredAS.bestPath.get(announcedAS) != null)
+					{
+						IA bestPath = monitoredAS.bestPath.get(announcedAS);
+						String[] replacementProps = AS.getProtoProps(bestPath, bestPath.popCosts.keySet().iterator().next(), new Protocol(AS.REPLACEMENT_AS));
+						if(replacementProps == null)
+						{
+							totalBestPaths += 1;
+						}
+						else
+						{
+							totalBestPaths += Long.valueOf(replacementProps[0]);
+						}
+						bestpathTruecost += monitoredAS.bestPath.get(announcedAS).getTrueCost();	//
+						bestpathBWSum += monitoredAS.bestPath.get(announcedAS).bookKeepingInfo.get(IA.BNBW_KEY);
+					}	// 
+						// 
+					//System.out.println("[DEBUG] lowest cost: " + lowestCost);
+					// see if monitored AS has that path in the RIB_in, //if it doesn't have a path, that means policy
+					//disconnection, don't include it in our percentage.
+					if (monitoredAS.ribIn.get(announcedAS) != null) {	// 
+						totalRIBSize += monitoredAS.ribIn.get(announcedAS).size();	// 
+						for (IA path : monitoredAS.ribIn.get(announcedAS).values()) {	// 
+							String[] replacementProps = AS.getProtoProps(path, path.popCosts.keySet().iterator().next(), new Protocol(AS.REPLACEMENT_AS));
+							if(replacementProps == null)
+							{
+								totalRIBPaths += 1;
+							}
+							else
+							{
+								totalRIBPaths += Long.valueOf(replacementProps[0]);
+							}
+							bwSum += path.bookKeepingInfo.get(IA.BNBW_KEY);
+							
+							//debug if statement
+							if(monitoredAS.neighborMap.containsKey(compareAS.asn))
+							{							
+							//	System.out.println("[DEBUG] AS " + monitoredAS.asn + " neighbor of: " + compareAS.asn);
+								//System.out.println("[DEBUG] received lowest cost: " + wiserProps);
+								//System.out.println("[DEBUG] rib of AS is : " + monitoredAS.ribIn.toString());
+							}
+							
+	
+						}// endfor
+						
+					}
+					else
+					{
+						total--;
+					}
+				}
+			//	System.out.println("totalbestpath: " + totalBestPaths);
+		//		totalBestPaths = 0;
+			}
+			switch(metric){
+			case RIB_METRIC:
+				System.out.println("GRAPH " + forX + " " + String.valueOf((float) totalRIBPaths/total) + " ENDGRAPH");
+				break;
+			case FIB_METRIC:
+				System.out.println("GRAPH " + forX + " " + String.valueOf((float) totalBestPaths/total) + " ENDGRAPH");
+				break;
+			}
+		//	System.out.println("GRAPH " + forX + " " + String.valueOf((float) costSum/total) + " ENDGRAPH");
+			System.out.println("totalRIbsize: " + totalRIBSize);
+			System.out.println("totla bestpath nodes: " + totalBestPaths);
+			System.out.println("totla bestpath tcost: " + bestpathTruecost );
+		}
 	/**
 	 * runs a basic IA simulation
 	 * benefit measured at transit only
@@ -3382,6 +3488,10 @@ public class Simulator {
 					{
 						temp1 = new Bandwidth_AS(as1, mraiVal, false);
 					}
+					else if(asTypeDef.get(as1) == AS.REPLACEMENT_AS)
+					{
+						temp1 = new Replacement_AS(as1, mraiVal);
+					}
 				}
 					//temp1 = new BGP_AS(as1, mraiVal); //
 				//else just use efault bgp
@@ -3409,6 +3519,10 @@ public class Simulator {
 					else if (asTypeDef.get(as2) == AS.BANDWIDTH_AS || asTypeDef.get(as2) == AS.BANDWIDTH_TRANSIT)
 					{
 						temp2 = new Bandwidth_AS(as2, mraiVal, false);
+					}
+					else if (asTypeDef.get(as2) == AS.REPLACEMENT_AS)
+					{
+						temp2 = new Replacement_AS(as2, mraiVal);
 					}
 				}
 				else
@@ -3443,6 +3557,155 @@ public class Simulator {
 //			}
 		}
 		br.close();
+	}
+	
+	/**
+	 * helper method for the metheod below
+	 * @param searchQueue search queue in bfs
+	 * @param predecessorList the predecessor list we are creating
+	 * @param verticesSeenSoFar see verticies seen so far in the belwo method
+	 * @param neighborSet the neighbors that we are considering
+	 * @param searchAS 
+	 */
+	private static void updatePredecessorAndVerticiesSeen(ArrayDeque<Integer> searchQueue, HashMap<Integer, ArrayList<Integer>> predecessorList, HashSet<Integer> verticesSeenSoFar, ArrayList<Integer> neighborSet, int searchAS)
+	{
+		//for each neighbor
+		for(Integer neighbor : neighborSet)
+		{
+			//if this is not a replacdement as, then skip
+			if(asMap.get(neighbor).type == AS.REPLACEMENT_AS){
+				if(!predecessorList.containsKey(neighbor))
+				{
+					predecessorList.put(neighbor, new ArrayList<Integer>());
+				}
+				ArrayList<Integer> predecessors = predecessorList.get(neighbor);
+				if(predecessors != null){
+					if(!predecessors.contains(searchAS))
+					{
+						predecessors.add(searchAS);
+					}
+				}
+				if(!verticesSeenSoFar.contains(neighbor))
+				{
+					searchQueue.add(neighbor);
+					verticesSeenSoFar.add(neighbor);
+				}
+			}
+		}
+	}
+	
+	private static HashMap<Integer, ArrayList<Integer>> getPredecessorList(int asNum)
+	{	
+		HashSet<Integer> verticesSeenSoFar = new HashSet<Integer>();
+		HashMap<Integer, ArrayList<Integer>> predecessorList = new HashMap<Integer, ArrayList<Integer>>();
+		//		System.out.println("[DEBUG] total ASes: " + asMap.size());
+		//perform breadth first search
+		//			System.out.println("DEBUG CCs: " + numConnectedComponents );
+		ArrayDeque<Integer> searchQueue = new ArrayDeque<Integer>();
+		searchQueue.add(asNum);
+		verticesSeenSoFar.add(asNum);
+		predecessorList.put(asNum, null);
+		while(!searchQueue.isEmpty())
+		{
+			//				System.out.print("searchqueuesize: " + searchQueue.size() + "\r");
+			Integer searchEntry = searchQueue.pop();
+			AS searchAS = asMap.get(searchEntry);
+			//					verticesSeenSoFar.add(searchEntry);
+			
+			updatePredecessorAndVerticiesSeen(searchQueue,predecessorList, verticesSeenSoFar, searchAS.customers, searchAS.asn);	
+			updatePredecessorAndVerticiesSeen(searchQueue,predecessorList, verticesSeenSoFar, searchAS.peers, searchAS.asn);	
+			updatePredecessorAndVerticiesSeen(searchQueue,predecessorList, verticesSeenSoFar, searchAS.providers, searchAS.asn);	
+//			for(Integer customer : searchAS.customers)
+//			{
+//				if(!predecessorList.containsKey(customer))
+//				{
+//					predecessorList.put(customer, new ArrayList<Integer>());
+//				}
+//				ArrayList<Integer> predecessors = predecessorList.get(customer);
+//				if(!predecessors.contains(searchAS.asn))
+//				{
+//					predecessors.add(searchAS.asn);
+//				}
+//				if(!verticesSeenSoFar.contains(customer))
+//				{
+//					searchQueue.add(customer);
+//					verticesSeenSoFar.add(customer);
+//				}
+//			}
+//			for(Integer peer : searchAS.peers)
+//			{
+//				if(!verticesSeenSoFar.contains(peer))
+//				{
+//					searchQueue.add(peer);
+//					verticesSeenSoFar.add(peer);
+//				}
+//			}
+//			for(Integer provider : searchAS.providers)
+//			{
+//				if(!verticesSeenSoFar.contains(provider))
+//				{
+//					searchQueue.add(provider);
+//					verticesSeenSoFar.add(provider);
+//				}
+			}
+			//				System.out.println("DEBUG ccsize: " + ccSize);;
+
+		
+//		System.out.println("[DEBUG] ccSizeAggregateSum: " + ccSizeAggregateSum);
+		return predecessorList;
+	}
+	
+	private static long findNumPaths(HashMap<Integer, ArrayList<Integer>> predecessorList, int asn, ArrayList<Integer> loopCheck)
+	{
+		
+		
+		ArrayList<Integer> predecessors = predecessorList.get(asn);
+		long count = 0;
+		if(predecessors != null)
+		{
+			for(Integer predecessor : predecessors)
+			{
+				if(!loopCheck.contains(predecessor)){
+					loopCheck.add(asn);
+					count++;
+					count += findNumPaths(predecessorList, predecessor, loopCheck);
+				}
+			}
+		}
+		return count;
+	}
+	
+	private static void fillASNumPaths(HashMap<Integer, ArrayList<Integer>> predecessorList, int asn)
+	{
+		HashSet<Integer> stubs = computeStubs();
+		AS theAS = asMap.get(asn);
+		if(theAS.type == AS.REPLACEMENT_AS)
+		{
+			for(Integer aStub : stubs)
+			{
+				if(predecessorList.containsKey(aStub))
+				{
+					long numPaths = findNumPaths(predecessorList, aStub, new ArrayList<Integer>());
+					((Replacement_AS) theAS).numPathsToDest.put(aStub, numPaths);
+				}
+				else
+				{
+					((Replacement_AS) theAS).numPathsToDest.put(aStub, (long) 1);
+				}
+			}
+		}
+	}
+	
+	private static void preProcessReplacement()
+	{
+		for(AS aAS : asMap.values())
+		{
+			if(aAS.type == AS.REPLACEMENT_AS)
+			{
+				System.out.println("preprocessingreplacement: " + aAS.asn);
+				fillASNumPaths(getPredecessorList(aAS.asn), aAS.asn);
+			}
+		}
 	}
 
 	public static void debug(String str){
