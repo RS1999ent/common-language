@@ -1782,7 +1782,7 @@ public class Simulator {
 	public static final int PARTICIPATING = 0;
 	public static final int ALL = 1;
 	public static final int GULF = 2;
-	
+	public static final int PART_STUBS = 3;
 	/**
 	 * method that runs a simuation and fills (mutates) params monitorASes adn anouncedASes.  Fills them up with information
 	 * @param monitorASes ASes that we will make measurements from 
@@ -1795,22 +1795,31 @@ public class Simulator {
 		switch (monitorFrom)
 		{
 		case PARTICIPATING: 
-			for( Integer asMapKey : asTypeDef.keySet())
+			for( int asMapKey : asTypeDef.keySet())
 			{
 				monitorASes.add(asMapKey);
 			}
 			break;
 		case ALL:
-			for(Integer key : asMap.keySet())
+			for(int key : asMap.keySet())
 			{
 				monitorASes.add(key);
 			}
 			break;
 		case GULF:
-			for(Integer key : asMap.keySet())
+			for(int key : asMap.keySet())
 			{
 				if(asMap.get(key).type == AS.BGP){
 					monitorASes.add(key);
+				}
+			}
+			break;
+		case PART_STUBS:
+			for(int stub : computeStubs())
+			{
+				if(asMap.get(stub).type == AS.REPLACEMENT_AS)
+				{
+					monitorASes.add(stub);
 				}
 			}
 			break;
@@ -1905,11 +1914,11 @@ public class Simulator {
 			int bestpathTruecost = 0;
 			int bestpathBWSum = 0;
 			//for transit ASes only, see the sum of received paths
-			for(Integer as : monitorASes)
+			for(int as : monitorASes)
 			{
 				//for each monitored AS, compare their lowest outgoing wiser cost with what was received
 				AS monitoredAS = asMap.get(as); //the AS we are measuring from (all transits eventually)
-				for(Integer announcedAS : announcedASes)
+				for(int announcedAS : announcedASes)
 				{
 					//make sure that the we aren't comparing the AS who announced this to itself
 					if(as == announcedAS){
@@ -2045,11 +2054,11 @@ public class Simulator {
 			int bestpathTruecost = 0;
 			int bestpathBWSum = 0;
 			//for transit ASes only, see the sum of received paths
-			for(Integer as : monitorASes)
+			for(int as : monitorASes)
 			{
 				//for each monitored AS, compare their lowest outgoing wiser cost with what was received
 				AS monitoredAS = asMap.get(as); //the AS we are measuring from (all transits eventually)
-				for(Integer announcedAS : announcedASes)
+				for(int announcedAS : announcedASes)
 				{
 					//make sure that the we aren't comparing the AS who announced this to itself
 					if(as == announcedAS){
@@ -2151,11 +2160,11 @@ public class Simulator {
 		float costSum = 0;
 		int total = monitorASes.size();
 		//for transit ASes only, see the sum of received paths
-		for(Integer as : monitorASes)
+		for(int as : monitorASes)
 		{
 			//for each monitored AS, compare their lowest outgoing wiser cost with what was received
 			AS monitoredAS = asMap.get(as); //the AS we are measuring from (all transits eventually)
-			for(Integer announcedAS : announcedASes)
+			for(int announcedAS : announcedASes)
 			{
 				//make sure that the we aren't comparing the AS who announced this to itself
 				if(as == announcedAS){
@@ -2259,13 +2268,13 @@ public class Simulator {
 		float percentSecure = 0; //transit ases add the percent of paths that are secure to announcing ASes
 		int total = monitorASes.size(); 
 		//for transit ASes only, see the sum of received paths
-		for(Integer as : monitorASes)
+		for(int as : monitorASes)
 		{
 			//for each monitored AS, compare their lowest outgoing wiser cost with what was received
 			AS monitoredAS = asMap.get(as); //the AS we are measuring from (all transits eventually)
 			int numSecure = 0;
 			int totalReceivedAnnounce = 0; //used to compute average of secure paths received. numSecure/total...
-			for(Integer announcedAS : announcedASes)
+			for(int announcedAS : announcedASes)
 			{
 				//make sure that the we aren't comparing the AS who announced this to itself
 				if(as == announcedAS){
@@ -3681,16 +3690,17 @@ public class Simulator {
 		AS theAS = asMap.get(asn);
 		if(theAS.type == AS.REPLACEMENT_AS)
 		{
-			for(Integer aStub : stubs)
+			for(int aAS : asMap.keySet())
 			{
-				if(predecessorList.containsKey(aStub))
+				if(predecessorList.containsKey(aAS))
 				{
-					long numPaths = findNumPaths(predecessorList, aStub, new ArrayList<Integer>());
-					((Replacement_AS) theAS).numPathsToDest.put(aStub, numPaths);
+					long numPaths = findNumPaths(predecessorList, aAS, new ArrayList<Integer>());
+					((Replacement_AS) theAS).numPathsToDest.put(aAS, numPaths);
+					((Replacement_AS) theAS).islandBuddies.add(aAS);
 				}
 				else
 				{
-					((Replacement_AS) theAS).numPathsToDest.put(aStub, (long) 1);
+					((Replacement_AS) theAS).numPathsToDest.put(aAS, (long) 1);
 				}
 			}
 		}
@@ -3702,7 +3712,7 @@ public class Simulator {
 		{
 			if(aAS.type == AS.REPLACEMENT_AS)
 			{
-				System.out.println("preprocessingreplacement: " + aAS.asn);
+				//System.out.println("preprocessingreplacement: " + aAS.asn);
 				fillASNumPaths(getPredecessorList(aAS.asn), aAS.asn);
 			}
 		}

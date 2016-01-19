@@ -1343,7 +1343,7 @@ public class BGP_AS extends AS {
 	public PoPTuple tupleChosen(IA advert) {
 		//choose a tuple based on lowest MED
 		int nh = advert.getFirstHop();
-		long lowestMED = Long.MAX_VALUE;			
+		int lowestMED = Integer.MAX_VALUE;			
 		long trueCostInc = 0;
 		PoPTuple chosenTuple = null;
 		for(PoPTuple tuple : neighborLatency.get(nh).keySet()){
@@ -1352,6 +1352,7 @@ public class BGP_AS extends AS {
 			{
 				//			trueCostInc = latency;
 				chosenTuple = tuple;
+				lowestMED = latency;
 			}
 		}
 		return chosenTuple;

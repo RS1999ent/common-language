@@ -241,14 +241,14 @@ public abstract class AS {
 		
 	}
 
-	private Integer getLowestCost(HashSet<Integer> nodes, HashMap<Integer, Integer> distance)
+	private int getLowestCost(HashSet<Integer> nodes, HashMap<Integer, Integer> distance)
 	{
-		Integer lowestCost = Integer.MAX_VALUE;
-		Integer lowKey = null;
+		int lowestCost = Integer.MAX_VALUE;
+		int lowKey = -1;
 		for(Iterator<Integer> it = nodes.iterator(); it.hasNext();)
 		{
 			int node = it.next();
-			if(distance.get(node) < lowestCost)
+			if(distance.get(node).intValue() < lowestCost)
 			{
 				lowKey = node;
 			}
@@ -264,9 +264,9 @@ public abstract class AS {
 	 */
 	private void precomputation()
 	{
-		for(Integer node : intraD.keySet())
+		for(int node : intraD.keySet())
 		{
-			for(Integer anotherNode : intraD.keySet())
+			for(int anotherNode : intraD.keySet())
 			{
 				if(node != anotherNode)
 				{

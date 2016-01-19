@@ -26,12 +26,16 @@ import java.util.*;
  */
 public class Replacement_AS extends AS {
 
+	private static final int MAX_PATHS_TO_PROPAGATE = 10;
 	
 	private static final int LINK_DELAY = 100; // static link delay of 10 ms
 
 	//how many paths does this node have to a destination
 	//<destination, number of paths to destination>
 	public HashMap<Integer, Long> numPathsToDest = new HashMap<Integer, Long>();
+	
+	//set of replacement ASes in island
+	public HashSet<Integer> islandBuddies = new HashSet<Integer>();
 	
 	/** The BGP_AS number of this BGP_AS */
 	//public int asn;
@@ -220,6 +224,36 @@ public class Replacement_AS extends AS {
 	}
 	
 
+	/**
+	 * find the edge of an island so you can fill the replacement information
+	 * @param advert - advertisement being sent out
+	 * @return the asnum of the incomding edge (that is, downstream entrance to island), -1 if you the edge of the island (an island of 1)
+	 */
+	private int findIslandEdge(IA advert)
+	{
+		LinkedList<Integer> path = (LinkedList<Integer>) advert.getPath().clone();
+		path.removeFirst(); // remove our prepend
+		if(path.isEmpty())
+		{
+			return -1;
+		}
+		int beforeNode = path.getFirst();
+		for(int node : path)
+		{
+			if(islandBuddies.contains(node)){
+				beforeNode = node;
+			}
+			else
+			{
+				break;
+			}
+		}
+		if(!islandBuddies.contains(beforeNode)){
+			return -1;
+		}
+		return beforeNode;
+	}
+	
 	
 	/**
 	 * method that fills the pop information with info (that is, what information is being advertised across differnet pops)
@@ -251,27 +285,44 @@ public class Replacement_AS extends AS {
 		//initialize our pop to pop advertisement info.  That is, initialize a blank IA info for each place we're advertising to
 		//a little hackish using neighborlatency to get this, but it works
 		
+		IAInfo replacementInfo = new IAInfo();
+		long transitPaths = 1;
+		if(!islandBuddies.contains(advertisedToAS))
+		{
+			int islandEntrance = findIslandEdge(advert);
+			if(islandEntrance != -1){
+				transitPaths = numPathsToDest.get(islandEntrance);
+			}
+	//		System.out.println(transitPaths);
+		}
+		
+		long pathsToDest = numPathsToDest.get(advert.getDest());
+		long inAdvertNumPaths = 1;
+		String[] inAdvertPathsToDest = AS.getProtoProps(advert, tupleChosen, new Protocol(AS.REPLACEMENT_AS));
+		if(inAdvertPathsToDest != null)
+		{
+			inAdvertNumPaths = Long.valueOf(inAdvertPathsToDest[0]);
+		}
+		pathsToDest *= transitPaths;
+		if(pathsToDest > inAdvertNumPaths)
+		{
+			
+			if(pathsToDest > MAX_PATHS_TO_PROPAGATE)
+			{
+				pathsToDest = MAX_PATHS_TO_PROPAGATE;
+			}
+			String pathAttribute = String.valueOf(pathsToDest);
+			try {
+				replacementInfo.setProtocolPathAttribute(pathAttribute.getBytes("UTF-8"), new Protocol(AS.REPLACEMENT_AS), advert.getPath());
+			} catch (UnsupportedEncodingException e) {
+				// TODO Auto-generated catch block
+				e.printStackTrace();
+			}
+		}
+
 		for(AS.PoPTuple popTuple : neighborLatency.get(advertisedToAS).keySet())
 		{
-			IAInfo replacementInfo = new IAInfo();
-			long pathsToDest = numPathsToDest.get(advert.getDest());
-			long inAdvertNumPaths = 1;
-			String[] inAdvertPathsToDest = AS.getProtoProps(advert, tupleChosen, new Protocol(AS.REPLACEMENT_AS));
-			if(inAdvertPathsToDest != null)
-			{
-				inAdvertNumPaths = Long.valueOf(inAdvertPathsToDest[0]);
-			}
-			
-			if(pathsToDest > inAdvertNumPaths)
-			{
-				String pathAttribute = String.valueOf(pathsToDest);
-				try {
-					replacementInfo.setProtocolPathAttribute(pathAttribute.getBytes("UTF-8"), new Protocol(AS.REPLACEMENT_AS), advert.getPath());
-				} catch (UnsupportedEncodingException e) {
-					// TODO Auto-generated catch block
-					e.printStackTrace();
-				}
-			}
+
 			advert.popCosts.put(popTuple, replacementInfo);
 		}
 
@@ -1367,7 +1418,7 @@ public class Replacement_AS extends AS {
 	public PoPTuple tupleChosen(IA advert) {
 		//choose a tuple based on lowest MED
 		int nh = advert.getFirstHop();
-		long lowestMED = Long.MAX_VALUE;			
+		int lowestMED = Integer.MAX_VALUE;			
 		long trueCostInc = 0;
 		PoPTuple chosenTuple = null;
 		for(PoPTuple tuple : neighborLatency.get(nh).keySet()){
@@ -1376,6 +1427,7 @@ public class Replacement_AS extends AS {
 			{
 				//			trueCostInc = latency;
 				chosenTuple = tuple;
+				lowestMED = latency;
 			}
 		}
 		return chosenTuple;
