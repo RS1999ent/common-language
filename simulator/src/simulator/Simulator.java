@@ -1871,18 +1871,18 @@ public class Simulator {
 				{
 					asMap.get(key).clearBookKeeping();
 				}
-//				if(!completed)
-//				{
-//					System.out.println("removing rib and fib entries for : " + announcedAS);
-//					IA test = null;
-//					for(int key : asMap.keySet())
-//					{						
-//						asMap.get(key).ribIn.remove(announcedAS);
-//						asMap.get(key).bestPath.remove(announcedAS);
-//						test = asMap.get(key).bestPath.get(announcedAS);
-//					}
-//					
-//				}
+				if(!completed)
+				{
+					System.out.println("removing rib and fib entries for : " + announcedAS);
+					IA test = null;
+					for(int key : asMap.keySet())
+					{						
+						asMap.get(key).ribIn.remove(announcedAS);
+						asMap.get(key).bestPath.remove(announcedAS);
+						test = asMap.get(key).bestPath.get(announcedAS);
+					}
+					
+				}
 				//System.out.println("iteration complete");
 		//	}
 		}
