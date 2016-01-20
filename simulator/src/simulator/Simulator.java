@@ -3753,7 +3753,7 @@ public class Simulator {
 				//System.out.println("preprocessingreplacement: " + aAS.asn);
 				HashMap<Integer, ArrayList<Integer>> predecessorList = getPredecessorList(aAS.asn);
 				fillASNumPaths(predecessorList, aAS.asn);
-				System.out.println("AS done: " + aAS.asn );
+	//			System.out.println("AS done: " + aAS.asn );
 			}
 		}
 	}
