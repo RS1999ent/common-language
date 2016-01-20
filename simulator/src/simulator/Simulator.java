@@ -30,7 +30,7 @@ import net.sourceforge.argparse4j.inf.Namespace;
 public class Simulator {
 
 	public static final boolean bw = true;
-	
+	public static int NUM_PATH_CAP = 10;
     private static final int MRAI_TIMER_VALUE = 30000; //30 seconds
     	private static final int TIER1_THRESHOLD = 50;
     //	private static final int TIER1_THRESHOLD = 0;
@@ -862,14 +862,14 @@ public class Simulator {
 	};
 	
 	private static int NUMTHREADS = 1; //specify number of threads for the threadpool of run()
-	private static long timeout = 20000;
+	private static long timeout = 60000;
 	
 	/**
 	 * This is the main function which runs the simulation. It picks events out of the queue
 	 * and updates the current time, and sends the events to the correct AS to handle.
 	 *
 	 */
-	public static void run() {
+	public static boolean run() {
 //		System.out.println("Starting the run");
 //		long startTime = System.currentTimeMillis();
 //		HashSet<Short> disconnected = new HashSet<Short>();
@@ -884,8 +884,11 @@ public class Simulator {
 		while(true) {
 			if(System.currentTimeMillis() - currentTime > timeout)
 			{
-				System.out.println("taking longer than: " + timeout/1000 + "secs exiting");
-				System.exit(1);
+				System.out.println("taking longer than: " + timeout/1000 + "stopping this run");
+				eventQueue.clear();
+				
+				return false;
+				//System.exit(1);
 			}
 		//	if(eventQueue.size() % 100 == 0)
 			//	System.out.println("eventqueue size: " + eventQueue.size());
@@ -910,7 +913,7 @@ public class Simulator {
 				else{ //we slept once and no new thread have been added since, we're done
 					return;
 				}*/
-				return;
+				return true;
 
 			}
 			else { //got a thread, make sure slept is false
@@ -1091,6 +1094,7 @@ public class Simulator {
 			parser.addArgument("--useBandwidth").required(true).metavar("useBandwidth").type(Integer.class);
 			parser.addArgument("--forX").required(true).metavar("forX").type(Float.class);
 			parser.addArgument("--metric").required(true).metavar("metric to use").type(Integer.class);
+			parser.addArgument("--maxPaths").metavar("max paths for replacement").type(Integer.class).setDefault(10);
 			Namespace arguments = null;
 			try{
 	//			System.out.println(parser.parseArgs(args));
@@ -1102,7 +1106,7 @@ public class Simulator {
 			}
 				
 			
-			
+			NUM_PATH_CAP = arguments.getInt("maxPaths");			
 			out = new BufferedWriter(new FileWriter("output.log"));
 			outFile = new BufferedWriter(new FileWriter(arguments.getString("outFile")));
 			seedVal = arguments.getLong("seed");
@@ -1853,17 +1857,27 @@ public class Simulator {
 		{
 			counter++; 
 			globalCounter++;
-			asMap.get(announcedASes.get(i)).announceSelf(); //announce an AS off our announced list			
+			int announcedAS = announcedASes.get(i);
+			asMap.get(announcedAS).announceSelf(); //announce an AS off our announced list			
 			if(counter == batchSize)
 			{	
 				counter = 0;			    
 				System.out.printf("\r%d", globalCounter);
 				//			    System.out.println("iteration START");
 				instrumented = false;
-				run();
-				for(Integer key : asMap.keySet())
+				boolean completed = run();
+				for(int key : asMap.keySet())
 				{
 					asMap.get(key).clearBookKeeping();
+				}
+				if(!completed)
+				{
+					for(int key : asMap.keySet())
+					{
+						asMap.get(key).ribIn.remove(announcedAS);
+						asMap.get(key).bestPath.remove(announcedAS);
+					}
+					
 				}
 				//System.out.println("iteration complete");
 			}
@@ -1882,7 +1896,7 @@ public class Simulator {
 
 	}
 	
-	private static final int BATCH_PERCENT = 1; //PERCENT OF ASES TO ANNOUNCE AT A TIME
+	private static final int BATCH_PERCENT = 1; //PERCENT OF ASES TO ANNOUNCE AT A TIME needs to always be 1 now
 	private static final int RIB_METRIC = 0;
 	private static final int FIB_METRIC = 1;
 	/**
@@ -1993,33 +2007,22 @@ public class Simulator {
 						}// endfor
 						
 					}
-					else
-					{
-						total--;
-					}
+//					else
+//					{
+//						total--;
+//					}
 				}
 			}
-			switch(metric){
-			case RIB_METRIC:
-				if(!bwTest){
-					System.out.println("GRAPH " + forX + " " + String.valueOf((float) costSum/total) + " ENDGRAPH");
-				}
-				else
-				{
-					System.out.println("GRAPH " + forX + " " + String.valueOf((float) bwSum/total) + " ENDGRAPH");
-				}
-				break;
-			case FIB_METRIC:
-				if(!bwTest){
-					System.out.println("GRAPH " + forX + " " + String.valueOf((float) bestpathTruecost/total) + " ENDGRAPH");
-				}
-				else
-				{
-					System.out.println("GRAPH " + forX + " " + String.valueOf((float) bestpathBWSum/total) + " ENDGRAPH");
-				}
-				break;
+			if(!bwTest){
+				System.out.println("RIB GRAPH " + forX + " " + String.valueOf((float) costSum/total) + " ENDGRAPH");
+				System.out.println("FIB GRAPH " + forX + " " + String.valueOf((float) bestpathTruecost/total) + " ENDGRAPH");
 			}
-		//	System.out.println("GRAPH " + forX + " " + String.valueOf((float) costSum/total) + " ENDGRAPH");
+			else
+			{
+				System.out.println("RIB GRAPH " + forX + " " + String.valueOf((float) bwSum/total) + " ENDGRAPH");
+				System.out.println("FIB GRAPH " + forX + " " + String.valueOf((float) bestpathBWSum/total) + " ENDGRAPH");
+			}
+					//	System.out.println("GRAPH " + forX + " " + String.valueOf((float) costSum/total) + " ENDGRAPH");
 			System.out.println("totalRIbsize: " + totalRIBSize);
 			System.out.println("totla bestpath nodes: " + totalBestPathNodes);
 			System.out.println("totla bestpath tcost: " + bestpathTruecost );
@@ -2110,26 +2113,20 @@ public class Simulator {
 						}// endfor
 						
 					}
-					else
-					{
-						total--;
-					}
+//					else
+//					{
+//						total--;
+//					}
 				}
 			//	System.out.println("totalbestpath: " + totalBestPaths);
 		//		totalBestPaths = 0;
 			}
-			switch(metric){
-			case RIB_METRIC:
-				System.out.println("GRAPH " + forX + " " + String.valueOf((float) totalRIBPaths/total) + " ENDGRAPH");
-				break;
-			case FIB_METRIC:
-				System.out.println("GRAPH " + forX + " " + String.valueOf((float) totalBestPaths/total) + " ENDGRAPH");
-				break;
-			}
+			System.out.println("RIB GRAPH " + forX + " " + String.valueOf((float) totalRIBPaths/total) + " ENDGRAPH");
+			System.out.println("FIB GRAPH " + forX + " " + String.valueOf((float) totalBestPaths/total) + " ENDGRAPH");
 		//	System.out.println("GRAPH " + forX + " " + String.valueOf((float) costSum/total) + " ENDGRAPH");
-			System.out.println("totalRIbsize: " + totalRIBSize);
-			System.out.println("totla bestpath nodes: " + totalBestPaths);
-			System.out.println("totla bestpath tcost: " + bestpathTruecost );
+//			System.out.println("totalRIbsize: " + totalRIBSize);
+			//System.out.println("totla bestpath nodes: " + totalBestPaths);
+//			System.out.println("totla bestpath tcost: " + bestpathTruecost );
 		}
 	/**
 	 * runs a basic IA simulation
@@ -3593,7 +3590,7 @@ public class Simulator {
 					{
 						predecessors.add(searchAS);
 					}
-				}
+				}				
 				if(!verticesSeenSoFar.contains(neighbor))
 				{
 					searchQueue.add(neighbor);
@@ -3664,24 +3661,54 @@ public class Simulator {
 		return predecessorList;
 	}
 	
-	private static long findNumPaths(HashMap<Integer, ArrayList<Integer>> predecessorList, int asn, ArrayList<Integer> loopCheck)
-	{
+	private static long findNumPaths(int root, HashMap<Integer, ArrayList<Integer>> predecessorList, int asn)
+	{		
+		ArrayDeque<LinkedList<Integer>> queue = new ArrayDeque<LinkedList<Integer>>();		
+		ArrayList<LinkedList<Integer>> paths = new ArrayList<LinkedList<Integer>>();
 		
-		
-		ArrayList<Integer> predecessors = predecessorList.get(asn);
-		long count = 0;
-		if(predecessors != null)
+		if(asn == root)
 		{
-			for(Integer predecessor : predecessors)
+			return 0;
+		}
+		LinkedList<Integer> temp = new LinkedList<Integer>();
+		temp.add(asn);
+		queue.addFirst(temp);
+//		if(predecessors == null)
+//		{
+//			return 0;
+//		}
+//		for(int element : predecessors)
+//		{
+//			queue.addLast(element);
+//		}
+		while(!queue.isEmpty())
+		{
+			
+			LinkedList<Integer> path = queue.removeFirst();
+			if(path.getLast() != root)
 			{
-				if(!loopCheck.contains(predecessor)){
-					loopCheck.add(asn);
-					count++;
-					count += findNumPaths(predecessorList, predecessor, loopCheck);
+				ArrayList<Integer> predecessors = predecessorList.get(path.getLast());
+				for(int predecessor : predecessors)
+				{
+					if(!path.contains(predecessor)){
+						LinkedList<Integer> newPath = (LinkedList<Integer>) path.clone();
+						newPath.addLast(predecessor);
+						queue.addLast(newPath);
+					}
+				}
+			}
+			else
+			{
+				paths.add(path);
+				if(paths.size() > NUM_PATH_CAP)
+				{
+					break;
 				}
 			}
 		}
-		return count;
+		
+
+		return paths.size();
 	}
 	
 	private static void fillASNumPaths(HashMap<Integer, ArrayList<Integer>> predecessorList, int asn)
@@ -3694,7 +3721,8 @@ public class Simulator {
 			{
 				if(predecessorList.containsKey(aAS))
 				{
-					long numPaths = findNumPaths(predecessorList, aAS, new ArrayList<Integer>());
+					long numPaths = findNumPaths(theAS.asn, predecessorList, aAS);
+//					System.out.println("numpaths: " + numPaths);
 					((Replacement_AS) theAS).numPathsToDest.put(aAS, numPaths);
 					((Replacement_AS) theAS).islandBuddies.add(aAS);
 				}

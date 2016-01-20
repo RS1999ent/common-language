@@ -26,7 +26,7 @@ import java.util.*;
  */
 public class Replacement_AS extends AS {
 
-	private static final int MAX_PATHS_TO_PROPAGATE = 10;
+	private static final int MAX_PATHS_TO_PROPAGATE = Simulator.NUM_PATH_CAP;
 	
 	private static final int LINK_DELAY = 100; // static link delay of 10 ms
 

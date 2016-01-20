@@ -325,8 +325,8 @@ public class Bandwidth_AS extends AS {
 		int nhType = CUSTOMER; // paths to self should be announced to all
 		int nh = -1;
 		// shadow the global mrai value
-		int pseudoMraiValue = Math.round(this.mraiValue*Simulator.r.nextFloat()/1000)*1000;
-//		int pseudoMraiValue = this.mraiValue;
+		//int pseudoMraiValue = Math.round(this.mraiValue*Simulator.r.nextFloat()/1000)*1000; //original		
+		int pseudoMraiValue = this.mraiValue;
 //		int pseudoMraiValue = Math.round(this.mraiValue*Simulator.r.nextFloat());
 		if(p.getPath().size() > 0) {
 			nh = p.getFirstHop(); // this is the BGP_AS that advertised the path to us

@@ -1,10 +1,10 @@
 #!/bin/bash
 
-echo arg1 is the astypes to generate, 501-wiser, 504 sbgp, 505 bw 507 replacement
-echo arg2 is the sim to perform in the simulator; 4 replacement, 5 truecost
-echo arg3 is where to monitor in the simulator, participating 0, all 1, gulf 2
-echo arg4 is whether to use bandwidth numbers in the simulator
-echo arg5 is what metric to use RIBMETRIC 0, FIBMETRIC 1
+#echo arg1 is the astypes to generate, 501-wiser, 504 sbgp, 505 bw 507 replacement
+#echo arg2 is the sim to perform in the simulator; 4 replacement, 5 truecost
+#echo arg3 is where to monitor in the simulator, participating 0, all 1, gulf 2
+#echo arg4 is whether to use bandwidth numbers in the simulator
+#echo arg5 is what metric to use RIBMETRIC 0, FIBMETRIC 1
 
 astypesFile=$*astypes.txt
 echo $astypesFile
