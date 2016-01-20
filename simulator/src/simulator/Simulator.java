@@ -2022,8 +2022,8 @@ public class Simulator {
 			}
 			else
 			{
-				System.out.println("RIB GRAPH " + forX + " " + String.valueOf((float) bwSum/total) + " ENDGRAPH");
-				System.out.println("FIB GRAPH " + forX + " " + String.valueOf((float) bestpathBWSum/total) + " ENDGRAPH");
+				System.out.println("RIB GRAPH " + forX + " " + String.valueOf((float) bwSum/total) + " ENDGRAPH ENDRIB");
+				System.out.println("FIB GRAPH " + forX + " " + String.valueOf((float) bestpathBWSum/total) + " ENDGRAPH ENDFIB");
 			}
 					//	System.out.println("GRAPH " + forX + " " + String.valueOf((float) costSum/total) + " ENDGRAPH");
 			System.out.println("totalRIbsize: " + totalRIBSize);

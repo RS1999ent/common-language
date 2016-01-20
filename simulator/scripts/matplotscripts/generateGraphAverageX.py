@@ -161,7 +161,7 @@ for tuple in rawData:
     handle, =plt.plot(arr(x),arr(y), label=legendName)
     legendHandles.append(handle)
 
-plt.legend(fontsize='large', loc=2)
+plt.legend(fontsize=10, loc=2)
     
 #plt.axis([0,1, 0, 1520000])
 plt.ylabel(ylabel)
