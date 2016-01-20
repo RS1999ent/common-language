@@ -1954,10 +1954,17 @@ public class Simulator {
 		//			}
 					if(monitoredAS.bestPath.get(announcedAS) != null)
 					{
-						IA bestToAnnounced = monitoredAS.bestPath.get(announcedAS);
-						totalBestPathNodes+= monitoredAS.bestPath.get(announcedAS).getPath().size();
-						bestpathTruecost += monitoredAS.bestPath.get(announcedAS).getTrueCost();	//
-						bestpathBWSum += monitoredAS.bestPath.get(announcedAS).bookKeepingInfo.get(IA.BNBW_KEY);
+						try{
+							IA bestToAnnounced = monitoredAS.bestPath.get(announcedAS);
+							totalBestPathNodes+= monitoredAS.bestPath.get(announcedAS).getPath().size();
+							bestpathTruecost += monitoredAS.bestPath.get(announcedAS).getTrueCost();	//
+							bestpathBWSum += monitoredAS.bestPath.get(announcedAS).bookKeepingInfo.get(IA.BNBW_KEY);
+						}
+						catch(Exception e)
+						{
+							System.out.println("exception for <monitor, anounced>: " + monitoredAS.asn + " " + announcedAS);
+							System.exit(1);
+						}
 					}	// 
 						// 
 					//System.out.println("[DEBUG] lowest cost: " + lowestCost);
