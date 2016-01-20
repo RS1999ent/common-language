@@ -16,6 +16,7 @@ parser.add_argument('--xlabel', metavar='x axis label', help = 'label for the x 
 parser.add_argument('--ylabel', metavar='y axis label', help = 'label for the y axis')
 parser.add_argument('--title', metavar = 'graph title', help = 'title for the graph')
 parser.add_argument('--scale', metavar = 'scale y axis', help = 'value to scale down by', default=1)
+parser.add_argument('--metric', metavar = 'use rib or fib sum', help = 'use the rib metric or not', default='FIB', 
 
 #open files based on arguments
 args = parser.parse_args()
@@ -25,6 +26,7 @@ xlabel = args.xlabel
 ylabel = args.ylabel
 title = args.title
 scalingFactor = args.scale
+metric = args.metric
 rawData = [] #list of tuples (xydictionary, legendname)
 X = []
 Y = []
@@ -33,7 +35,7 @@ ymax = 0
 def parseInput():
     for entry in inputDataList:
         expOutput = open(entry, 'r')
-        p = re.compile('GRAPH.*ENDGRAPH')
+        p = re.compile(metric + ' GRAPH.*ENDGRAPH')
         legendRE = re.compile('LEGEND.*ENDLEGEND')
         legendName = ' '
         xyDict = {}
@@ -42,8 +44,8 @@ def parseInput():
                 m = p.search(line)
                 line = m.group()
                 splitLine = line.split()
-                x = splitLine[1]
-                y = splitLine[2]
+                x = splitLine[2]
+                y = splitLine[3]
                 if DEBUG:
                     print x,y
                 if x not in xyDict:
@@ -158,14 +160,14 @@ for tuple in rawData:
     handle, =plt.plot(arr(x),arr(y), label=legendName)
     legendHandles.append(handle)
 
-plt.legend(fontsize='small', loc=2)
+plt.legend(fontsize='large', loc=2)
     
 #plt.axis([0,1, 0, 1520000])
 plt.ylabel(ylabel)
 plt.xlabel(xlabel)
 plt.xticks(numpy.arange(0, 1.1, .1))
 plt.yticks(numpy.arange(-.3, 1.01, .1))
-plt.grid(which='major', axis = 'both')
+#plt.grid(which='major', axis = 'both')
 pylab.ylim(ymin=-.3, ymax=1)
 pp.savefig()
 pp.close()

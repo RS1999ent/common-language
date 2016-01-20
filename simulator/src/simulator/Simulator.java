@@ -862,7 +862,7 @@ public class Simulator {
 	};
 	
 	private static int NUMTHREADS = 1; //specify number of threads for the threadpool of run()
-	private static long timeout = 60000;
+	private static long timeout = 20000;
 	
 	/**
 	 * This is the main function which runs the simulation. It picks events out of the queue
@@ -1107,6 +1107,7 @@ public class Simulator {
 				
 			
 			NUM_PATH_CAP = arguments.getInt("maxPaths");			
+			System.out.println("numpathcap: " + NUM_PATH_CAP);
 			out = new BufferedWriter(new FileWriter("output.log"));
 			outFile = new BufferedWriter(new FileWriter(arguments.getString("outFile")));
 			seedVal = arguments.getLong("seed");
@@ -1859,8 +1860,8 @@ public class Simulator {
 			globalCounter++;
 			int announcedAS = announcedASes.get(i);
 			asMap.get(announcedAS).announceSelf(); //announce an AS off our announced list			
-			if(counter == batchSize)
-			{	
+//			if(counter == batchSize)
+//			{	
 				counter = 0;			    
 				System.out.printf("\r%d", globalCounter);
 				//			    System.out.println("iteration START");
@@ -1870,23 +1871,26 @@ public class Simulator {
 				{
 					asMap.get(key).clearBookKeeping();
 				}
-				if(!completed)
-				{
-					for(int key : asMap.keySet())
-					{
-						asMap.get(key).ribIn.remove(announcedAS);
-						asMap.get(key).bestPath.remove(announcedAS);
-					}
-					
-				}
+//				if(!completed)
+//				{
+//					System.out.println("removing rib and fib entries for : " + announcedAS);
+//					IA test = null;
+//					for(int key : asMap.keySet())
+//					{						
+//						asMap.get(key).ribIn.remove(announcedAS);
+//						asMap.get(key).bestPath.remove(announcedAS);
+//						test = asMap.get(key).bestPath.get(announcedAS);
+//					}
+//					
+//				}
 				//System.out.println("iteration complete");
-			}
+		//	}
 		}
 
 		//		System.out.println("Number of announced ASes: " + announcedASes.size());
 		//run for any missing ASes
 		instrumented = false;
-		run();
+//		run();
 		//		monitorASes.clear(); //REMOVE LATER, ADDING ALL MONITOR ASES
 		for(Integer key : asMap.keySet())
 		{
@@ -1950,6 +1954,7 @@ public class Simulator {
 		//			}
 					if(monitoredAS.bestPath.get(announcedAS) != null)
 					{
+						IA bestToAnnounced = monitoredAS.bestPath.get(announcedAS);
 						totalBestPathNodes+= monitoredAS.bestPath.get(announcedAS).getPath().size();
 						bestpathTruecost += monitoredAS.bestPath.get(announcedAS).getTrueCost();	//
 						bestpathBWSum += monitoredAS.bestPath.get(announcedAS).bookKeepingInfo.get(IA.BNBW_KEY);
@@ -2014,8 +2019,8 @@ public class Simulator {
 				}
 			}
 			if(!bwTest){
-				System.out.println("RIB GRAPH " + forX + " " + String.valueOf((float) costSum/total) + " ENDGRAPH");
-				System.out.println("FIB GRAPH " + forX + " " + String.valueOf((float) bestpathTruecost/total) + " ENDGRAPH");
+				System.out.println("RIB GRAPH " + forX + " " + String.valueOf((float) costSum/total) + " ENDGRAPH ENDRIB");
+				System.out.println("FIB GRAPH " + forX + " " + String.valueOf((float) bestpathTruecost/total) + " ENDGRAPH ENDFIB");
 			}
 			else
 			{
@@ -2121,8 +2126,8 @@ public class Simulator {
 			//	System.out.println("totalbestpath: " + totalBestPaths);
 		//		totalBestPaths = 0;
 			}
-			System.out.println("RIB GRAPH " + forX + " " + String.valueOf((float) totalRIBPaths/total) + " ENDGRAPH");
-			System.out.println("FIB GRAPH " + forX + " " + String.valueOf((float) totalBestPaths/total) + " ENDGRAPH");
+			System.out.println("RIB GRAPH " + forX + " " + String.valueOf((float) totalRIBPaths/total) + " ENDGRAPH ENDRIB");
+			System.out.println("FIB GRAPH " + forX + " " + String.valueOf((float) totalBestPaths/total) + " ENDGRAPH ENDFIB");
 		//	System.out.println("GRAPH " + forX + " " + String.valueOf((float) costSum/total) + " ENDGRAPH");
 //			System.out.println("totalRIbsize: " + totalRIBSize);
 			//System.out.println("totla bestpath nodes: " + totalBestPaths);
@@ -3665,7 +3670,7 @@ public class Simulator {
 	{		
 		ArrayDeque<LinkedList<Integer>> queue = new ArrayDeque<LinkedList<Integer>>();		
 		ArrayList<LinkedList<Integer>> paths = new ArrayList<LinkedList<Integer>>();
-		
+		int count = 0;
 		if(asn == root)
 		{
 			return 0;
@@ -3683,7 +3688,11 @@ public class Simulator {
 //		}
 		while(!queue.isEmpty())
 		{
-			
+			count = queue.size();
+			if(count > NUM_PATH_CAP)
+			{
+				return count;
+			}
 			LinkedList<Integer> path = queue.removeFirst();
 			if(path.getLast() != root)
 			{
@@ -3693,7 +3702,7 @@ public class Simulator {
 					if(!path.contains(predecessor)){
 						LinkedList<Integer> newPath = (LinkedList<Integer>) path.clone();
 						newPath.addLast(predecessor);
-						queue.addLast(newPath);
+						queue.addFirst(newPath);
 					}
 				}
 			}
@@ -3702,13 +3711,14 @@ public class Simulator {
 				paths.add(path);
 				if(paths.size() > NUM_PATH_CAP)
 				{
+					count = paths.size();
 					break;
 				}
 			}
 		}
 		
 
-		return paths.size();
+		return count;
 	}
 	
 	private static void fillASNumPaths(HashMap<Integer, ArrayList<Integer>> predecessorList, int asn)
@@ -3741,7 +3751,9 @@ public class Simulator {
 			if(aAS.type == AS.REPLACEMENT_AS)
 			{
 				//System.out.println("preprocessingreplacement: " + aAS.asn);
-				fillASNumPaths(getPredecessorList(aAS.asn), aAS.asn);
+				HashMap<Integer, ArrayList<Integer>> predecessorList = getPredecessorList(aAS.asn);
+				fillASNumPaths(predecessorList, aAS.asn);
+				System.out.println("AS done: " + aAS.asn );
 			}
 		}
 	}
