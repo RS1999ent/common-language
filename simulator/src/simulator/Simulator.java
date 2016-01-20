@@ -862,7 +862,7 @@ public class Simulator {
 	};
 	
 	private static int NUMTHREADS = 1; //specify number of threads for the threadpool of run()
-	private static long timeout = 20000;
+	private static long timeout = 10000;
 	
 	/**
 	 * This is the main function which runs the simulation. It picks events out of the queue
@@ -1128,10 +1128,13 @@ public class Simulator {
 		//	readIntraDomain(intraFile);
 			//readLinks(linkFile);
 			//readParents(parentsFile);
-			
 			r = new Random(seedVal);
 			trimASMap(largestConnectedComponent()); //trims the AS map to be one connected component
 			numAses = asMap.size();
+			if(xVal == 0)
+			{
+				monitorFrom = ALL;
+			}
 			switch(simMode) {
 			case 0:
 		//	    runFCPSimulations();
@@ -1948,10 +1951,12 @@ public class Simulator {
 					for(int sanity : monitorASes)
 					{
 						AS sanityAS = asMap.get(sanity);
-						if(sanityAS.bestPath.get(announcedASes) != null){
-							IA bestToAnnounced = monitoredAS.bestPath.get(announcedAS);
-							if(bestToAnnounced.getPath() == null)
-							{
+						if(sanityAS.bestPath.get(announcedAS) != null){
+							try{
+								monitoredAS.bestPath.get(announcedAS).getPath().size();
+							}
+							catch (Exception e)
+							{								
 								skip = true;
 							}
 						}
