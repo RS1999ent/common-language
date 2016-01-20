@@ -1943,6 +1943,23 @@ public class Simulator {
 						continue;
 					}
 					AS compareAS = asMap.get(announcedAS); //the AS that announced
+					//sanity check, if any monitor as to this as causes an exception, do not add to costs
+					boolean skip = false;
+					for(int sanity : monitorASes)
+					{
+						AS sanityAS = asMap.get(sanity);
+						if(sanityAS.bestPath.get(announcedASes) != null){
+							IA bestToAnnounced = monitoredAS.bestPath.get(announcedAS);
+							if(bestToAnnounced.getPath() == null)
+							{
+								skip = true;
+							}
+						}
+					}
+					if(skip)
+					{
+						continue;
+					}
 					//what is the lowest cost outgoing link of announced Node
 	//				int lowestCost = Integer.MAX_VALUE;
 		//			for(Integer neighbor: compareAS.neighborLatency.keySet())
@@ -1973,29 +1990,6 @@ public class Simulator {
 					if (monitoredAS.ribIn.get(announcedAS) != null) {	// 
 						totalRIBSize += monitoredAS.ribIn.get(announcedAS).size();	// 
 						for (IA path : monitoredAS.ribIn.get(announcedAS).values()) {	// 
-	//not true						// all paths should have wiser information in them
-							/*byte[] wiserBytes = path.getProtocolPathAttribute(	// 
-									new Protocol(AS.WISER), path.getPath());	// 
-							String wiserProps = null;	// 
-							int wiserCost = 0;	// 
-							int normalization = 1;	// 
-							// if ther is wiser props
-							if (wiserBytes[0] != (byte) 0xFF) {	// 
-								try {	// 
-									// fill them into our variables
-									wiserProps = new String(wiserBytes, "UTF-8");	// 
-									String[] split = wiserProps.split("\\s+");	// 
-									wiserCost = Integer.valueOf(split[0]);	// 
-									normalization = Integer.valueOf(split[1]);	// 
-								} catch (UnsupportedEncodingException e) {
-									// TODO Auto-generated catch block
-									e.printStackTrace();
-								}
-							} else {
-								if(!monitoredAS.neighborMap.containsKey(announcedAS))
-									System.out.println("[DEBUG] NO WISER PROPS FOR: "
-										+ announcedAS);
-							}*/
 							
 							costSum += path.getTrueCost();
 							bwSum += path.bookKeepingInfo.get(IA.BNBW_KEY);
@@ -2007,14 +2001,6 @@ public class Simulator {
 								//System.out.println("[DEBUG] received lowest cost: " + wiserProps);
 								//System.out.println("[DEBUG] rib of AS is : " + monitoredAS.ribIn.toString());
 							}
-							
-	//						System.out.println("[DEBUG] received lowest cost: " + wiserCost);
-							//this is used for percent lowest cost
-						//	if (wiserCost == lowestCost) {
-								
-					//			costSum++;
-					//			break;
-					//		}
 	
 						}// endfor
 						

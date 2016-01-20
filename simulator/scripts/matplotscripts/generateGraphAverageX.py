@@ -16,7 +16,7 @@ parser.add_argument('--xlabel', metavar='x axis label', help = 'label for the x 
 parser.add_argument('--ylabel', metavar='y axis label', help = 'label for the y axis')
 parser.add_argument('--title', metavar = 'graph title', help = 'title for the graph')
 parser.add_argument('--scale', metavar = 'scale y axis', help = 'value to scale down by', default=1)
-parser.add_argument('--metric', metavar = 'use rib or fib sum', help = 'use the rib metric or not', default='FIB', 
+parser.add_argument('--metric', metavar = 'use rib or fib sum', help = 'use the rib metric or not', default='FIB')
 
 #open files based on arguments
 args = parser.parse_args()
@@ -35,17 +35,18 @@ ymax = 0
 def parseInput():
     for entry in inputDataList:
         expOutput = open(entry, 'r')
-        p = re.compile(metric + ' GRAPH.*ENDGRAPH')
+        metricRE = re.compile(metric + '.*END' + metric)
+        p = re.compile('GRAPH.*ENDGRAPH')
         legendRE = re.compile('LEGEND.*ENDLEGEND')
         legendName = ' '
         xyDict = {}
         for line in expOutput:
-            if p.search(line):
+            if metricRE.search(line):
                 m = p.search(line)
                 line = m.group()
                 splitLine = line.split()
-                x = splitLine[2]
-                y = splitLine[3]
+                x = splitLine[1]
+                y = splitLine[2]
                 if DEBUG:
                     print x,y
                 if x not in xyDict:

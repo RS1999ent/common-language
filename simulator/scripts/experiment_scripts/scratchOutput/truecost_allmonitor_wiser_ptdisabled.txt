@@ -1,5 +1,5 @@
 501 5 1 0 1astypes.txt
-
+LEGEND measured from all ASes, contiguous deployment ENDLEGEND
 Testing for stub/transit percentage: 0.000000
 
 Testing on Transit seed 1
