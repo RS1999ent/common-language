@@ -18,6 +18,7 @@ parser.add_argument('--ylabel', metavar='y axis label', help = 'label for the y 
 parser.add_argument('--title', metavar = 'graph title', help = 'title for the graph')
 parser.add_argument('--scale', metavar = 'scale y axis', help = 'value to scale down by', default=1)
 parser.add_argument('--metric', metavar = 'use rib or fib sum', help = 'use the rib metric or not', default='FIB')
+parser.add_argument('--legendLoc', metavar = 'legend location', help = 'location to put legend (see pylab doc)', default = 2)
 
 #open files based on arguments
 args = parser.parse_args()
@@ -28,6 +29,7 @@ ylabel = args.ylabel
 title = args.title
 scalingFactor = args.scale
 metric = args.metric
+legendLoc = args.legendLoc
 rawData = [] #list of tuples (xydictionary, legendname)
 X = []
 Y = []
@@ -177,6 +179,12 @@ ax2 = fig.add_subplot(gs[1])
 for tuple in rawData:
     xyDict = tuple[0]
     legendName = tuple[1]
+    splitLegend = legendName.split()
+    style = '-'
+    print 'splitgenend: ', splitLegend[0]
+    if splitLegend[0] == 'contiguous':
+        style = '--'
+    
     if DEBUG:
         print 'legendname: ', legendName
     y, betterY = getY(xyDict)
@@ -187,10 +195,10 @@ for tuple in rawData:
     if DEBUG:
         print 'scaley: ', y
     x = getX(xyDict)
-    ax.plot(arr(x),arr(y), label=legendName)
-    ax2.plot(arr(x),arr(y), label=legendName)
+    ax.plot(arr(x),arr(y), label=legendName, linestyle=style)
+    ax2.plot(arr(x),arr(y), label=legendName, linestyle=style)
 
-ax.legend(fontsize=10, loc=2)
+ax.legend(fontsize=10, loc=legendLoc)
 ax2.set_ylim(ylim2)
 plt.subplots_adjust(hspace = .09)
 ax.set_ylim(ylim)
