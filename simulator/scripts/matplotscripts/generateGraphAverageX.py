@@ -1,6 +1,7 @@
 import numpy
 import pylab
 import matplotlib.pyplot as plt
+import matplotlib.gridspec as gridspec
 from matplotlib.backends.backend_pdf import PdfPages
 import argparse
 import random
@@ -17,6 +18,7 @@ parser.add_argument('--ylabel', metavar='y axis label', help = 'label for the y 
 parser.add_argument('--title', metavar = 'graph title', help = 'title for the graph')
 parser.add_argument('--scale', metavar = 'scale y axis', help = 'value to scale down by', default=1)
 parser.add_argument('--metric', metavar = 'use rib or fib sum', help = 'use the rib metric or not', default='FIB')
+parser.add_argument('--legendLoc', metavar = 'legend location', help = 'location to put legend (see pylab doc)', default = 2)
 
 #open files based on arguments
 args = parser.parse_args()
@@ -27,6 +29,7 @@ ylabel = args.ylabel
 title = args.title
 scalingFactor = args.scale
 metric = args.metric
+legendLoc = args.legendLoc
 rawData = [] #list of tuples (xydictionary, legendname)
 X = []
 Y = []
@@ -111,6 +114,23 @@ def scaleY(y, scaler):
         newY.append(percentInto)
     return newY
 
+#find the minimum y in the raw data
+#returns it
+def minY(rawData):
+    minY = 99999999999
+    maxY = 0
+    for tuple in rawData:
+        xyDict = tuple[0]
+        y, betterY = getY(xyDict)
+        tmpMin = min(y)
+        tmpMax = max(y)
+        if tmpMin < minY:
+            minY = tmpMin
+        if tmpMax > maxY:
+            maxY = tmpMax
+    return minY, maxY
+    
+
 parseInput()
 #fillXY()
         
@@ -142,34 +162,92 @@ arr = numpy.asarray
 #        [0, 0]]).T     #1
 
 
-#plt.figure()
+fig = plt.figure()
+smallestY, maxY = minY(rawData)
+ylim = [smallestY, maxY]
+ylim2 = [0, .1*smallestY]
+ylimratio = (ylim[1]-ylim[0])/(ylim2[1]-ylim2[0]+ylim[1]-ylim[0])
+ylim2ratio = (ylim2[1]-ylim2[0])/(ylim2[1]-ylim2[0]+ylim[1]-ylim[0])
+gs = gridspec.GridSpec(2, 1, height_ratios=[ylimratio, ylim2ratio])
 #plt.errorbar(x, y, yerr=0)
 legendHandles = []
 bestY = None
+minY = None
+ax = fig.add_subplot(gs[0])
+ax2 = fig.add_subplot(gs[1])
+#f, (ax, ax2) = plt.subplots(2, 1, sharex=True)
 for tuple in rawData:
     xyDict = tuple[0]
     legendName = tuple[1]
+    splitLegend = legendName.split()
+    style = '-'
+    print 'splitgenend: ', splitLegend[0]
+    if splitLegend[0] == 'contiguous':
+        style = '--'
+    
     if DEBUG:
         print 'legendname: ', legendName
     y, betterY = getY(xyDict)
+    minY = min(y)
     if not math.isnan(betterY):
         bestY = betterY
-    y = scaleY(y, bestY)
+  #  y = scaleY(y, bestY)
     if DEBUG:
         print 'scaley: ', y
     x = getX(xyDict)
-    handle, =plt.plot(arr(x),arr(y), label=legendName)
-    legendHandles.append(handle)
+    ax.plot(arr(x),arr(y), label=legendName, linestyle=style)
+    ax2.plot(arr(x),arr(y), label=legendName, linestyle=style)
 
-plt.legend(fontsize=10, loc=2)
-    
+ax.legend(fontsize=10, loc=legendLoc)
+ax2.set_ylim(ylim2)
+plt.subplots_adjust(hspace = .09)
+ax.set_ylim(ylim)
+
+
+ax.spines['bottom'].set_visible(False)
+ax2.spines['top'].set_visible(False)
+ax.xaxis.tick_top()
+
+ax.tick_params(labeltop='off')  # don't put tick labels at the top
+ax.yaxis.set_ticks(numpy.arange(smallestY, maxY, (maxY - smallestY) * .15))
+ax2.xaxis.tick_bottom()
+ax2.yaxis.set_ticks(numpy.arange(0, .1*smallestY, .1*smallestY - 1))
+
+
+kwargs = dict(color='k', clip_on=False)
+xlim = ax.get_xlim()
+dx = .01*(xlim[1]-xlim[0])
+dy = .01*(ylim[1]-ylim[0])/ylimratio
+ax.plot((xlim[0]-dx,xlim[0]+dx), (ylim[0]-dy,ylim[0]+dy), **kwargs)
+ax.plot((xlim[1]-dx,xlim[1]+dx), (ylim[0]-dy,ylim[0]+dy), **kwargs)
+dy = .01*(ylim2[1]-ylim2[0])/ylim2ratio
+ax2.plot((xlim[0]-dx,xlim[0]+dx), (ylim2[1]-dy,ylim2[1]+dy), **kwargs)
+ax2.plot((xlim[1]-dx,xlim[1]+dx), (ylim2[1]-dy,ylim2[1]+dy), **kwargs)
+ax.set_xlim(xlim)
+ax2.set_xlim(xlim)
+
+
+#d = .015  # how big to make the diagonal lines in axes coordinates
+# arguments to pass plot, just so we don't keep repeating them
+#kwargs = dict(transform=ax.transAxes, color='k', clip_on=False)
+#ax.plot((-d, +d), (-d, +d), **kwargs)        # top-left diagonal
+#ax.plot((1 - d, 1 + d), (-d, +d), **kwargs)  # top-right diagonal
+#
+#kwargs.update(transform=ax2.transAxes)  # switch to the bottom axes
+#ax2.plot((-d, +d), (1 - d, 1 + d), **kwargs)  # bottom-left diagonal
+#ax2.plot((1 - d, 1 + d), (1 - d, 1 + d), **kwargs)  # bottom-right diagona
+
+ax2.set_xlabel(xlabel)
+ax2.set_ylabel(ylabel)
+ax2.yaxis.set_label_coords(0.05, 0.5, transform=fig.transFigure)
+
 #plt.axis([0,1, 0, 1520000])
-plt.ylabel(ylabel)
-plt.xlabel(xlabel)
+#plt.ylabel(ylabel)
+#plt.xlabel(xlabel)
 plt.xticks(numpy.arange(0, 1.1, .1))
-plt.yticks(numpy.arange(-.3, 1.01, .1))
+#plt.yticks(numpy.arange(-.3, 1.01, .1))
 #plt.grid(which='major', axis = 'both')
-pylab.ylim(ymin=-.3, ymax=1)
+#pylab.ylim(ymin=-.3, ymax=1)
 pp.savefig()
 pp.close()
 plt.show()
