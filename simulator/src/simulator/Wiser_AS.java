@@ -223,7 +223,7 @@ public class Wiser_AS extends AS {
 		int cost = 0;
 		for(AS.PoPTuple poptuple : neighborLatency.get(advertisedToAS).keySet())
 		{
-			cost += neighborLatency.get(advertisedToAS).get(poptuple);
+			cost += neighborLatency.get(advertisedToAS).get(poptuple).get(AS.COST_METRIC);
 			//			int cost = getTrueCostInc(oldPath); //the true cost inc, will be the wiser cost advertised for now
 			if(tupleChosen.pop1 != -1){
 				cost += getIntraDomainCost(tupleChosen.pop1, poptuple.pop1, advertisedToAS); //cost is equal to just intradomain cost, because we are filling popcosts
@@ -1355,7 +1355,7 @@ public class Wiser_AS extends AS {
 				String[] wiserProps = getWiserProps(path, tuple);
 				if (wiserProps == null)
 				{
-					if(neighborLatency.get(path.getFirstHop()).get(tuple.reverse()) < p1LowestCost)
+					if(neighborLatency.get(path.getFirstHop()).get(tuple.reverse()).get(AS.COST_METRIC) < p1LowestCost)
 					{
 						p1Tuple = tuple.reverse();
 					}

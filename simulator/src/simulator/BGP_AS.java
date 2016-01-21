@@ -1347,7 +1347,7 @@ public class BGP_AS extends AS {
 		long trueCostInc = 0;
 		PoPTuple chosenTuple = null;
 		for(PoPTuple tuple : neighborLatency.get(nh).keySet()){
-			int latency = neighborLatency.get(nh).get(tuple);
+			int latency = neighborLatency.get(nh).get(tuple).get(AS.COST_METRIC);
 			if(latency < lowestMED)
 			{
 				//			trueCostInc = latency;

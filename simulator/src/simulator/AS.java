@@ -43,6 +43,10 @@ public abstract class AS {
 	static final int REPLACEMENT_AS = 507;
 	static final int REPLACEMENT_TRANSIT = 506;
 	
+	static final int COST_METRIC = 1;
+	static final int BW_METRIC = 2;
+	
+	
 	public int type = 0;
 	
 	//did this as announce itself
@@ -116,9 +120,8 @@ public abstract class AS {
 	
 	}
 
-	// hashmap to find latencies. neighbor (int) -> hashmap of point of presense
-	// tuples -> latency
-	HashMap<Integer, HashMap<PoPTuple, Integer>> neighborLatency = new HashMap<Integer, HashMap<PoPTuple, Integer>>();
+	// hashmap to find latencies. neighbor (int) -> hashmap of point of presense to hashmap of metric
+	HashMap<Integer, HashMap<PoPTuple, HashMap<Integer, Integer>>> neighborLatency = new HashMap<Integer, HashMap<PoPTuple, HashMap<Integer, Integer>>>();
 
 	// adjacency list for intradomain pop adjacencies. Goes Pop -> hash adjacentpop -> latency
 	HashMap<Integer, HashMap<Integer, Integer>> intraD = new HashMap<Integer, HashMap<Integer, Integer>>();
@@ -157,25 +160,29 @@ public abstract class AS {
 	public abstract void addProvider(int as2);
 	
 	/**
-	 * adds the latency between to ponts of presence between neigbhroing ases
+	 * adds the metric assigned to link between two pairs
 	 * 
 	 * @param as
 	 *            the neighbor AS
 	 * @param popPair
 	 *            the points of presence connecting the two
-	 * @param latency
+	 * @param metricVal
 	 *            the latency between those points of presence
 	 */
-	public void addLatency(int as, PoPTuple popPair, int latency) {
+	public void addLinkMetric(int as, PoPTuple popPair, int metric, int metricVal) {
 		// grab reference to the has table if it exists for this neighbor
-		HashMap<PoPTuple, Integer> temp;
+		HashMap<PoPTuple, HashMap<Integer, Integer>> temp;
 		if (!neighborLatency.containsKey(as)) {
-			temp = new HashMap<PoPTuple, Integer>();
+			temp = new HashMap<PoPTuple, HashMap<Integer, Integer>>();
 			neighborLatency.put(as, temp);
 		}
 		temp = neighborLatency.get(as);
+		if(!temp.containsKey(popPair))
+		{
+			temp.put(popPair, new HashMap<Integer, Integer>());
+		}
 		// add the latency for the pair
-		temp.put(popPair, latency);
+		temp.get(popPair).put(metric, metricVal);
 
 	}
 	
@@ -511,13 +518,13 @@ public abstract class AS {
 	protected  void updateBookKeeping(IA advert, PoPTuple chosenTuple){
 		if(neighborLatency.containsKey(advert.getFirstHop()))
 		{
-			advert.setTrueCost(advert.getTrueCost() + neighborLatency.get(advert.getFirstHop()).get(chosenTuple));
+			advert.setTrueCost(advert.getTrueCost() + neighborLatency.get(advert.getFirstHop()).get(chosenTuple).get(AS.COST_METRIC));
 			if(!advert.bookKeepingInfo.containsKey(IA.BNBW_KEY))
 			{				
 				advert.bookKeepingInfo.put(IA.BNBW_KEY, Float.MAX_VALUE);
 			}
 			float currBNBW = Float.valueOf(advert.bookKeepingInfo.get(IA.BNBW_KEY));
-			float neighborBW = neighborLatency.get(advert.getFirstHop()).get(chosenTuple); 
+			float neighborBW = neighborLatency.get(advert.getFirstHop()).get(chosenTuple).get(AS.BW_METRIC); 
 			if( neighborBW < currBNBW)
 			{
 				advert.bookKeepingInfo.put(IA.BNBW_KEY, neighborBW );
@@ -535,13 +542,13 @@ public abstract class AS {
 		{
 			for(PoPTuple neighborTuple : neighborLatency.get(toAS).keySet())
 			{
-				advert.setTrueCost(advert.getTrueCost() + neighborLatency.get(toAS).get(neighborTuple));
+				advert.setTrueCost(advert.getTrueCost() + neighborLatency.get(toAS).get(neighborTuple).get(AS.COST_METRIC));
 				if(!advert.bookKeepingInfo.containsKey(IA.BNBW_KEY))
 				{				
 					advert.bookKeepingInfo.put(IA.BNBW_KEY, Float.MAX_VALUE);
 				}
 				float currBNBW = Float.valueOf(advert.bookKeepingInfo.get(IA.BNBW_KEY));
-				float neighborBW = neighborLatency.get(toAS).get(neighborTuple); 
+				float neighborBW = neighborLatency.get(toAS).get(neighborTuple).get(AS.BW_METRIC); 
 				if( neighborBW < currBNBW)
 				{
 					advert.bookKeepingInfo.put(IA.BNBW_KEY, neighborBW );

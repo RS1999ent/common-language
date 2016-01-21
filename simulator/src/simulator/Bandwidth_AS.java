@@ -223,9 +223,9 @@ public class Bandwidth_AS extends AS {
 		for(AS.PoPTuple poptuple : neighborLatency.get(advertisedToAS).keySet())
 		{
 			cost = currBottleneckBW;
-			if(neighborLatency.get(advertisedToAS).get(poptuple) < currBottleneckBW)
+			if(neighborLatency.get(advertisedToAS).get(poptuple).get(AS.BW_METRIC) < currBottleneckBW)
 			{
-				cost = neighborLatency.get(advertisedToAS).get(poptuple);
+				cost = neighborLatency.get(advertisedToAS).get(poptuple).get(AS.BW_METRIC);
 			}
 			
 			IAInfo popInfo = new IAInfo();
@@ -1357,10 +1357,10 @@ public class Bandwidth_AS extends AS {
 				String[] bwProps = getBandwidthProps(path, tuple);
 				if (bwProps == null)
 				{
-					if(neighborLatency.get(path.getFirstHop()).get(tuple.reverse()) > p1bottleneckBW)
+					if(neighborLatency.get(path.getFirstHop()).get(tuple.reverse()).get(AS.BW_METRIC) > p1bottleneckBW)
 					{
 						p1Tuple = tuple.reverse();
-						p1bottleneckBW = neighborLatency.get(path.getFirstHop()).get(tuple.reverse());
+						p1bottleneckBW = neighborLatency.get(path.getFirstHop()).get(tuple.reverse()).get(AS.BW_METRIC);
 					}
 				}
 				else

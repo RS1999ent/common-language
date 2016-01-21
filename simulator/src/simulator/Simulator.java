@@ -3465,14 +3465,16 @@ public class Simulator {
 			int as2 = Integer.parseInt(token[1]);
 			int relation = Integer.parseInt(token[2]);
 			int linkMetric = 0;
+			int cost =  Math.round((1/Float.parseFloat(token[3])) * 100000);
+			int bw = Math.round(Float.parseFloat(token[3]));
 			//decide whether to use bandwidth or latency
-			if(!useBandwidth){
-				linkMetric = Math.round((1/Float.parseFloat(token[3])) * 100000); //working with bandwidth maybe temporary, so parse float Integer.parseInt(token[3]);
-			}
-			else
-			{
-				linkMetric = Math.round(Float.parseFloat(token[3]));
-			}
+//			if(!useBandwidth){
+//				linkMetric = Math.round((1/Float.parseFloat(token[3])) * 100000); //working with bandwidth maybe temporary, so parse float Integer.parseInt(token[3]);
+//			}
+//			else
+//			{
+//				linkMetric = Math.round(Float.parseFloat(token[3]));
+//			}
 			int pop1 = Integer.parseInt(token[4]);
 			int pop2 = Integer.parseInt(token[5]);
 //			int as1Type = Integer.parseInt(token[4]);
@@ -3558,8 +3560,10 @@ public class Simulator {
 				temp2.addPeer(as1);
 			}
 			
-			temp1.addLatency(temp2.asn, new AS.PoPTuple(pop1, pop2), linkMetric);
-			temp2.addLatency(temp1.asn, new AS.PoPTuple(pop2, pop1) , linkMetric);
+			temp1.addLinkMetric(temp2.asn, new AS.PoPTuple(pop1, pop2), AS.COST_METRIC, cost);
+			temp1.addLinkMetric(temp2.asn, new AS.PoPTuple(pop1, pop2), AS.BW_METRIC, bw);
+			temp2.addLinkMetric(temp1.asn, new AS.PoPTuple(pop2, pop1) , AS.BW_METRIC, bw);
+			temp2.addLinkMetric(temp1.asn, new AS.PoPTuple(pop2, pop1) , AS.COST_METRIC, cost);
 //			else { // sibling?
 //			temp1.addCustomer(as2);
 //			temp2.addCustomer(as1);
