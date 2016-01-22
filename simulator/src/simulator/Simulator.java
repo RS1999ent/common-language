@@ -1167,7 +1167,7 @@ public class Simulator {
 			    break;
 	
 			case 3:
-	//			iaBasicSimulationStubsOnly();
+				iaBasicSimulationRichWorld(monitorFrom, useBandwidth, xVal, metric);
 			    break;
 	
 			case 4:
@@ -1198,6 +1198,7 @@ public class Simulator {
 			}
 			out.close();
 		}
+
 
 	/**
 		 * Reads input files to figure out topology. Initializes all the ASes
@@ -2109,13 +2110,13 @@ public class Simulator {
 				}
 			}
 			if(!bwTest){
-				System.out.println("RIB GRAPH " + forX + " " + String.valueOf((float) costSum/total) + " ENDGRAPH ENDRIB");
-				System.out.println("FIB GRAPH " + forX + " " + String.valueOf((float) bestpathTruecost/total) + " ENDGRAPH ENDFIB");
+				System.out.println("WISER RIB GRAPH " + forX + " " + String.valueOf((float) costSum/total) + " ENDGRAPH ENDRIB ENDWISER");
+				System.out.println("WISER FIB GRAPH " + forX + " " + String.valueOf((float) bestpathTruecost/total) + " ENDGRAPH ENDFIB ENDWISER");
 			}
 			else
 			{
-				System.out.println("RIB GRAPH " + forX + " " + String.valueOf((float) bwSum/total) + " ENDGRAPH ENDRIB");
-				System.out.println("FIB GRAPH " + forX + " " + String.valueOf((float) bestpathBWSum/total) + " ENDGRAPH ENDFIB");
+				System.out.println("BW RIB GRAPH " + forX + " " + String.valueOf((float) bwSum/total) + " ENDGRAPH ENDRIB ENDBW");
+				System.out.println("BW FIB GRAPH " + forX + " " + String.valueOf((float) bestpathBWSum/total) + " ENDGRAPH ENDFIB ENDBW");
 			}
 					//	System.out.println("GRAPH " + forX + " " + String.valueOf((float) costSum/total) + " ENDGRAPH");
 			System.out.println("totalRIbsize: " + totalRIBSize);
@@ -2223,6 +2224,185 @@ public class Simulator {
 			//System.out.println("totla bestpath nodes: " + totalBestPaths);
 //			System.out.println("totla bestpath tcost: " + bestpathTruecost );
 		}
+	
+		public static void iaBasicSimulationRichWorld(int monitorFrom, boolean bwTest, float forX, int metric){
+			
+			
+			//ases that will be used for observation
+			ArrayList<Integer> monitorASes = new ArrayList<Integer>();
+		//	tier1ASes = computeTier1();
+	
+	
+			// We first announce all the tier-1 ASes and save 
+			// the paths from each of our failure-provider to the tier1
+			simTime = 0;
+			upstreamASes.clear();
+			r = new Random(seedVal);
+			ArrayList<Integer> announcedASes = new ArrayList<Integer>();
+			
+			runSimulation(monitorASes, announcedASes, monitorFrom);
+			
+			int costSum = 0;
+			float bwSum = 0;
+			int totalRIBSize = 0;
+			int total = monitorASes.size();
+			int wiserTotal = 0;
+			int bwTotal = 0;
+			int replacementTotal = 0;
+			int totalBestPaths = 0;
+			int totalRIBPaths = 0;
+			int totalBestPathNodes = 0;
+			int bestpathTruecost = 0;
+			int bestpathBWSum = 0;
+			ArrayList<Integer> removedASes = new ArrayList<Integer>();
+			//for transit ASes only, see the sum of received paths
+			for(int as : monitorASes)
+			{
+				//for each monitored AS, compare their lowest outgoing wiser cost with what was received
+				AS monitoredAS = asMap.get(as); //the AS we are measuring from (all transits eventually)
+				switch(monitoredAS.type)
+				{
+				case AS.WISER:
+					wiserTotal++;
+					break;
+				case AS.BANDWIDTH_AS:
+					bwTotal++;
+					break;
+				case AS.REPLACEMENT_AS:
+					replacementTotal++;
+					break;
+				}
+				for(int announcedAS : announcedASes)
+				{
+					//make sure that the we aren't comparing the AS who announced this to itself
+					if(as == announcedAS){
+						continue;
+					}
+					AS compareAS = asMap.get(announcedAS); //the AS that announced
+					//sanity check, if any monitor as to this as causes an exception, do not add to costs
+					boolean skip = false;
+					for(int sanity : monitorASes)
+					{
+						AS sanityAS = asMap.get(sanity);
+						if(sanityAS.bestPath.get(announcedAS) != null){
+							try{
+								monitoredAS.bestPath.get(announcedAS).getPath().size();
+							}
+							catch (Exception e)
+							{		
+								if (!removedASes.contains(announcedAS))
+								{
+									System.out.println("removed: " + announcedAS);
+									removedASes.add(announcedAS);
+								}
+								skip = true;
+							}
+						}
+					}
+					if(skip)
+					{
+						continue;
+					}
+					//what is the lowest cost outgoing link of announced Node
+	//				int lowestCost = Integer.MAX_VALUE;
+		//			for(Integer neighbor: compareAS.neighborLatency.keySet())
+		//			{
+		//				if(compareAS.neighborLatency.get(neighbor) < lowestCost)
+		//				{
+		//					lowestCost = compareAS.neighborLatency.get(neighbor);
+		//				}
+		//			}
+					if(monitoredAS.bestPath.get(announcedAS) != null)
+					{
+						try{
+							if(monitoredAS.type == AS.REPLACEMENT_AS){
+								IA bestPath = monitoredAS.bestPath.get(announcedAS);
+								String[] replacementProps = AS.getProtoProps(bestPath, bestPath.popCosts.keySet().iterator().next(), new Protocol(AS.REPLACEMENT_AS));
+								if(replacementProps == null)
+								{
+									totalBestPaths += 1;
+								}
+								else
+								{
+									totalBestPaths += Long.valueOf(replacementProps[0]);
+								}
+							}
+							totalBestPathNodes+= monitoredAS.bestPath.get(announcedAS).getPath().size();
+							if(monitoredAS.type == AS.WISER){
+								bestpathTruecost += monitoredAS.bestPath.get(announcedAS).getTrueCost();
+							}//
+							if(monitoredAS.type == AS.BANDWIDTH_AS){
+								bestpathBWSum += monitoredAS.bestPath.get(announcedAS).bookKeepingInfo.get(IA.BNBW_KEY);
+							}
+						}
+						catch(Exception e)
+						{
+							System.out.println("exception for <monitor, anounced>: " + monitoredAS.asn + " " + announcedAS);
+							System.exit(1);
+						}
+					}	// 
+						// 
+					//System.out.println("[DEBUG] lowest cost: " + lowestCost);
+					// see if monitored AS has that path in the RIB_in, //if it doesn't have a path, that means policy
+					//disconnection, don't include it in our percentage.
+					if (monitoredAS.ribIn.get(announcedAS) != null) {	// 
+						totalRIBSize += monitoredAS.ribIn.get(announcedAS).size();	// 
+						for (IA path : monitoredAS.ribIn.get(announcedAS).values()) {	// 
+							
+							if(monitoredAS.type == AS.REPLACEMENT_AS){
+								String[] replacementProps = AS.getProtoProps(path, path.popCosts.keySet().iterator().next(), new Protocol(AS.REPLACEMENT_AS));
+								if(replacementProps == null)
+								{
+									totalRIBPaths += 1;
+								}
+								else
+								{
+									totalRIBPaths += Long.valueOf(replacementProps[0]);
+								}
+							}
+							if(monitoredAS.type == AS.WISER){
+								costSum += path.getTrueCost();
+							}
+							if(monitoredAS.type == AS.BANDWIDTH_AS){
+								bwSum += path.bookKeepingInfo.get(IA.BNBW_KEY);
+							}
+							
+							//debug if statement
+							if(monitoredAS.neighborMap.containsKey(compareAS.asn))
+							{							
+							//	System.out.println("[DEBUG] AS " + monitoredAS.asn + " neighbor of: " + compareAS.asn);
+								//System.out.println("[DEBUG] received lowest cost: " + wiserProps);
+								//System.out.println("[DEBUG] rib of AS is : " + monitoredAS.ribIn.toString());
+							}
+	
+						}// endfor
+						
+					}
+//					else
+//					{
+//						total--;
+//					}
+				}
+			}
+	//		if(!bwTest){
+			System.out.println("WISER RIB GRAPH " + forX + " " + String.valueOf((float) costSum/wiserTotal) + " ENDGRAPH ENDRIB ENDWISER");
+			System.out.println("WISER FIB GRAPH " + forX + " " + String.valueOf((float) bestpathTruecost/wiserTotal) + " ENDGRAPH ENDFIB ENDWISER");
+			//		}
+			//		else
+			//		{
+			System.out.println("BW RIB GRAPH " + forX + " " + String.valueOf((float) bwSum/bwTotal) + " ENDGRAPH ENDRIB ENDBW");
+			System.out.println("BW FIB GRAPH " + forX + " " + String.valueOf((float) bestpathBWSum/bwTotal) + " ENDGRAPH ENDFIB ENDBW");
+			//		}
+			
+			System.out.println("REPLACEMENT RIB GRAPH " + forX + " " + String.valueOf((float) totalRIBPaths/replacementTotal) + " ENDGRAPH ENDRIB ENDREPLACEMENT");
+			System.out.println("REPLACEMENT FIB GRAPH " + forX + " " + String.valueOf((float) totalBestPaths/replacementTotal) + " ENDGRAPH ENDFIB ENDREPLACEMENT");
+			//	System.out.println("GRAPH " + forX + " " + String.valueOf((float) costSum/total) + " ENDGRAPH");
+			System.out.println("totalRIbsize: " + totalRIBSize);
+			System.out.println("totla bestpath nodes: " + totalBestPathNodes);
+			System.out.println("totla bestpath tcost: " + bestpathTruecost );
+		}
+		
+	
 	/**
 	 * runs a basic IA simulation
 	 * benefit measured at transit only
