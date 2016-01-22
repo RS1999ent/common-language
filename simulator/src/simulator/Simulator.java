@@ -862,7 +862,7 @@ public class Simulator {
 	};
 	
 	private static int NUMTHREADS = 1; //specify number of threads for the threadpool of run()
-	private static long timeout = 10000;
+	private static long timeout = 30000;
 	
 	/**
 	 * This is the main function which runs the simulation. It picks events out of the queue
