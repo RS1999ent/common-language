@@ -862,7 +862,7 @@ public class Simulator {
 	};
 	
 	private static int NUMTHREADS = 1; //specify number of threads for the threadpool of run()
-	private static long timeout = 30000;
+	private static long timeout = 10000;
 	
 	/**
 	 * This is the main function which runs the simulation. It picks events out of the queue
@@ -881,15 +881,30 @@ public class Simulator {
 			threadPool[i] =  new HandleEventThread();
 		}*/
 		long currentTime = System.currentTimeMillis();
+		PriorityQueue<Event> eventqueuecopy = eventQueue;
+//		for(AS aAS : asMap.values())
+//		{
+//			if(aAS.bestpathNullCheck())
+//			{
+//				System.out.println("a best path has a null value");
+//			}
+//		}
 		while(true) {
 			if(System.currentTimeMillis() - currentTime > timeout)
 			{
 				System.out.println("taking longer than: " + timeout/1000 + "stopping this run");
 				eventQueue.clear();
-				
+//				for(AS aAS : asMap.values())
+//				{
+//					if(aAS.bestpathNullCheck())
+//					{
+//						System.out.println("a best path has a null value");
+//					}
+//				}
 				return false;
 				//System.exit(1);
 			}
+		
 		//	if(eventQueue.size() % 100 == 0)
 			//	System.out.println("eventqueue size: " + eventQueue.size());
 	//		synchronized(eventQueue){ //get lock on eventQueue
@@ -1069,6 +1084,8 @@ public class Simulator {
 		} // end while
 	} // end function run()
 
+	
+	public static String topoFile;
 	/**
 		 * Reads input files to figure out topology. Initializes all the ASes
 		 * @param args
@@ -1112,6 +1129,7 @@ public class Simulator {
 			outFile = new BufferedWriter(new FileWriter(arguments.getString("outFile")));
 			seedVal = arguments.getLong("seed");
 			String topologyFile = arguments.getString("ASRelationships");
+			topoFile = topologyFile; 
 			//file for AStypes
 			String typeFile = arguments.getString("ASTypesFile");
 			String intraFile = arguments.getString("IntraDomainFile");
@@ -1886,20 +1904,88 @@ public class Simulator {
 					}
 					
 				}
+				HashMap<Integer, AS> clonedASMap = (HashMap<Integer, AS>) asMap.clone();
+				asMap.clear();
+				try {
+					readTopology(topoFile, false );
+					preProcessReplacement();
+				} catch (Exception e) {
+					// TODO Auto-generated catch block
+					e.printStackTrace();
+				}
+				
+				for(int as : asMap.keySet())
+				{
+					asMap.get(as).bestPath = (HashMap<Integer, IA>) clonedASMap.get(as).bestPath.clone();
+					asMap.get(as).ribIn = (HashMap<Integer, HashMap<Integer, IA>>) clonedASMap.get(as).ribIn.clone();
+				}
+				
 				//System.out.println("iteration complete");
 		//	}
 		}
+		
+		boolean cleared = true;
+		do {
+			cleared = true;
+			for(int announcedAS : announcedASes)
+			{
+				for(int monitorAS: monitorASes)
+				{
+					AS sanityAS = asMap.get(monitorAS);
+					if(sanityAS.bestPath.get(announcedAS) != null){
+						try{
+							sanityAS.bestPath.get(announcedAS).getPath().size();
+						}
+						catch (Exception e)
+						{	
+							sanityAS.bestPath.remove(announcedAS);
+							sanityAS.ribIn.remove(announcedAS);
+							System.out.println("rerunning for: " + monitorAS + " " + announcedAS);
+							asMap.get(announcedAS).announceSelf();
+							run();
+							cleared = false;
+						}
+					}
+				}
+			}
+		} while(!cleared);
+		
+		System.out.println("HERE");
+		do {
+			cleared = true;
+			for(int announcedAS : announcedASes)
+			{
+				for(int monitorAS: monitorASes)
+				{
+					AS sanityAS = asMap.get(monitorAS);
+					if(sanityAS.bestPath.get(announcedAS) != null){
+						try{
+							sanityAS.bestPath.get(announcedAS).getPath().size();
+						}
+						catch (Exception e)
+						{	
+							sanityAS.bestPath.remove(announcedAS);
+							sanityAS.ribIn.remove(announcedAS);
+							System.out.println("rerunning for: " + monitorAS + " " + announcedAS);
+							asMap.get(announcedAS).announceSelf();
+							run();
+							cleared = false;
+						}
+					}
+				}
+			}
+		} while(!cleared);
 
 		//		System.out.println("Number of announced ASes: " + announcedASes.size());
 		//run for any missing ASes
 		instrumented = false;
 //		run();
 		//		monitorASes.clear(); //REMOVE LATER, ADDING ALL MONITOR ASES
-		for(Integer key : asMap.keySet())
-		{
-			asMap.get(key).clearBookKeeping();
-			//		monitorASes.add(key); //ADDING ALL MONITOR ASES, REMOVE LATER
-		}		
+//		for(Integer key : asMap.keySet())
+//		{
+//			asMap.get(key).clearBookKeeping();
+//			//		monitorASes.add(key); //ADDING ALL MONITOR ASES, REMOVE LATER
+//		}		
 
 	}
 	
@@ -1934,6 +2020,7 @@ public class Simulator {
 			int totalBestPathNodes = 0;
 			int bestpathTruecost = 0;
 			int bestpathBWSum = 0;
+			ArrayList<Integer> removedASes = new ArrayList<Integer>();
 			//for transit ASes only, see the sum of received paths
 			for(int as : monitorASes)
 			{
@@ -1956,7 +2043,12 @@ public class Simulator {
 								monitoredAS.bestPath.get(announcedAS).getPath().size();
 							}
 							catch (Exception e)
-							{								
+							{		
+								if (!removedASes.contains(announcedAS))
+								{
+									System.out.println("removed: " + announcedAS);
+									removedASes.add(announcedAS);
+								}
 								skip = true;
 							}
 						}

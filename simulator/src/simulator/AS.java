@@ -567,4 +567,16 @@ public abstract class AS {
 	 */
 	public abstract PoPTuple tupleChosen(IA advert);
 	
+	public boolean bestpathNullCheck()
+	{
+		for(IA element : bestPath.values())
+		{
+			if(element.getPath().isEmpty())
+			{
+				return true;
+			}
+		}
+		return false;
+	}
+	
 }

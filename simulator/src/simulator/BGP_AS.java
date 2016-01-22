@@ -1332,11 +1332,11 @@ public class BGP_AS extends AS {
 	}
 	
 	public void clearBookKeeping(){
-		pendingUpdates.clear();
+	//	pendingUpdates.clear();
 	//	dstRIBHistMap.clear();
 	//	mraiRunning.clear();
 	//	ribIn.clear();
-		super.passThrough.clear();
+//		super.passThrough.clear();
 	}
 
 	@Override
