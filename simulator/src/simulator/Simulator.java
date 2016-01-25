@@ -2217,8 +2217,8 @@ public class Simulator {
 			//	System.out.println("totalbestpath: " + totalBestPaths);
 		//		totalBestPaths = 0;
 			}
-			System.out.println("RIB GRAPH " + forX + " " + String.valueOf((float) totalRIBPaths/total) + " ENDGRAPH ENDRIB");
-			System.out.println("FIB GRAPH " + forX + " " + String.valueOf((float) totalBestPaths/total) + " ENDGRAPH ENDFIB");
+			System.out.println("REPLACEMENT RIB GRAPH " + forX + " " + String.valueOf((float) totalRIBPaths/total) + " ENDGRAPH ENDRIB ENDREPLACEMENT");
+			System.out.println("REPLACEMENT FIB GRAPH " + forX + " " + String.valueOf((float) totalBestPaths/total) + " ENDGRAPH ENDFIB ENDREPLACEMENT");
 		//	System.out.println("GRAPH " + forX + " " + String.valueOf((float) costSum/total) + " ENDGRAPH");
 //			System.out.println("totalRIbsize: " + totalRIBSize);
 			//System.out.println("totla bestpath nodes: " + totalBestPaths);
