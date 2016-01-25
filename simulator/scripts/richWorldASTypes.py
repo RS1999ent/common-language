@@ -2,7 +2,9 @@ import argparse
 import random
 import math
 
+
 DEBUG = 0
+
 
 parser = argparse.ArgumentParser(description='generates AStypes for initial experiment')
 parser.add_argument('annotatedData', metavar='annotatedIplane', nargs = 1, help = 'annotated data, generated from annotateIplaneData.py or annotateCAIDAData.py')
@@ -11,6 +13,7 @@ parser.add_argument('--numTransits', metavar='fraction', help = 'what fraction o
 parser.add_argument('--seedTransit', metavar='rgenerator seed',  help = 'seed for random number generator for generating transits', default=1)
 parser.add_argument('--seedWiser', metavar='seed', help = 'seed for random number generator for generating wiser', default=2)
 parser.add_argument('--sim', metavar='sim', help = 'what is the primary transit type (501=wiser, 504 = sbgp, 505=bw, 507 = replacement)', default=501)
+parser.add_argument('--randomMethod', metavar='what random method', help = 'how do pick ases randomly 0 for equally from transits and stubs, 1 weighted by degree, 2 uniform', default = 0)
 
 #open files based on arguments
 args = parser.parse_args()
@@ -31,6 +34,11 @@ CUSTOMER_PROVIDER = -1
 PEER_PEER = 0
 PROVIDER_CUSTOMER = 1
 
+#random method
+POOLS = 0
+WEIGHTED = 1
+UNIFORM = 2
+
 distList = [BGP_NUMBER, WISER_NUMBER, BW_NUMBER, REPLACEMENT_NUMBER]
 
 #asMap (integer, AS)
@@ -43,6 +51,9 @@ tier2s = []
 #seeds
 wiserSeed = args.seedWiser
 transitSeed = args.seedTransit
+
+#random method
+weighted = int(args.randomMethod)
 
 #number of transits
 numTransits = float(args.numTransits) #1/round(1/float(args.numTransits))
@@ -226,7 +237,64 @@ def largestStub():
         elif len(stubASes[element].neighborMap) > len(stubASes[largestSoFar].neighborMap):
             largestSoFar = element
     return largestSoFar
+
+
+#returns a list of ases with weight based on their degree
+def createDegreeWeightedList(asList):
+    totalNeighbors = 0
+    weightedList = []
+    for element in asList:
+        AS = asList[element]
+        totalNeighbors += len(AS.neighborMap)
+    for element in asList:
+        AS = asList[element]
+        weightedList.append((element, len(AS.neighborMap)))
+    return weightedList
     
+        
+        
+
+#randomily create a list of ases as a percentage of the choice list
+#returns the chosen as list and the modified choiceList
+def straightRandom(choiceList, percentToChoose):
+    iterations = int(percentToChoose * len(choiceList)) #number of transits to
+                                                 #add (easiliy modifiable to be from any tier)
+                                                 #print iterations
+    transits = []
+    for i in range(iterations):
+        #generate random number in range of largestcc, if not in transits, add it if it is, generate another and add
+        rNum = random.randrange(0, len(choiceList))
+        tempAS = choiceList[rNum]
+        while tempAS in transits:
+            rNum = random.randrange(0, len(transitRange))
+            tempAS = transitRange[rNum]
+        choiceList.pop(rNum)
+        transits.append(tempAS)
+    return transits, choiceList
+
+#returns chosen as list given weights
+def weightedRandom(choices, percentToChoose):
+    iterations = int(percentToChoose * len(choices))
+    chosenASes = []
+    leftovers = []
+    for i in range(iterations):
+        total = sum(w for c, w in choices)
+        r = random.uniform(0, total)
+        upto = 0
+        for c, w in choices:
+            if upto + w >= r:
+                chosenASes.append(c)
+                choices.remove((c,w))
+                break
+            upto += w
+    for element in choices:
+        leftovers.append(element[0])
+    return chosenASes, leftovers
+
+    
+###############
+###start######
+##########
 parseIplane()
 if DEBUG:
     print '[debug] number of ases: ', len(asMap)
@@ -285,21 +353,9 @@ random.seed(transitSeed)
 #print len(largestConnectedComponent)
 #print 'num transits from ', numTransits, 'percent: ', int(numTransits * (len(largestConnectedComponent) - len(wiserAS)))
 
-transitRange = transitASes #list of transits to grab from, will shrink
-iterations = int(numTransits * len(transitRange)) #number of transits to
-                                                 #add (easiliy modifiable to be from any tier)
-#print iterations
-for i in range(iterations):
-    #generate random number in range of largestcc, if not in transits, add it if it is, generate another and add
-    rNum = random.randrange(0, len(transitRange))
-    tempAS = transitRange[rNum]
-    while tempAS in transits or tempAS in wiserAS:
-        rNum = random.randrange(0, len(transitRange))
-        tempAS = transitRange[rNum]
-    transitRange.pop(rNum)
-    transits.append(tempAS)
 
-stubsChosen = []
+
+#stubsChosen = []
 stubKeys = stubASes.keys()
 iterations = int(numTransits * (len(stubKeys))) 
 #iterations = int(1 * (len(stubKeys)-1)) this is if you want all stubs chosen
@@ -307,38 +363,36 @@ if DEBUG:
     print "stub interations: ", iterations
 random.seed(transitSeed)
 
-for i in range(iterations):
-    rNum = random.randrange(0, len(stubKeys)) #for the stub ases - the announcing as
-    tempAS = stubKeys[rNum]
-    while tempAS in stubsChosen or tempAS in wiserAS:
-        rNum = random.randrange(0, len(stubKeys))
-        tempAS = stubKeys[rNum]
-    stubKeys.pop(rNum)
-    stubsChosen.append(tempAS)
+transitRange = transitASes
+chosenASes = []
+leftoverASes = []
+if weighted == POOLS:
+    transitsChosen, leftoverTransits = straightRandom(transitRange, numTransits)
+    stubsChosen, leftoverStubs = straightRandom(stubKeys, numTransits)
+    chosenASes = transitsChosen + stubsChosen
+    leftoverASes = leftoverTransits + leftoverStubs
+elif weighted == WEIGHTED:
+    weightedChoices = createDegreeWeightedList(asMap)
+    chosen, leftovers = weightedRandom(weightedChoices, numTransits)
+    chosenASes = chosen
+    leftoverASes = leftovers
     
 if int(sim) == WISER_NUMBER:
-    putToOutput(transits, TRANSIT_NUMBER)
-    putToOutput(stubsChosen, WISER_NUMBER) #putToOutput(stubsChosen,
-                                       #str(TRANSIT_NUMBER) + " STUB")
-                                       #this has implications in code,
-                                       #+ "stub" used for monitoring
-                                       #from stubs only                        
-    assignRemaining(transitRange, WISER_NUMBER, distList)
-    assignRemaining(stubKeys, WISER_NUMBER, distList)
+    putToOutput(chosenASes, WISER_NUMBER)
+
+    assignRemaining(leftoverASes, WISER_NUMBER, distList)
 if SBGP_NUMBER == int(sim):
-    putToOutput(transits, SBGP_TRANSIT)
-    putToOutput(stubsChosen, SBGP_NUMBER)
+#    putToOutput(transitsChosen, SBGP_TRANSIT)
+    putToOutput(chosenASes, SBGP_NUMBER)
     
 if BW_NUMBER == int(sim):
-    putToOutput(transits, BW_TRANSIT)
-    putToOutput(stubsChosen, BW_NUMBER)
-    assignRemaining(transitRange, BW_NUMBER, distList)
-    assignRemaining(stubKeys, BW_NUMBER, distList)
+    putToOutput(chosenASes, BW_TRANSIT)
+ 
+    assignRemaining(leftoverASes, BW_NUMBER, distList)
 if REPLACEMENT_NUMBER == int(sim):
-    putToOutput(transits, REPLACEMENT_NUMBER)
-    putToOutput(stubsChosen, REPLACEMENT_NUMBER)
-    assignRemaining(transitRange, REPLACEMENT_NUMBER, distList)
-    assignRemaining(stubKeys, REPLACEMENT_NUMBER, distList)
+    putToOutput(chosenASes, REPLACEMENT_NUMBER)
+
+    assignRemaining(leftoverASes, REPLACEMENT_NUMBER, distList)
 
     
 #putToOutput(wiserAS, WISER_NUMBER) #commented this out, we announce from the stubs

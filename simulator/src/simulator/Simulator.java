@@ -2439,10 +2439,10 @@ public class Simulator {
 			System.out.println("ALLBW_FIB_GRAPH " + forX + " " + String.valueOf((float) totalFibBwSum/total) + " END" );
 			
 			System.out.println("GULF_BWREPLACEMENT_TRUECOST_RIB " + forX + " " + String.valueOf((float) (totalRibCostSum - partRibCostSum) / (total - wiserTotal)  ) + " END");
-			System.out.println("GULF_BWREPLACEMENT_TRUECOST_FIB " + forX + " " + String.valueOf((float) (totalFibCostSum - partFibCostSum) / (total - wiserTotal)  ) + " END");
+			System.out.println("GULF_BWREPLACEMENT_TRUECOST_FIB " + forX + " " + String.valueOf((float) (totalFibCostSum - bestpathTruecost) / (total - wiserTotal)  ) + " END");
 			
 			System.out.println("GULF_WISERREPLACEMENT_TRUECOST_RIB " + forX + " " + String.valueOf((float) (totalRibBwSum - partRibBwSum) / (total - bwTotal)  ) + " END");
-			System.out.println("GULF_WISERREPLACEMENT_TRUECOST_FIB " + forX + " " + String.valueOf((float) (totalFibBwSum - partFibBwSum) / (total - bwTotal)  ) + " END");
+			System.out.println("GULF_WISERREPLACEMENT_TRUECOST_FIB " + forX + " " + String.valueOf((float) (totalFibBwSum - bestpathBWSum) / (total - bwTotal)  ) + " END");
 			
 			
 			
