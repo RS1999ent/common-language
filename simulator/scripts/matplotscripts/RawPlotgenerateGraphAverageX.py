@@ -161,10 +161,11 @@ arr = numpy.asarray
 #        [0, 0]]).T     #1
 
 
-#plt.figure()
+fig = plt.figure()
 #plt.errorbar(x, y, yerr=0)
 legendHandles = []
 bestY = None
+baselineY = None
 for tuple in rawData:
     xyDict = tuple[0]
     legendName = tuple[1]
@@ -181,11 +182,17 @@ for tuple in rawData:
     if DEBUG:
         print 'scaley: ', y
     x = getX(xyDict)
+    baselineY = y[0]
     handle, =plt.plot(arr(x),arr(y), linestyle=style, label=legendName)
     legendHandles.append(handle)
 
 plt.legend(fontsize=10, loc=2)
-    
+
+plt.plot((0, 1), (baselineY, baselineY), 'k-')
+plt.text(.8,baselineY, 'Status quo')
+plt.plot((0,1), (bestY, bestY), 'k-')
+plt.text(0, bestY, 'Full adoption')
+
 #plt.axis([0,1, 0, 1520000])
 plt.ylabel(ylabel)
 plt.xlabel(xlabel)

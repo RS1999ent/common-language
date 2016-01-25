@@ -8,7 +8,7 @@ import random
 import math
 import re
 
-DEBUG = 1
+DEBUG = 0
 
 parser = argparse.ArgumentParser(description='Creates a pdf graph from experimentoutput')
 parser.add_argument('experimentOutput', metavar='expOutput', nargs ="+", help = 'experimental output, relevent info should have GRAPH and LEGEND ENDLEGEND')
@@ -164,7 +164,7 @@ arr = numpy.asarray
 
 fig = plt.figure()
 smallestY, maxY = minY(rawData)
-ylim = [smallestY, maxY]
+ylim = [smallestY - .02*smallestY, maxY + .02*maxY]
 ylim2 = [0, .1*smallestY]
 ylimratio = (ylim[1]-ylim[0])/(ylim2[1]-ylim2[0]+ylim[1]-ylim[0])
 ylim2ratio = (ylim2[1]-ylim2[0])/(ylim2[1]-ylim2[0]+ylim[1]-ylim[0])
@@ -172,6 +172,7 @@ gs = gridspec.GridSpec(2, 1, height_ratios=[ylimratio, ylim2ratio])
 #plt.errorbar(x, y, yerr=0)
 legendHandles = []
 bestY = None
+baselineY = None
 minY = None
 ax = fig.add_subplot(gs[0])
 ax2 = fig.add_subplot(gs[1])
@@ -195,6 +196,7 @@ for tuple in rawData:
     if DEBUG:
         print 'scaley: ', y
     x = getX(xyDict)
+    baselineY = y[0]
     ax.plot(arr(x),arr(y), label=legendName, linestyle=style)
     ax2.plot(arr(x),arr(y), label=legendName, linestyle=style)
 
@@ -202,6 +204,11 @@ ax.legend(fontsize=10, loc=legendLoc)
 ax2.set_ylim(ylim2)
 plt.subplots_adjust(hspace = .09)
 ax.set_ylim(ylim)
+
+ax.plot((0, 1), (baselineY, baselineY), 'k-')
+ax.text(.8,baselineY, 'Status quo')
+ax.plot((0,1), (bestY, bestY), 'k-')
+ax.text(0, bestY, 'Full adoption')
 
 
 ax.spines['bottom'].set_visible(False)
