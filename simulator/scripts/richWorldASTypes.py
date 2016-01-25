@@ -376,6 +376,8 @@ elif weighted == WEIGHTED:
     chosen, leftovers = weightedRandom(weightedChoices, numTransits)
     chosenASes = chosen
     leftoverASes = leftovers
+elif weighted == UNIFORM:
+    chosenASes, leftoverASes = straightRandom(asMap.keys(), numTransits)
     
 if int(sim) == WISER_NUMBER:
     putToOutput(chosenASes, WISER_NUMBER)
