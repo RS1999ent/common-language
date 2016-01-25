@@ -1139,8 +1139,8 @@ public class Simulator {
 			boolean useBandwidth = (arguments.getInt("useBandwidth") == 1) ? true : false;
 			simMode = arguments.getInt("sim");
 			float xVal = arguments.getFloat("forX");
-			int metric = arguments.getInt("metric");
-			readTypes(typeFile); //reading types must go before readtopology, otherwise allnodes will be bgp
+			int metric = arguments.getInt("metric");			
+			int primaryType = readTypes(typeFile); //reading types must go before readtopology, otherwise allnodes will be bgp
 			readTopology(topologyFile, useBandwidth);
 			preProcessReplacement();
 		//	readIntraDomain(intraFile);
@@ -1167,7 +1167,7 @@ public class Simulator {
 			    break;
 	
 			case 3:
-				iaBasicSimulationRichWorld(monitorFrom, useBandwidth, xVal, metric);
+				iaBasicSimulationRichWorld(monitorFrom, useBandwidth, xVal, metric, primaryType);
 			    break;
 	
 			case 4:
@@ -2225,7 +2225,7 @@ public class Simulator {
 //			System.out.println("totla bestpath tcost: " + bestpathTruecost );
 		}
 	
-		public static void iaBasicSimulationRichWorld(int monitorFrom, boolean bwTest, float forX, int metric){
+		public static void iaBasicSimulationRichWorld(int monitorFrom, boolean bwTest, float forX, int metric, int primaryType){
 			
 			
 			//ases that will be used for observation
@@ -2240,17 +2240,27 @@ public class Simulator {
 			r = new Random(seedVal);
 			ArrayList<Integer> announcedASes = new ArrayList<Integer>();
 			
-			runSimulation(monitorASes, announcedASes, monitorFrom);
+//			runSimulation(monitorASes, announcedASes, monitorFrom);
+			runSimulation(monitorASes, announcedASes, ALL);
 			
-			int costSum = 0;
-			float bwSum = 0;
+			int partFibCostSum = 0;
+			float partFibBwSum = 0;
+			int partRibCostSum = 0;
+			float partRibBwSum = 0;
+			int totalFibCostSum = 0;
+			int totalFibBwSum = 0;
+			int totalRibCostSum = 0;
+			int totalRibBwSum = 0;
 			int totalRIBSize = 0;
 			int total = monitorASes.size();
 			int wiserTotal = 0;
 			int bwTotal = 0;
 			int replacementTotal = 0;
+			int replacementStubTotal = 0;
 			int totalBestPaths = 0;
+			int totalStubBestPaths = 0;
 			int totalRIBPaths = 0;
+			int totalStubRIBPaths = 0;
 			int totalBestPathNodes = 0;
 			int bestpathTruecost = 0;
 			int bestpathBWSum = 0;
@@ -2260,6 +2270,7 @@ public class Simulator {
 			{
 				//for each monitored AS, compare their lowest outgoing wiser cost with what was received
 				AS monitoredAS = asMap.get(as); //the AS we are measuring from (all transits eventually)
+				boolean isStub = (monitoredAS.customers.size() == 0);
 				switch(monitoredAS.type)
 				{
 				case AS.WISER:
@@ -2270,6 +2281,10 @@ public class Simulator {
 					break;
 				case AS.REPLACEMENT_AS:
 					replacementTotal++;
+					if(isStub)
+					{
+						replacementStubTotal++;
+					}
 					break;
 				}
 				for(int announcedAS : announcedASes)
@@ -2321,10 +2336,18 @@ public class Simulator {
 								if(replacementProps == null)
 								{
 									totalBestPaths += 1;
+									if(isStub)
+									{
+										totalStubBestPaths += 1;
+									}
 								}
 								else
 								{
 									totalBestPaths += Long.valueOf(replacementProps[0]);
+									if(isStub)
+									{
+										totalStubBestPaths += Long.valueOf(replacementProps[0]);
+									}
 								}
 							}
 							totalBestPathNodes+= monitoredAS.bestPath.get(announcedAS).getPath().size();
@@ -2334,6 +2357,8 @@ public class Simulator {
 							if(monitoredAS.type == AS.BANDWIDTH_AS){
 								bestpathBWSum += monitoredAS.bestPath.get(announcedAS).bookKeepingInfo.get(IA.BNBW_KEY);
 							}
+							totalFibCostSum += monitoredAS.bestPath.get(announcedAS).getTrueCost();
+							totalFibBwSum += monitoredAS.bestPath.get(announcedAS).bookKeepingInfo.get(IA.BNBW_KEY);
 						}
 						catch(Exception e)
 						{
@@ -2348,23 +2373,32 @@ public class Simulator {
 					if (monitoredAS.ribIn.get(announcedAS) != null) {	// 
 						totalRIBSize += monitoredAS.ribIn.get(announcedAS).size();	// 
 						for (IA path : monitoredAS.ribIn.get(announcedAS).values()) {	// 
-							
+							totalRibCostSum += path.getTrueCost();
+							totalRibBwSum += path.bookKeepingInfo.get(IA.BNBW_KEY);
 							if(monitoredAS.type == AS.REPLACEMENT_AS){
 								String[] replacementProps = AS.getProtoProps(path, path.popCosts.keySet().iterator().next(), new Protocol(AS.REPLACEMENT_AS));
 								if(replacementProps == null)
 								{
 									totalRIBPaths += 1;
+									if(isStub)
+									{
+										totalStubRIBPaths += 1;
+									}
 								}
 								else
 								{
 									totalRIBPaths += Long.valueOf(replacementProps[0]);
+									if(isStub)
+									{
+										totalStubRIBPaths += Long.valueOf(replacementProps[0]);
+									}
 								}
 							}
 							if(monitoredAS.type == AS.WISER){
-								costSum += path.getTrueCost();
+								partRibCostSum += path.getTrueCost();
 							}
 							if(monitoredAS.type == AS.BANDWIDTH_AS){
-								bwSum += path.bookKeepingInfo.get(IA.BNBW_KEY);
+								partRibBwSum += path.bookKeepingInfo.get(IA.BNBW_KEY);
 							}
 							
 							//debug if statement
@@ -2385,21 +2419,33 @@ public class Simulator {
 				}
 			}
 	//		if(!bwTest){
-			System.out.println("WISER RIB GRAPH " + forX + " " + String.valueOf((float) costSum/wiserTotal) + " ENDGRAPH ENDRIB ENDWISER");
-			System.out.println("WISER FIB GRAPH " + forX + " " + String.valueOf((float) bestpathTruecost/wiserTotal) + " ENDGRAPH ENDFIB ENDWISER");
+			System.out.println("WISER_RIB_GRAPH " + forX + " " + String.valueOf((float) partRibCostSum/wiserTotal) + " END");
+			System.out.println("WISER_FIB_GRAPH " + forX + " " + String.valueOf((float) bestpathTruecost/wiserTotal) + " END");
 			//		}
 			//		else
 			//		{
-			System.out.println("BW RIB GRAPH " + forX + " " + String.valueOf((float) bwSum/bwTotal) + " ENDGRAPH ENDRIB ENDBW");
-			System.out.println("BW FIB GRAPH " + forX + " " + String.valueOf((float) bestpathBWSum/bwTotal) + " ENDGRAPH ENDFIB ENDBW");
+			System.out.println("BW_RIB_GRAPH " + forX + " " + String.valueOf((float) partRibBwSum/bwTotal) + " END");
+			System.out.println("BW_FIB_GRAPH " + forX + " " + String.valueOf((float) bestpathBWSum/bwTotal) + " END");
 			//		}
 			
-			System.out.println("REPLACEMENT RIB GRAPH " + forX + " " + String.valueOf((float) totalRIBPaths/replacementTotal) + " ENDGRAPH ENDRIB ENDREPLACEMENT");
-			System.out.println("REPLACEMENT FIB GRAPH " + forX + " " + String.valueOf((float) totalBestPaths/replacementTotal) + " ENDGRAPH ENDFIB ENDREPLACEMENT");
-			//	System.out.println("GRAPH " + forX + " " + String.valueOf((float) costSum/total) + " ENDGRAPH");
-			System.out.println("totalRIbsize: " + totalRIBSize);
-			System.out.println("totla bestpath nodes: " + totalBestPathNodes);
-			System.out.println("totla bestpath tcost: " + bestpathTruecost );
+			System.out.println("REPLACEMENT_RIB_GRAPH " + forX + " " + String.valueOf((float) totalRIBPaths/replacementTotal) + " END");
+			System.out.println("REPLACEMENT_FIB_GRAPH " + forX + " " + String.valueOf((float) totalBestPaths/replacementTotal) + " END");
+			System.out.println("REPLACEMENT_STUB_RIB_GRAPH " + forX + " " + String.valueOf((float) totalStubRIBPaths/replacementStubTotal) + " END");
+			System.out.println("REPLACEMENT_STUB_FIB_GRAPH " + forX + " " + String.valueOf((float) totalStubBestPaths/replacementStubTotal) + " END");
+			
+			System.out.println("ALLWISER_RIB_GRAPH " + forX + " " + String.valueOf((float) totalRibCostSum/total) + " END" );
+			System.out.println("ALLWISER_FIB_GRAPH " + forX + " " + String.valueOf((float) totalFibCostSum/total) + " END" );
+			System.out.println("ALLBW_RIB_GRAPH " + forX + " " + String.valueOf((float) totalRibBwSum/total) + " END" );
+			System.out.println("ALLBW_FIB_GRAPH " + forX + " " + String.valueOf((float) totalFibBwSum/total) + " END" );
+			
+			System.out.println("GULF_BWREPLACEMENT_TRUECOST_RIB " + forX + " " + String.valueOf((float) (totalRibCostSum - partRibCostSum) / (total - wiserTotal)  ) + " END");
+			System.out.println("GULF_BWREPLACEMENT_TRUECOST_FIB " + forX + " " + String.valueOf((float) (totalFibCostSum - partFibCostSum) / (total - wiserTotal)  ) + " END");
+			
+			System.out.println("GULF_WISERREPLACEMENT_TRUECOST_RIB " + forX + " " + String.valueOf((float) (totalRibBwSum - partRibBwSum) / (total - bwTotal)  ) + " END");
+			System.out.println("GULF_WISERREPLACEMENT_TRUECOST_FIB " + forX + " " + String.valueOf((float) (totalFibBwSum - partFibBwSum) / (total - bwTotal)  ) + " END");
+			
+			
+			
 		}
 		
 	
@@ -3683,7 +3729,9 @@ public class Simulator {
 	static ArrayList<Integer> monitorStubASes = new ArrayList<Integer>();
 	//method that reads in the types file, puts them in a special types list
 	//this keeps in mind that the default type is BGP.
-	private static void readTypes(String typesFile) throws Exception{
+	private static int readTypes(String typesFile) throws Exception{
+		int primaryType = 0;
+		boolean firstType = true;
 		BufferedReader br = new BufferedReader(new FileReader(typesFile));
 		while(br.ready()){
 			String[] token = br.readLine().split("\\s+");
@@ -3693,9 +3741,15 @@ public class Simulator {
 			{
 				monitorStubASes.add(as);
 			}
+			if(firstType)
+			{
+				primaryType = type;
+				firstType = false;
+			}
 			asTypeDef.put(as, type);
 		}
 		br.close();
+		return primaryType;
 	}
 	
 	/**
