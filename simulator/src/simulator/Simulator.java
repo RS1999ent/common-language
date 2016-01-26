@@ -2419,6 +2419,7 @@ public class Simulator {
 				}
 			}
 	//		if(!bwTest){
+			if(forX == 0){
 			System.out.println("WISER_RIB_GRAPH " + forX + " " + String.valueOf((float) partRibCostSum/wiserTotal) + " END");
 			System.out.println("WISER_FIB_GRAPH " + forX + " " + String.valueOf((float) bestpathTruecost/wiserTotal) + " END");
 			//		}
@@ -2427,6 +2428,14 @@ public class Simulator {
 			System.out.println("BW_RIB_GRAPH " + forX + " " + String.valueOf((float) partRibBwSum/bwTotal) + " END");
 			System.out.println("BW_FIB_GRAPH " + forX + " " + String.valueOf((float) bestpathBWSum/bwTotal) + " END");
 			//		}
+			}
+			else{
+				System.out.println("WISER_RIB_GRAPH " + forX + " " + String.valueOf((float) totalRibCostSum/total) + " END" );
+				System.out.println("WISER_FIB_GRAPH " + forX + " " + String.valueOf((float) totalFibCostSum/total) + " END" );
+				System.out.println("BW_RIB_GRAPH " + forX + " " + String.valueOf((float) totalRibBwSum/total) + " END" );
+				System.out.println("BW_FIB_GRAPH " + forX + " " + String.valueOf((float) totalFibBwSum/total) + " END" );
+
+			}
 			
 			System.out.println("REPLACEMENT_RIB_GRAPH " + forX + " " + String.valueOf((float) totalRIBPaths/replacementTotal) + " END");
 			System.out.println("REPLACEMENT_FIB_GRAPH " + forX + " " + String.valueOf((float) totalBestPaths/replacementTotal) + " END");
