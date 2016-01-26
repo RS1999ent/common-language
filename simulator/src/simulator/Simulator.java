@@ -3801,7 +3801,7 @@ public class Simulator {
 			int relation = Integer.parseInt(token[2]);
 			int linkMetric = 0; 
 			//int cost =  Math.round((1/Float.parseFloat(token[3])) * 100000); 
-			int cost =  (int) Math.round(1/Math.log(Float.parseFloat(token[3])) * 100000); //log! 
+			int cost =  (int) Math.round(1/Math.log(Float.parseFloat(token[3])) * 10000); //log! 
 			int bw = Math.round(Float.parseFloat(token[3]));
 			//decide whether to use bandwidth or latency
 //			if(!useBandwidth){
