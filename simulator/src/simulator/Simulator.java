@@ -2419,14 +2419,14 @@ public class Simulator {
 				}
 			}
 	//		if(!bwTest){
-			if(forX == 0){
-			System.out.println("WISER_RIB_GRAPH " + forX + " " + String.valueOf((float) partRibCostSum/wiserTotal) + " END");
-			System.out.println("WISER_FIB_GRAPH " + forX + " " + String.valueOf((float) bestpathTruecost/wiserTotal) + " END");
-			//		}
-			//		else
-			//		{
-			System.out.println("BW_RIB_GRAPH " + forX + " " + String.valueOf((float) partRibBwSum/bwTotal) + " END");
-			System.out.println("BW_FIB_GRAPH " + forX + " " + String.valueOf((float) bestpathBWSum/bwTotal) + " END");
+			if(forX == 0.0){
+				System.out.println("WISER_RIB_GRAPH " + forX + " " + String.valueOf((float) partRibCostSum/wiserTotal) + " END");
+				System.out.println("WISER_FIB_GRAPH " + forX + " " + String.valueOf((float) bestpathTruecost/wiserTotal) + " END");
+				//		}
+				//		else
+				//		{
+				System.out.println("BW_RIB_GRAPH " + forX + " " + String.valueOf((float) partRibBwSum/bwTotal) + " END");
+				System.out.println("BW_FIB_GRAPH " + forX + " " + String.valueOf((float) bestpathBWSum/bwTotal) + " END");
 			//		}
 			}
 			else{
