@@ -1104,6 +1104,73 @@ public class Wiser_AS extends AS {
 	}
 
 	/**
+	 * given two paths, returns true of p1 is better than p2 based on wiser props alone
+	 * @param p1 path 1 
+	 * @param p2 path 2
+	 * @return
+	 */
+	public boolean betterWiser(IA p1, IA p2)
+	{
+		//information used throughout the selection process
+		int p1LowestCost = Integer.MAX_VALUE;
+		AS.PoPTuple p1Tuple = new AS.PoPTuple(-1, -1);
+		p1Tuple = tupleChosen(p1);
+		int p2LowestCost = Integer.MAX_VALUE;
+		AS.PoPTuple p2Tuple = new AS.PoPTuple(-1, -1);
+		p2Tuple = tupleChosen(p2);
+
+		String[] p1WiserProps = getWiserProps(p1, p1Tuple.reverse());
+		String[] p2WiserProps = getWiserProps(p2, p2Tuple.reverse());
+		float p1WiserCost = p1WiserProps != null ? Integer.valueOf(p1WiserProps[0]) : 0; //pull wisercost out, if the advert has one
+		float p2WiserCost = p2WiserProps != null ? Integer.valueOf(p2WiserProps[0]) : 0; //pull wisercost out, if the advert has one
+		float p1Normalization = p1WiserProps != null ? Integer.valueOf(p1WiserProps[1]) : 1; //pull normalization out, if the advert has one
+		float p2Normalization = p2WiserProps != null ? Integer.valueOf(p2WiserProps[1]) : 1; //pull normalization out, if the advert has one
+
+		//if there is a propagated wiser cost, then we will choose one of them
+		//this is a very coarse policy with regards to this, but it can be changed later
+		if(p1WiserProps != null || p2WiserProps != null)
+		{
+			if(p1WiserProps != null && p2WiserProps == null)
+			{
+				return true;
+			}
+			else if(p1WiserProps == null && p2WiserProps != null)
+			{
+				return false;
+			}
+			else
+			{
+				/*				String[] p1Props = p1WiserProps;
+					String[] p2Props = p2WiserProps;
+
+					int p1Wisercost = Integer.valueOf(p1Props[0]);
+					int p1Normalization = Integer.valueOf(p1Props[1]);
+
+					int p2Wisercost = Integer.valueOf(p2Props[0]);
+					int p2Normalization = Integer.valueOf(p2Props[1]);*/
+				if(p1WiserCost/p1Normalization == p2WiserCost / p2Normalization)
+				{
+					if (p1.getPath().size() < p2.getPath().size())
+					{
+						return true;
+					}	
+					//						else
+					//						{
+					//							if(p1.getPath().size() == p2.getPath().size())
+					//							{
+					//								return p1.getFirstHop() < p2.getFirstHop();
+					//							}
+					return false;
+					//						}
+				}
+				return p1WiserCost/p1Normalization < p2WiserCost/p2Normalization;
+			}
+		}
+		return true;
+
+	}
+	
+	/**
 		 * This function determines if the first path is better than the second
 		 * @param p1 The first path 
 		 * @param p2 The second path
@@ -1158,149 +1225,10 @@ public class Wiser_AS extends AS {
 			
 			int p1nhType = neighborMap.get(p1nh);
 			int p2nhType = neighborMap.get(p2nh);
-	
-			//information used throughout the selection process
-			int p1LowestCost = Integer.MAX_VALUE;
-			AS.PoPTuple p1Tuple = new AS.PoPTuple(-1, -1);
-			p1Tuple = tupleChosen(p1);
-			int p2LowestCost = Integer.MAX_VALUE;
-			AS.PoPTuple p2Tuple = new AS.PoPTuple(-1, -1);
-			p2Tuple = tupleChosen(p2);
-			
-	
-			//byte[] p1WiserBytes = p1.getProtocolPathAttribute(new Protocol(AS.WISER), p1.getPath());
-			//byte[] p2WiserBytes = p2.getProtocolPathAttribute(new Protocol(AS.WISER), p2.getPath());
-			String[] p1WiserProps = getWiserProps(p1, p1Tuple.reverse());
-			String[] p2WiserProps = getWiserProps(p2, p2Tuple.reverse());
-			float p1WiserCost = p1WiserProps != null ? Integer.valueOf(p1WiserProps[0]) : 0; //pull wisercost out, if the advert has one
-			float p2WiserCost = p2WiserProps != null ? Integer.valueOf(p2WiserProps[0]) : 0; //pull wisercost out, if the advert has one
-			float p1Normalization = p1WiserProps != null ? Integer.valueOf(p1WiserProps[1]) : 1; //pull normalization out, if the advert has one
-			float p2Normalization = p2WiserProps != null ? Integer.valueOf(p2WiserProps[1]) : 1; //pull normalization out, if the advert has one
-	
-			/*if(p1WiserBytes[0] != (byte) 0xFF)
-			{
-				try {
-					p1WiserProps = new String(p1WiserBytes, "UTF-8");
-				} catch (UnsupportedEncodingException e) {
-					// TODO Auto-generated catch block
-					e.printStackTrace();
-				}
-			}
-			if(p2WiserBytes[0] != (byte) 0xFF)
-			{
-				try {
-					p2WiserProps = new String(p2WiserBytes, "UTF-8");
-				} catch (UnsupportedEncodingException e) {
-					// TODO Auto-generated catch block
-					e.printStackTrace();
-				}
-			}*/
-			
-			//if we are talking to a wiser node for path 1, then popCosts will have some elements in it, work with those
+			boolean wiserP1Better = betterWiser(p1, p2);
 		
-			
-			
-			//find the lowest costs if we are talking iwth wiser node
-	//		if(p1.popCosts.size() > 0)
-	//		{
-	//			for(AS.PoPTuple tuple : p1.popCosts.keySet())
-	//			{
-	//				//get the link latency of the path based on the tuple that we are analyzing in the path
-	//			//	int linklatency = 0;
-	//		//		if(neighborLatency.get(p1.getFirstHop()).get(new PoPTuple(tuple.pop2, tuple.pop1)) != null)
-	//	//			{
-	//		//			linklatency = neighborLatency.get(p1.getFirstHop()).get(new PoPTuple(tuple.pop2, tuple.pop1));//reverse the tuple for our lookup because the advetisement format is from them to us
-	//		//		}
-	//				if(p1.popCosts.get(tuple) + p1WiserCost/p1Normalization < p1LowestCost){
-	//					p1LowestCost = p1.popCosts.get(tuple) + p1WiserCost/p1Normalization ;
-	//					p1Tuple = new AS.PoPTuple(tuple.pop2, tuple.pop1); //reverse it because we find latencies via pop (in us) to pop (in them)
-	//				}
-	//			}
-	//		}
-			
-	//		if(p2.popCosts.size() > 0)
-	//		{
-	//			for(AS.PoPTuple tuple : p2.popCosts.keySet())
-	//			{
-	//				//get the link latency of the path based on the tuple that we are analyzing in the path
-	//	//			int linklatency = 0;
-	//		//		if(neighborLatency.get(p2.getFirstHop()).get(new PoPTuple(tuple.pop2, tuple.pop1)) != null)
-	//		//		{
-	//		//			linklatency = neighborLatency.get(p2.getFirstHop()).get(new PoPTuple(tuple.pop2, tuple.pop1));//reverse the tuple for our lookup because the advetisement format is from them to us
-	//		//		}
-	//				if(p2.popCosts.get(tuple) + p2WiserCost/p2Normalization < p2LowestCost){
-	//					p2LowestCost = p2.popCosts.get(tuple) + p2WiserCost/p2Normalization ;
-	//					p2Tuple = new AS.PoPTuple(tuple.pop2, tuple.pop1); //reverse it because we find latencies via pop (in us) to pop (in them)
-	//				}
-	//			}
-	//		}
-			
-			//always choose low cost paths with wiser nodes over low cost paths that are passed through
-			/*if(p1Tuple != null || p2Tuple != null)
-			{
-				if(p1Tuple != null && p2Tuple == null)
-				{
-					String[] p2wiserProps = getWiserProps(p2);
-					int p1TotalCost = neighborLatency.get(p1.getFirstHop()).get(p1Tuple) + p1LowestCost;
-					int p2Cost = Integer.valueOf(p2wiserProps[0]) / Integer.valueOf(p2wiserProps[1]);
-					return true;
-				}
-				else if(p1Tuple == null && p2Tuple != null)
-				{
-					String[] p1wiserProps = getWiserProps(p1);
-					int p1Cost = Integer.valueOf(p1wiserProps[0]) / Integer.valueOf(p1wiserProps[1]);
-					int p2TotalCost = neighborLatency.get(p2.getFirstHop()).get(p2Tuple) + p2LowestCost;
-					return false;
-				}
-				else
-				{
-					int p1TotalCost = p1LowestCost;//neighborLatency.get(p1.getFirstHop()).get(p1Tuple) + p1LowestCost; 
-					int p2TotalCost = p2LowestCost;//neighborLatency.get(p2.getFirstHop()).get(p2Tuple) + p2LowestCost;
-					return p1TotalCost < p2TotalCost;
-				}
-			}*/
-			
-			//if there is a propagated wiser cost, then we will choose one of them
-			//this is a very coarse policy with regards to this, but it can be changed later
-			if(p1WiserProps != null || p2WiserProps != null)
-			{
-				if(p1WiserProps != null && p2WiserProps == null)
-				{
-					return true;
-				}
-				else if(p1WiserProps == null && p2WiserProps != null)
-				{
-					return false;
-				}
-				else
-				{
-	/*				String[] p1Props = p1WiserProps;
-					String[] p2Props = p2WiserProps;
-					
-					int p1Wisercost = Integer.valueOf(p1Props[0]);
-					int p1Normalization = Integer.valueOf(p1Props[1]);
-					
-					int p2Wisercost = Integer.valueOf(p2Props[0]);
-					int p2Normalization = Integer.valueOf(p2Props[1]);*/
-					if(p1WiserCost/p1Normalization == p2WiserCost / p2Normalization)
-					{
-						if (p1.getPath().size() < p2.getPath().size())
-						{
-							return true;
-						}	
-//						else
-//						{
-//							if(p1.getPath().size() == p2.getPath().size())
-//							{
-//								return p1.getFirstHop() < p2.getFirstHop();
-//							}
-							return false;
-//						}
-					}
-					return p1WiserCost/p1Normalization < p2WiserCost/p2Normalization;
-				}
-			}
-			
+
+	
 			
 			if( p1nhType < p2nhType ) { //
 				return true;
@@ -1309,6 +1237,10 @@ public class Wiser_AS extends AS {
 				return false;
 			}
 			else { // both are similar, so look at path length
+				if(wiserP1Better)
+				{
+					return true;
+				}
 				if(p1.getPath().size() < p2.getPath().size()) {
 					return true;
 				}
