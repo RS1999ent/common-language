@@ -2243,8 +2243,8 @@ public class Simulator {
 //			runSimulation(monitorASes, announcedASes, monitorFrom);
 			runSimulation(monitorASes, announcedASes, ALL);
 			
-			int partFibCostSum = 0;
-			float partFibBwSum = 0;
+			int receivedFIBWiserCost = 0;
+			int receivedFIBTrueCost = 0;
 			int partRibCostSum = 0;
 			float partRibBwSum = 0;
 			int totalFibCostSum = 0;
@@ -2329,9 +2329,12 @@ public class Simulator {
 		//			}
 					if(monitoredAS.bestPath.get(announcedAS) != null)
 					{
+						IA bestPath = monitoredAS.bestPath.get(announcedAS);
 						try{
-							if(monitoredAS.type == AS.REPLACEMENT_AS){
-								IA bestPath = monitoredAS.bestPath.get(announcedAS);
+							
+								
+						
+							if(monitoredAS.type == AS.REPLACEMENT_AS){								
 								String[] replacementProps = AS.getProtoProps(bestPath, bestPath.popCosts.keySet().iterator().next(), new Protocol(AS.REPLACEMENT_AS));
 								if(replacementProps == null)
 								{
@@ -2353,12 +2356,20 @@ public class Simulator {
 							totalBestPathNodes+= monitoredAS.bestPath.get(announcedAS).getPath().size();
 							if(monitoredAS.type == AS.WISER){
 								bestpathTruecost += monitoredAS.bestPath.get(announcedAS).getTrueCost();
+								String wiserProps[] = AS.getWiserProps(bestPath, bestPath.popCosts.keySet().iterator().next());
+								if(wiserProps != null)
+								{
+									int wiserVal = Integer.valueOf(wiserProps[0]);
+									receivedFIBWiserCost += wiserVal;
+									receivedFIBTrueCost += bestPath.getTrueCost();
+								}
 							}//
 							if(monitoredAS.type == AS.BANDWIDTH_AS){
 								bestpathBWSum += monitoredAS.bestPath.get(announcedAS).bookKeepingInfo.get(IA.BNBW_KEY);
 							}
 							totalFibCostSum += monitoredAS.bestPath.get(announcedAS).getTrueCost();
 							totalFibBwSum += monitoredAS.bestPath.get(announcedAS).bookKeepingInfo.get(IA.BNBW_KEY);
+							
 						}
 						catch(Exception e)
 						{
@@ -2453,8 +2464,7 @@ public class Simulator {
 			System.out.println("GULF_WISERREPLACEMENT_TRUECOST_RIB " + forX + " " + String.valueOf((float) (totalRibBwSum - partRibBwSum) / (total - bwTotal)  ) + " END");
 			System.out.println("GULF_WISERREPLACEMENT_TRUECOST_FIB " + forX + " " + String.valueOf((float) (totalFibBwSum - bestpathBWSum) / (total - bwTotal)  ) + " END");
 			
-			
-			
+			System.out.println("bestpath receivedcost:truecost ratio: " + forX + " " + String.valueOf((float) receivedFIBWiserCost / receivedFIBTrueCost));
 		}
 		
 	
@@ -3800,10 +3810,11 @@ public class Simulator {
 			int as2 = Integer.parseInt(token[1]);
 			int relation = Integer.parseInt(token[2]);
 			int linkMetric = 0; 
-			//int cost =  Math.round((1/Float.parseFloat(token[3])) * 100000); 
-			//int cost =  (int) Math.round(1/Math.log10(Float.parseFloat(token[3])) * 10000); //log! 
+			int cost =  Math.round((1/Float.parseFloat(token[3])) * 100000); 
+		//	int cost =  (int) Math.round(1/Math.log10(Float.parseFloat(token[3])) * 10000); //log! 
 			int bw = Math.round(Float.parseFloat(token[3]));
-			int cost = bw;
+	//		int cost = bw;
+	//		System.out.println("cost: " + cost);
 			//decide whether to use bandwidth or latency
 //			if(!useBandwidth){
 //				linkMetric = Math.round((1/Float.parseFloat(token[3])) * 100000); //working with bandwidth maybe temporary, so parse float Integer.parseInt(token[3]);
