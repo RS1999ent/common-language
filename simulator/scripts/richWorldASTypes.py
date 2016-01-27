@@ -14,6 +14,7 @@ parser.add_argument('--seedTransit', metavar='rgenerator seed',  help = 'seed fo
 parser.add_argument('--seedWiser', metavar='seed', help = 'seed for random number generator for generating wiser', default=2)
 parser.add_argument('--sim', metavar='sim', help = 'what is the primary transit type (501=wiser, 504 = sbgp, 505=bw, 507 = replacement)', default=501)
 parser.add_argument('--randomMethod', metavar='what random method', help = 'how do pick ases randomly 0 for equally from transits and stubs, 1 weighted by degree, 2 uniform', default = 0)
+parser.add_argument('--richworld', metavar = 'use richworld generation', default= 1)
 
 #open files based on arguments
 args = parser.parse_args()
@@ -57,13 +58,7 @@ weighted = int(args.randomMethod)
 
 #number of transits
 numTransits = float(args.numTransits) #1/round(1/float(args.numTransits))
-#numIters = int(round(1/numTransits) -1)  #number of iters of
-                                     #iters. The -1 so that bgp is
-                                     #equivalent to one of the
-                                     #iterations.  The floor so that
-                                     #the protocols have an equal
-                                     #share, the remainder (if any)
-                                     #goes to bgp
+richworld = int(args.richworld)
 
 #simtype
 sim = args.sim;
@@ -381,20 +376,20 @@ elif weighted == UNIFORM:
     
 if int(sim) == WISER_NUMBER:
     putToOutput(chosenASes, WISER_NUMBER)
-
-    assignRemaining(leftoverASes, WISER_NUMBER, distList)
+    if richworld:
+        assignRemaining(leftoverASes, WISER_NUMBER, distList)
 if SBGP_NUMBER == int(sim):
 #    putToOutput(transitsChosen, SBGP_TRANSIT)
     putToOutput(chosenASes, SBGP_NUMBER)
     
 if BW_NUMBER == int(sim):
     putToOutput(chosenASes, BW_TRANSIT)
- 
-    assignRemaining(leftoverASes, BW_NUMBER, distList)
+    if richworld:
+        assignRemaining(leftoverASes, BW_NUMBER, distList)
 if REPLACEMENT_NUMBER == int(sim):
     putToOutput(chosenASes, REPLACEMENT_NUMBER)
-
-    assignRemaining(leftoverASes, REPLACEMENT_NUMBER, distList)
+    if richworld:
+        assignRemaining(leftoverASes, REPLACEMENT_NUMBER, distList)
 
     
 #putToOutput(wiserAS, WISER_NUMBER) #commented this out, we announce from the stubs
