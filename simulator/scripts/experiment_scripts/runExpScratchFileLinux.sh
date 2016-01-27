@@ -21,7 +21,7 @@ for j in $(seq .1 .1 .9);
 do
     test=$(echo "scale = 2; $j / 10" | bc)
     printf "\nTesting for stub/transit percentage: %f\n"  $test
-    for i in $(seq 1 10);
+    for i in $(seq 1 3);
     do
 	printf "\nTesting on Transit seed %s\n" $i
 	python ../richWorldASTypes.py --seedWiser 1 ../../formattedData/annotatedBrite.txt ../../formattedData/"$astypesFile" --numTransits $j --seedTransit $i --sim $1 --randomMethod $7 --richworld $9
