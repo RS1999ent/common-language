@@ -3810,10 +3810,10 @@ public class Simulator {
 			int as2 = Integer.parseInt(token[1]);
 			int relation = Integer.parseInt(token[2]);
 			int linkMetric = 0; 
-			//int cost =  Math.round((1/Float.parseFloat(token[3])) * 100000); 
+			int cost =  Math.round((1/Float.parseFloat(token[3])) * 100000); 
 		//	int cost =  (int) Math.round(1/Math.log10(Float.parseFloat(token[3])) * 10000); //log! 
 			int bw = Math.round(Float.parseFloat(token[3]));
-			int cost = bw;
+			//			int cost = bw;
 	//		System.out.println("cost: " + cost);
 			//decide whether to use bandwidth or latency
 //			if(!useBandwidth){
