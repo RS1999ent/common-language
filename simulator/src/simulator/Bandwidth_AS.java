@@ -215,10 +215,10 @@ public class Bandwidth_AS extends AS {
 		tupleChosen = tupleChosen == null ? new PoPTuple(-1, -1) : tupleChosen;
 		String[] pBandwidthProps = getBandwidthProps(oldPath, tupleChosen.reverse());//oldPath.getProtocolPathAttribute(new Protocol(AS.WISER), oldPath.getPath());
 		String pWiserProps = null;
-		int currBottleneckBW = pBandwidthProps == null ? Integer.MAX_VALUE : Integer.valueOf(pBandwidthProps[0]);
-		int pNormalization = 1;
+		float currBottleneckBW = pBandwidthProps == null ? Float.MAX_VALUE : Float.valueOf(pBandwidthProps[0]);
+		float pNormalization = 1;
 		newPath.popCosts.clear();//clear popcosts, might contain the old stuff and since we are filling these with new popcosts, then they need to be empty
-		int cost = 0;
+		float cost = 0;
 		//add intradomain costs here, instead it is just going to be the same for now		
 		for(AS.PoPTuple poptuple : neighborLatency.get(advertisedToAS).keySet())
 		{
@@ -1129,10 +1129,10 @@ public class Bandwidth_AS extends AS {
 			//byte[] p2WiserBytes = p2.getProtocolPathAttribute(new Protocol(AS.WISER), p2.getPath());
 			String[] p1BWProps = getBandwidthProps(p1, p1Tuple.reverse());
 			String[] p2BWProps = getBandwidthProps(p2, p2Tuple.reverse());
-			float p1BW = p1BWProps != null ? Integer.valueOf(p1BWProps[0]) : 0; //pull wisercost out, if the advert has one
-			float p2BW = p2BWProps != null ? Integer.valueOf(p2BWProps[0]) : 0; //pull wisercost out, if the advert has one
-			float p1Normalization = p1BWProps != null ? Integer.valueOf(p1BWProps[1]) : 1; //pull normalization out, if the advert has one
-			float p2Normalization = p2BWProps != null ? Integer.valueOf(p2BWProps[1]) : 1; //pull normalization out, if the advert has one
+			float p1BW = p1BWProps != null ? Float.valueOf(p1BWProps[0]) : 0; //pull wisercost out, if the advert has one
+			float p2BW = p2BWProps != null ? Float.valueOf(p2BWProps[0]) : 0; //pull wisercost out, if the advert has one
+			float p1Normalization = p1BWProps != null ? Float.valueOf(p1BWProps[1]) : 1; //pull normalization out, if the advert has one
+			float p2Normalization = p2BWProps != null ? Float.valueOf(p2BWProps[1]) : 1; //pull normalization out, if the advert has one
 	
 	
 			
@@ -1293,7 +1293,7 @@ public class Bandwidth_AS extends AS {
 		}
 		
 		//if we are talking to a wiser node for path 1, then popCosts will have some elements in it, work with those
-		int p1bottleneckBW = 0;
+		float p1bottleneckBW = 0;
 		AS.PoPTuple p1Tuple = null;
 		//find the lowest costs if we are talking iwth wiser node.  That is the summation of the intradomain costs + the latency of the link, the lowest of those
 		if(path.popCosts.size() > 0)
@@ -1318,8 +1318,8 @@ public class Bandwidth_AS extends AS {
 				}
 				else
 				{
-					int bottleneckBW = bwProps != null ? Integer.valueOf(bwProps[0]) : 0; //pull wisercost out, if the advert has one
-					int normalization = bwProps != null ? Integer.valueOf(bwProps[1]) : 1; //pull normalization out, if the advert has one
+					float bottleneckBW = bwProps != null ? Float.valueOf(bwProps[0]) : 0; //pull wisercost out, if the advert has one
+					float normalization = bwProps != null ? Float.valueOf(bwProps[1]) : 1; //pull normalization out, if the advert has one
 					if(((float)bottleneckBW)/(float)normalization > p1bottleneckBW)
 					{
 						p1Tuple = tuple.reverse();

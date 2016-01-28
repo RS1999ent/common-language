@@ -2282,23 +2282,23 @@ public class Simulator {
 			float receivedFIBTrueCost = 0;
 			int partRibCostSum = 0;
 			float partRibBwSum = 0;
-			int totalFibCostSum = 0;
-			int totalFibBwSum = 0;
-			int totalRibCostSum = 0;
-			int totalRibBwSum = 0;
-			int totalRIBSize = 0;
-			int total = monitorASes.size();
-			int wiserTotal = 0;
-			int bwTotal = 0;
-			int replacementTotal = 0;
-			int replacementStubTotal = 0;
-			int totalBestPaths = 0;
-			int totalStubBestPaths = 0;
-			int totalRIBPaths = 0;
-			int totalStubRIBPaths = 0;
-			int totalBestPathNodes = 0;
-			int bestpathTruecost = 0;
-			int bestpathBWSum = 0;
+			float totalFibCostSum = 0;
+			float totalFibBwSum = 0;
+			float totalRibCostSum = 0;
+			float totalRibBwSum = 0;
+			float totalRIBSize = 0;
+			float total = monitorASes.size();
+			float wiserTotal = 0;
+			float bwTotal = 0;
+			float replacementTotal = 0;
+			float replacementStubTotal = 0;
+			float totalBestPaths = 0;
+			float totalStubBestPaths = 0;
+			float totalRIBPaths = 0;
+			float totalStubRIBPaths = 0;
+			float totalBestPathNodes = 0;
+			float bestpathTruecost = 0;
+			float bestpathBWSum = 0;
 			ArrayList<Integer> removedASes = new ArrayList<Integer>();
 			//for transit ASes only, see the sum of received paths
 			for(int as : monitorASes)
@@ -2366,61 +2366,61 @@ public class Simulator {
 					if(monitoredAS.bestPath.get(announcedAS) != null)
 					{
 						IA bestPath = monitoredAS.bestPath.get(announcedAS);
-						try{
-							
-								
-						
-							if(monitoredAS.type == AS.REPLACEMENT_AS){								
-								String[] replacementProps = AS.getProtoProps(bestPath, bestPath.popCosts.keySet().iterator().next(), new Protocol(AS.REPLACEMENT_AS));
-								if(replacementProps == null)
+//						try{
+
+
+
+						if(monitoredAS.type == AS.REPLACEMENT_AS){								
+							String[] replacementProps = AS.getProtoProps(bestPath, bestPath.popCosts.keySet().iterator().next(), new Protocol(AS.REPLACEMENT_AS));
+							if(replacementProps == null)
+							{
+								totalBestPaths += 1;
+								if(isStub)
 								{
-									totalBestPaths += 1;
-									if(isStub)
-									{
-										totalStubBestPaths += 1;
-									}
-								}
-								else
-								{
-									totalBestPaths += Long.valueOf(replacementProps[0]);
-									if(isStub)
-									{
-										totalStubBestPaths += Long.valueOf(replacementProps[0]);
-									}
+									totalStubBestPaths += 1;
 								}
 							}
-							totalBestPathNodes+= monitoredAS.bestPath.get(announcedAS).getPath().size();
-							if(monitoredAS.type == AS.WISER){
-								bestpathTruecost += monitoredAS.bestPath.get(announcedAS).getTrueCost();
-								String wiserProps[] = AS.getWiserProps(bestPath, bestPath.popCosts.keySet().iterator().next());
-								if(wiserProps != null)
+							else
+							{
+								totalBestPaths += Long.valueOf(replacementProps[0]);
+								if(isStub)
 								{
-									int wiserVal = Integer.valueOf(wiserProps[0]);
-									int normalization = Integer.valueOf(wiserProps[1]);
+									totalStubBestPaths += Long.valueOf(replacementProps[0]);
+								}
+							}
+						}
+						totalBestPathNodes+= monitoredAS.bestPath.get(announcedAS).getPath().size();
+						if(monitoredAS.type == AS.WISER){
+							bestpathTruecost += monitoredAS.bestPath.get(announcedAS).getTrueCost();
+							String wiserProps[] = AS.getWiserProps(bestPath, bestPath.popCosts.keySet().iterator().next());
+							if(wiserProps != null)
+							{
+								float wiserVal = Float.valueOf(wiserProps[0]);
+								float normalization = Float.valueOf(wiserProps[1]);
 								//	System.out.println("normalization: " + normalization);
-									receivedFIBWiserCost += ((float) wiserVal) / normalization;
-									receivedFIBTrueCost += ((float)bestPath.getTrueCost()) / normalization;
-								}
-							}//
-							if(monitoredAS.type == AS.BANDWIDTH_AS){
-								bestpathBWSum += monitoredAS.bestPath.get(announcedAS).bookKeepingInfo.get(IA.BNBW_KEY);
-								String bwProps[] = AS.getBandwidthProps(bestPath, bestPath.popCosts.keySet().iterator().next());
-								if(bwProps != null){
-									int bw = Integer.valueOf(bwProps[0]);
-									receivedFIBBW += bw;
-									receivedFIBTrueBW +=  monitoredAS.bestPath.get(announcedAS).bookKeepingInfo.get(IA.BNBW_KEY);
-								}
-								
+								receivedFIBWiserCost += ((float) wiserVal) / normalization;
+								receivedFIBTrueCost += ((float)bestPath.getTrueCost()) / normalization;
 							}
-							totalFibCostSum += monitoredAS.bestPath.get(announcedAS).getTrueCost();
-							totalFibBwSum += monitoredAS.bestPath.get(announcedAS).bookKeepingInfo.get(IA.BNBW_KEY);
-							
+						}//
+						if(monitoredAS.type == AS.BANDWIDTH_AS){
+							bestpathBWSum += monitoredAS.bestPath.get(announcedAS).bookKeepingInfo.get(IA.BNBW_KEY);
+							String bwProps[] = AS.getBandwidthProps(bestPath, bestPath.popCosts.keySet().iterator().next());
+							if(bwProps != null){
+								float bw = Float.valueOf(bwProps[0]);
+								receivedFIBBW += bw;
+								receivedFIBTrueBW +=  monitoredAS.bestPath.get(announcedAS).bookKeepingInfo.get(IA.BNBW_KEY);
+							}
+
 						}
-						catch(Exception e)
-						{
-							System.out.println("exception for <monitor, anounced>: " + monitoredAS.asn + " " + announcedAS);
-							System.exit(1);
-						}
+						totalFibCostSum += monitoredAS.bestPath.get(announcedAS).getTrueCost();
+						totalFibBwSum += monitoredAS.bestPath.get(announcedAS).bookKeepingInfo.get(IA.BNBW_KEY);
+
+//						}
+//						catch(Exception e)
+//						{
+//							System.out.println("exception for <monitor, anounced>: " + monitoredAS.asn + " " + announcedAS);
+//							System.exit(1);
+//						}
 					}	// 
 						// 
 					//System.out.println("[DEBUG] lowest cost: " + lowestCost);
@@ -3875,9 +3875,9 @@ public class Simulator {
 			int linkMetric = 0; 
 //			int cost =  Math.round((1/Float.parseFloat(token[3])) * 100000); 
 		//	int cost =  (int) Math.round(1/Math.log10(Float.parseFloat(token[3])) * 10000); //log! 
-			int bw = Math.round(Float.parseFloat(token[3]));
-		//	int cost = bw;
-			int cost =convertCost(bw, 10, 1024, 5);
+			float bw = Math.round(Float.parseFloat(token[3]));
+			float cost = bw;
+			//int cost =convertCost(bw, 10, 1024, 5);
 	//		System.out.println("cost: " + cost);
 			//decide whether to use bandwidth or latency
 //			if(!useBandwidth){

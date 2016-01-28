@@ -206,7 +206,7 @@ public class Wiser_AS extends AS {
 
 	//adds wiser path attributes to newPath based on what's in oldpath
 	//newpath is mutated
-	void addWiserPathAttribute(IA newPath, IA oldPath, Integer advertisedToAS)
+	void addWiserPathAttribute(IA newPath, IA oldPath, int advertisedToAS)
 	{
 		//PoPTuple tupleChosen = new PoPTuple(-1,-1);
 		updateBookKeepingOutward(newPath, advertisedToAS);
@@ -215,13 +215,13 @@ public class Wiser_AS extends AS {
 		tupleChosen = tupleChosen == null ? new PoPTuple(-1, -1) : tupleChosen;
 		String[] pWiserBytes = getWiserProps(oldPath, tupleChosen.reverse());//oldPath.getProtocolPathAttribute(new Protocol(AS.WISER), oldPath.getPath());
 		String pWiserProps = null;
-		int pWisercost = pWiserBytes == null ? 0 : Integer.valueOf(pWiserBytes[0]);
-		int pNormalization = pWiserBytes == null ? 1 : (Integer.valueOf(pWiserBytes[1]) + 1 );
+		float pWisercost = pWiserBytes == null ? 0 : Float.valueOf(pWiserBytes[0]);
+		float pNormalization = pWiserBytes == null ? 1 : (Float.valueOf(pWiserBytes[1]) + 1 );
 		
 		newPath.popCosts.clear();//clear popcosts, might contain the old stuff and since we are filling these with new popcosts, then they need to be empty
 		
 		//add intradomain costs here, instead it is just going to be the same for now
-		int cost = 0;
+		float cost = 0;
 		for(AS.PoPTuple poptuple : neighborLatency.get(advertisedToAS).keySet())
 		{
 			cost += neighborLatency.get(advertisedToAS).get(poptuple).get(AS.COST_METRIC);
@@ -1122,10 +1122,10 @@ public class Wiser_AS extends AS {
 
 		String[] p1WiserProps = getWiserProps(p1, p1Tuple.reverse());
 		String[] p2WiserProps = getWiserProps(p2, p2Tuple.reverse());
-		float p1WiserCost = p1WiserProps != null ? Integer.valueOf(p1WiserProps[0]) : 0; //pull wisercost out, if the advert has one
-		float p2WiserCost = p2WiserProps != null ? Integer.valueOf(p2WiserProps[0]) : 0; //pull wisercost out, if the advert has one
-		float p1Normalization = p1WiserProps != null ? Integer.valueOf(p1WiserProps[1]) : 1; //pull normalization out, if the advert has one
-		float p2Normalization = p2WiserProps != null ? Integer.valueOf(p2WiserProps[1]) : 1; //pull normalization out, if the advert has one
+		float p1WiserCost = p1WiserProps != null ? Float.valueOf(p1WiserProps[0]) : 0; //pull wisercost out, if the advert has one
+		float p2WiserCost = p2WiserProps != null ? Float.valueOf(p2WiserProps[0]) : 0; //pull wisercost out, if the advert has one
+		float p1Normalization = p1WiserProps != null ? Float.valueOf(p1WiserProps[1]) : 1; //pull normalization out, if the advert has one
+		float p2Normalization = p2WiserProps != null ? Float.valueOf(p2WiserProps[1]) : 1; //pull normalization out, if the advert has one
 
 		p1Normalization = 1;
 		p2Normalization = 1;
@@ -1308,8 +1308,8 @@ public class Wiser_AS extends AS {
 				}
 				else
 				{
-					int wiserCost = wiserProps != null ? Integer.valueOf(wiserProps[0]) : 0; //pull wisercost out, if the advert has one
-					int normalization = wiserProps != null ? Integer.valueOf(wiserProps[1]) : 1; //pull normalization out, if the advert has one
+					float wiserCost = wiserProps != null ? Float.valueOf(wiserProps[0]) : 0; //pull wisercost out, if the advert has one
+					float normalization = wiserProps != null ? Float.valueOf(wiserProps[1]) : 1; //pull normalization out, if the advert has one
 					if(((float)wiserCost)/(float)normalization < p1LowestCost)
 					{
 						p1Tuple = tuple.reverse();

@@ -131,7 +131,7 @@ public abstract class AS {
 	}
 
 	// hashmap to find latencies. neighbor (int) -> hashmap of point of presense to hashmap of metric
-	HashMap<Integer, HashMap<PoPTuple, HashMap<Integer, Integer>>> neighborLatency = new HashMap<Integer, HashMap<PoPTuple, HashMap<Integer, Integer>>>();
+	HashMap<Integer, HashMap<PoPTuple, HashMap<Integer, Float>>> neighborLatency = new HashMap<Integer, HashMap<PoPTuple, HashMap<Integer, Float>>>();
 
 	// adjacency list for intradomain pop adjacencies. Goes Pop -> hash adjacentpop -> latency
 	HashMap<Integer, HashMap<Integer, Integer>> intraD = new HashMap<Integer, HashMap<Integer, Integer>>();
@@ -179,17 +179,17 @@ public abstract class AS {
 	 * @param metricVal
 	 *            the latency between those points of presence
 	 */
-	public void addLinkMetric(int as, PoPTuple popPair, int metric, int metricVal) {
+	public void addLinkMetric(int as, PoPTuple popPair, int metric, float metricVal) {
 		// grab reference to the has table if it exists for this neighbor
-		HashMap<PoPTuple, HashMap<Integer, Integer>> temp;
+		HashMap<PoPTuple, HashMap<Integer, Float>> temp;
 		if (!neighborLatency.containsKey(as)) {
-			temp = new HashMap<PoPTuple, HashMap<Integer, Integer>>();
+			temp = new HashMap<PoPTuple, HashMap<Integer, Float>>();
 			neighborLatency.put(as, temp);
 		}
 		temp = neighborLatency.get(as);
 		if(!temp.containsKey(popPair))
 		{
-			temp.put(popPair, new HashMap<Integer, Integer>());
+			temp.put(popPair, new HashMap<Integer, Float>());
 		}
 		// add the latency for the pair
 		temp.get(popPair).put(metric, metricVal);

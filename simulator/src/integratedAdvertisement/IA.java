@@ -46,15 +46,15 @@ public class IA {
 	//you choose a path going through this pop
 	public HashMap<AS.PoPTuple, Integer> truePoPCosts = new HashMap<AS.PoPTuple, Integer>();
 	//true cost of path
-	long trueCost;
+	float trueCost;
 	//true iff the every node on path is secure (i.e. sbgp).  
 	public boolean secure;
 	
-	public long getTrueCost() {
+	public float getTrueCost() {
 		return trueCost;
 	}
 
-	public void setTrueCost(long trueCost) {
+	public void setTrueCost(float trueCost) {
 		this.trueCost = trueCost;
 	}
 

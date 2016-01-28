@@ -1338,11 +1338,11 @@ public class SBGP_AS extends AS {
 	public PoPTuple tupleChosen(IA advert) {
 		//choose a tuple based on lowest MED
 		int nh = advert.getFirstHop();
-		int lowestMED = Integer.MAX_VALUE;			
+		float lowestMED = Float.MAX_VALUE;			
 		long trueCostInc = 0;
 		PoPTuple chosenTuple = null;
 		for(PoPTuple tuple : neighborLatency.get(nh).keySet()){
-			int latency = neighborLatency.get(nh).get(tuple).get(AS.COST_METRIC);
+			float latency = neighborLatency.get(nh).get(tuple).get(AS.COST_METRIC);
 			if(latency < lowestMED)
 			{
 				//			trueCostInc = latency;
