@@ -3877,6 +3877,10 @@ public class Simulator {
 		//	int cost =  (int) Math.round(1/Math.log10(Float.parseFloat(token[3])) * 10000); //log! 
 			float bw = Math.round(Float.parseFloat(token[3]));
 			float cost = bw;
+			if(cost > 5)
+			{
+				cost = 5;
+			}
 			//int cost =convertCost(bw, 10, 1024, 5);
 	//		System.out.println("cost: " + cost);
 			//decide whether to use bandwidth or latency
