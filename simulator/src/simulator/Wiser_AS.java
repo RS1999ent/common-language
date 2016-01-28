@@ -216,7 +216,8 @@ public class Wiser_AS extends AS {
 		String[] pWiserBytes = getWiserProps(oldPath, tupleChosen.reverse());//oldPath.getProtocolPathAttribute(new Protocol(AS.WISER), oldPath.getPath());
 		String pWiserProps = null;
 		int pWisercost = pWiserBytes == null ? 0 : Integer.valueOf(pWiserBytes[0]);
-		int pNormalization = 1;
+		int pNormalization = pWiserBytes == null ? 1 : (Integer.valueOf(pWiserBytes[1]) + 1 );
+		
 		newPath.popCosts.clear();//clear popcosts, might contain the old stuff and since we are filling these with new popcosts, then they need to be empty
 		
 		//add intradomain costs here, instead it is just going to be the same for now
@@ -1126,6 +1127,9 @@ public class Wiser_AS extends AS {
 		float p1Normalization = p1WiserProps != null ? Integer.valueOf(p1WiserProps[1]) : 1; //pull normalization out, if the advert has one
 		float p2Normalization = p2WiserProps != null ? Integer.valueOf(p2WiserProps[1]) : 1; //pull normalization out, if the advert has one
 
+		p1Normalization = 1;
+		p2Normalization = 1;
+		
 		//if there is a propagated wiser cost, then we will choose one of them
 		//this is a very coarse policy with regards to this, but it can be changed later
 		if(p1WiserProps != null || p2WiserProps != null)
@@ -1306,7 +1310,7 @@ public class Wiser_AS extends AS {
 				{
 					int wiserCost = wiserProps != null ? Integer.valueOf(wiserProps[0]) : 0; //pull wisercost out, if the advert has one
 					int normalization = wiserProps != null ? Integer.valueOf(wiserProps[1]) : 1; //pull normalization out, if the advert has one
-					if((float)wiserCost/(float)normalization < p1LowestCost)
+					if(((float)wiserCost)/(float)normalization < p1LowestCost)
 					{
 						p1Tuple = tuple.reverse();
 					}

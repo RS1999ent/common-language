@@ -2110,13 +2110,13 @@ public class Simulator {
 				}
 			}
 			if(!bwTest){
-				System.out.println("WISER RIB GRAPH " + forX + " " + String.valueOf((float) costSum/total) + " ENDGRAPH ENDRIB ENDWISER");
-				System.out.println("WISER FIB GRAPH " + forX + " " + String.valueOf((float) bestpathTruecost/total) + " ENDGRAPH ENDFIB ENDWISER");
+				System.out.println("WISER RIB GRAPH " + forX + " " + String.valueOf(((float) costSum)/total) + " ENDGRAPH ENDRIB ENDWISER");
+				System.out.println("WISER FIB GRAPH " + forX + " " + String.valueOf(((float) bestpathTruecost)/total) + " ENDGRAPH ENDFIB ENDWISER");
 			}
 			else
 			{
-				System.out.println("BW RIB GRAPH " + forX + " " + String.valueOf((float) bwSum/total) + " ENDGRAPH ENDRIB ENDBW");
-				System.out.println("BW FIB GRAPH " + forX + " " + String.valueOf((float) bestpathBWSum/total) + " ENDGRAPH ENDFIB ENDBW");
+				System.out.println("BW RIB GRAPH " + forX + " " + String.valueOf(((float) bwSum)/total) + " ENDGRAPH ENDRIB ENDBW");
+				System.out.println("BW FIB GRAPH " + forX + " " + String.valueOf(((float) bestpathBWSum)/total) + " ENDGRAPH ENDFIB ENDBW");
 			}
 					//	System.out.println("GRAPH " + forX + " " + String.valueOf((float) costSum/total) + " ENDGRAPH");
 			System.out.println("totalRIbsize: " + totalRIBSize);
@@ -2276,9 +2276,10 @@ public class Simulator {
 			runSimulation(monitorASes, announcedASes, ALL);
 			
 			int incomingCost = 0;
-			
-			int receivedFIBWiserCost = 0;
-			int receivedFIBTrueCost = 0;
+			float receivedFIBBW = 0;
+			float receivedFIBTrueBW = 0;
+			float receivedFIBWiserCost = 0;
+			float receivedFIBTrueCost = 0;
 			int partRibCostSum = 0;
 			float partRibBwSum = 0;
 			int totalFibCostSum = 0;
@@ -2395,12 +2396,21 @@ public class Simulator {
 								if(wiserProps != null)
 								{
 									int wiserVal = Integer.valueOf(wiserProps[0]);
-									receivedFIBWiserCost += wiserVal;
-									receivedFIBTrueCost += bestPath.getTrueCost();
+									int normalization = Integer.valueOf(wiserProps[1]);
+								//	System.out.println("normalization: " + normalization);
+									receivedFIBWiserCost += ((float) wiserVal) / normalization;
+									receivedFIBTrueCost += ((float)bestPath.getTrueCost()) / normalization;
 								}
 							}//
 							if(monitoredAS.type == AS.BANDWIDTH_AS){
 								bestpathBWSum += monitoredAS.bestPath.get(announcedAS).bookKeepingInfo.get(IA.BNBW_KEY);
+								String bwProps[] = AS.getBandwidthProps(bestPath, bestPath.popCosts.keySet().iterator().next());
+								if(bwProps != null){
+									int bw = Integer.valueOf(bwProps[0]);
+									receivedFIBBW += bw;
+									receivedFIBTrueBW +=  monitoredAS.bestPath.get(announcedAS).bookKeepingInfo.get(IA.BNBW_KEY);
+								}
+								
 							}
 							totalFibCostSum += monitoredAS.bestPath.get(announcedAS).getTrueCost();
 							totalFibBwSum += monitoredAS.bestPath.get(announcedAS).bookKeepingInfo.get(IA.BNBW_KEY);
@@ -2466,41 +2476,43 @@ public class Simulator {
 			}
 	//		if(!bwTest){
 			if(forX != 0.0){
-				System.out.println("WISER_RIB_GRAPH " + forX + " " + String.valueOf((float) partRibCostSum/wiserTotal) + " END");
-				System.out.println("WISER_FIB_GRAPH " + forX + " " + String.valueOf((float) bestpathTruecost/wiserTotal) + " END");
+				System.out.println("WISER_RIB_GRAPH " + forX + " " + String.valueOf(((float) partRibCostSum)/wiserTotal) + " END");
+				System.out.println("WISER_FIB_GRAPH " + forX + " " + String.valueOf(((float) bestpathTruecost)/wiserTotal) + " END");
 				//		}
 				//		else
 				//		{
-				System.out.println("BW_RIB_GRAPH " + forX + " " + String.valueOf((float) partRibBwSum/bwTotal) + " END");
-				System.out.println("BW_FIB_GRAPH " + forX + " " + String.valueOf((float) bestpathBWSum/bwTotal) + " END");
+				System.out.println("BW_RIB_GRAPH " + forX + " " + String.valueOf(((float) partRibBwSum)/bwTotal) + " END");
+				System.out.println("BW_FIB_GRAPH " + forX + " " + String.valueOf(((float) bestpathBWSum)/bwTotal) + " END");
 			//		}
 			}
 			else{
-				System.out.println("WISER_RIB_GRAPH " + forX + " " + String.valueOf((float) totalRibCostSum/total) + " END" );
-				System.out.println("WISER_FIB_GRAPH " + forX + " " + String.valueOf((float) totalFibCostSum/total) + " END" );
-				System.out.println("BW_RIB_GRAPH " + forX + " " + String.valueOf((float) totalRibBwSum/total) + " END" );
-				System.out.println("BW_FIB_GRAPH " + forX + " " + String.valueOf((float) totalFibBwSum/total) + " END" );
+				System.out.println("WISER_RIB_GRAPH " + forX + " " + String.valueOf(((float) totalRibCostSum)/total) + " END" );
+				System.out.println("WISER_FIB_GRAPH " + forX + " " + String.valueOf(((float) totalFibCostSum)/total) + " END" );
+				System.out.println("BW_RIB_GRAPH " + forX + " " + String.valueOf(((float) totalRibBwSum)/total) + " END" );
+				System.out.println("BW_FIB_GRAPH " + forX + " " + String.valueOf(((float) totalFibBwSum)/total) + " END" );
 
 			}
 			
-			System.out.println("REPLACEMENT_RIB_GRAPH " + forX + " " + String.valueOf((float) totalRIBPaths/replacementTotal) + " END");
-			System.out.println("REPLACEMENT_FIB_GRAPH " + forX + " " + String.valueOf((float) totalBestPaths/replacementTotal) + " END");
-			System.out.println("REPLACEMENT_STUB_RIB_GRAPH " + forX + " " + String.valueOf((float) totalStubRIBPaths/replacementStubTotal) + " END");
-			System.out.println("REPLACEMENT_STUB_FIB_GRAPH " + forX + " " + String.valueOf((float) totalStubBestPaths/replacementStubTotal) + " END");
+			System.out.println("REPLACEMENT_RIB_GRAPH " + forX + " " + String.valueOf(((float) totalRIBPaths)/replacementTotal) + " END");
+			System.out.println("REPLACEMENT_FIB_GRAPH " + forX + " " + String.valueOf(((float) totalBestPaths)/replacementTotal) + " END");
+			System.out.println("REPLACEMENT_STUB_RIB_GRAPH " + forX + " " + String.valueOf(((float) totalStubRIBPaths)/replacementStubTotal) + " END");
+			System.out.println("REPLACEMENT_STUB_FIB_GRAPH " + forX + " " + String.valueOf(((float) totalStubBestPaths)/replacementStubTotal) + " END");
 			
-			System.out.println("ALLWISER_RIB_GRAPH " + forX + " " + String.valueOf((float) totalRibCostSum/total) + " END" );
-			System.out.println("ALLWISER_FIB_GRAPH " + forX + " " + String.valueOf((float) totalFibCostSum/total) + " END" );
-			System.out.println("ALLBW_RIB_GRAPH " + forX + " " + String.valueOf((float) totalRibBwSum/total) + " END" );
-			System.out.println("ALLBW_FIB_GRAPH " + forX + " " + String.valueOf((float) totalFibBwSum/total) + " END" );
+			System.out.println("ALLWISER_RIB_GRAPH " + forX + " " + String.valueOf(((float) totalRibCostSum)/total) + " END" );
+			System.out.println("ALLWISER_FIB_GRAPH " + forX + " " + String.valueOf(((float) totalFibCostSum)/total) + " END" );
+			System.out.println("ALLBW_RIB_GRAPH " + forX + " " + String.valueOf(((float) totalRibBwSum)/total) + " END" );
+			System.out.println("ALLBW_FIB_GRAPH " + forX + " " + String.valueOf(((float) totalFibBwSum)/total) + " END" );
 			
-			System.out.println("GULF_BWREPLACEMENT_TRUECOST_RIB " + forX + " " + String.valueOf((float) (totalRibCostSum - partRibCostSum) / (total - wiserTotal)  ) + " END");
-			System.out.println("GULF_BWREPLACEMENT_TRUECOST_FIB " + forX + " " + String.valueOf((float) (totalFibCostSum - bestpathTruecost) / (total - wiserTotal)  ) + " END");
+			System.out.println("GULF_BWREPLACEMENT_TRUECOST_RIB " + forX + " " + String.valueOf(((float) (totalRibCostSum - partRibCostSum)) / (total - wiserTotal)  ) + " END");
+			System.out.println("GULF_BWREPLACEMENT_TRUECOST_FIB " + forX + " " + String.valueOf(((float) (totalFibCostSum - bestpathTruecost)) / (total - wiserTotal)  ) + " END");
 			
-			System.out.println("GULF_WISERREPLACEMENT_TRUECOST_RIB " + forX + " " + String.valueOf((float) (totalRibBwSum - partRibBwSum) / (total - bwTotal)  ) + " END");
-			System.out.println("GULF_WISERREPLACEMENT_TRUECOST_FIB " + forX + " " + String.valueOf((float) (totalFibBwSum - bestpathBWSum) / (total - bwTotal)  ) + " END");
+			System.out.println("GULF_WISERREPLACEMENT_TRUECOST_RIB " + forX + " " + String.valueOf(((float) (totalRibBwSum - partRibBwSum)) / (total - bwTotal)  ) + " END");
+			System.out.println("GULF_WISERREPLACEMENT_TRUECOST_FIB " + forX + " " + String.valueOf(((float) (totalFibBwSum - bestpathBWSum)) / (total - bwTotal)  ) + " END");
 			
-			System.out.println("incomingCosts " + forX + " " + String.valueOf((float) incomingCost/wiserTotal) + " END");
-			System.out.println("bestpath_receivedcost:truecost_ratio: " + forX + " " + String.valueOf((float) receivedFIBWiserCost / receivedFIBTrueCost) + " END");
+			System.out.println("incomingCosts " + forX + " " + String.valueOf(((float) incomingCost)/wiserTotal) + " END");
+			System.out.println("WISER_FIB_COST_IN_ADVERT " + forX + " " + String.valueOf(((float) receivedFIBWiserCost) / wiserTotal) );
+			System.out.println("bestpath_receivedcost:truecost_ratio: " + forX + " " + String.valueOf(((float) receivedFIBWiserCost) / receivedFIBTrueCost) + " END");
+			System.out.println("bwratio_received:true " + forX + " " + String.valueOf(((float) receivedFIBBW) / receivedFIBTrueBW) + " END");
 		}
 		
 	
@@ -2574,7 +2586,7 @@ public class Simulator {
 							//						String[] split = wiserProps.split("\\s+");
 							wiserCost = Integer.valueOf(wiserProps[0]);
 							normalization = Integer.valueOf(wiserProps[1]);
-							costSum += (float)wiserCost/(float)normalization;
+							costSum += ((float)wiserCost)/(float)normalization;
 						} else {
 							if(!monitoredAS.neighborMap.containsKey(announcedAS))
 								debug("[DEBUG] NO WISER PROPS FOR: "
@@ -3838,7 +3850,7 @@ public class Simulator {
 	
 	private static int convertCost(int bw, int min, int max, int steps)
 	{
-		float chunk =  (max - min) / (float)steps;
+		float chunk =  (max - min) / ((float)steps);
 		float progress = min;
 		for(int i = 1; i <= steps; i++)
 		{

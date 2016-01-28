@@ -1320,7 +1320,7 @@ public class Bandwidth_AS extends AS {
 				{
 					int bottleneckBW = bwProps != null ? Integer.valueOf(bwProps[0]) : 0; //pull wisercost out, if the advert has one
 					int normalization = bwProps != null ? Integer.valueOf(bwProps[1]) : 1; //pull normalization out, if the advert has one
-					if((float)bottleneckBW/(float)normalization > p1bottleneckBW)
+					if(((float)bottleneckBW)/(float)normalization > p1bottleneckBW)
 					{
 						p1Tuple = tuple.reverse();
 					}
