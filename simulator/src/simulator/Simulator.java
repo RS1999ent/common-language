@@ -2228,6 +2228,8 @@ public class Simulator {
 	
 		public static int getIncomingCosts(int as)
 		{
+			int incomingCost = 0;
+			AS monitorAS = asMap.get(as);
 			for(int asMapKey : asMap.keySet())
 			{
 				if(as == asMapKey)
@@ -2236,10 +2238,23 @@ public class Simulator {
 				}
 				for(IA bestpath : asMap.get(asMapKey).bestPath.values())
 				{
-					
+					LinkedList<Integer> path = bestpath.getPath();
+					int prevNode = -1;
+					for(int node : path)
+					{
+						if(node == as)
+						{
+							if(prevNode != -1)
+							{
+								PoPTuple monitorToNode = new PoPTuple(as, prevNode );
+								incomingCost += monitorAS.neighborLatency.get(prevNode).get(monitorToNode).get(AS.COST_METRIC);
+							}
+						}
+						prevNode = node;
+					}
 				}
 			}
-			return 0;
+			return incomingCost;
 		}
 	
 		public static void iaBasicSimulationRichWorld(int monitorFrom, boolean bwTest, float forX, int metric, int primaryType){
@@ -2294,6 +2309,7 @@ public class Simulator {
 				{
 				case AS.WISER:
 					wiserTotal++;
+					incomingCost += getIncomingCosts(as);
 					break;
 				case AS.BANDWIDTH_AS:
 					bwTotal++;
@@ -2483,6 +2499,7 @@ public class Simulator {
 			System.out.println("GULF_WISERREPLACEMENT_TRUECOST_RIB " + forX + " " + String.valueOf((float) (totalRibBwSum - partRibBwSum) / (total - bwTotal)  ) + " END");
 			System.out.println("GULF_WISERREPLACEMENT_TRUECOST_FIB " + forX + " " + String.valueOf((float) (totalFibBwSum - bestpathBWSum) / (total - bwTotal)  ) + " END");
 			
+			System.out.println("incomingCosts " + forX + " " + String.valueOf((float) incomingCost/wiserTotal) + " END");
 			System.out.println("bestpath_receivedcost:truecost_ratio: " + forX + " " + String.valueOf((float) receivedFIBWiserCost / receivedFIBTrueCost) + " END");
 		}
 		
@@ -3819,6 +3836,21 @@ public class Simulator {
 		
 	}
 	
+	private static int convertCost(int bw, int min, int max, int steps)
+	{
+		float chunk =  (max - min) / (float)steps;
+		float progress = min;
+		for(int i = 1; i <= steps; i++)
+		{
+			progress += chunk;
+			if(bw < progress)
+			{
+				return i;
+			}
+		}
+		return 5;
+	}
+	
 	private static void readTopology(String topologyFile, boolean useBandwidth) throws Exception {
 		// remember to initialize seedVal before calling this function.
 
@@ -3829,10 +3861,11 @@ public class Simulator {
 			int as2 = Integer.parseInt(token[1]);
 			int relation = Integer.parseInt(token[2]);
 			int linkMetric = 0; 
-			int cost =  Math.round((1/Float.parseFloat(token[3])) * 100000); 
+//			int cost =  Math.round((1/Float.parseFloat(token[3])) * 100000); 
 		//	int cost =  (int) Math.round(1/Math.log10(Float.parseFloat(token[3])) * 10000); //log! 
 			int bw = Math.round(Float.parseFloat(token[3]));
-			//			int cost = bw;
+		//	int cost = bw;
+			int cost =convertCost(bw, 10, 1024, 5);
 	//		System.out.println("cost: " + cost);
 			//decide whether to use bandwidth or latency
 //			if(!useBandwidth){
