@@ -2225,6 +2225,23 @@ public class Simulator {
 //			System.out.println("totla bestpath tcost: " + bestpathTruecost );
 		}
 	
+	
+		public static int getIncomingCosts(int as)
+		{
+			for(int asMapKey : asMap.keySet())
+			{
+				if(as == asMapKey)
+				{
+					continue;
+				}
+				for(IA bestpath : asMap.get(asMapKey).bestPath.values())
+				{
+					
+				}
+			}
+			return 0;
+		}
+	
 		public static void iaBasicSimulationRichWorld(int monitorFrom, boolean bwTest, float forX, int metric, int primaryType){
 			
 			
@@ -2242,6 +2259,8 @@ public class Simulator {
 			
 //			runSimulation(monitorASes, announcedASes, monitorFrom);
 			runSimulation(monitorASes, announcedASes, ALL);
+			
+			int incomingCost = 0;
 			
 			int receivedFIBWiserCost = 0;
 			int receivedFIBTrueCost = 0;
