@@ -894,7 +894,7 @@ public class Replacement_AS extends AS {
 		// Simulator.debug("BGP_AS" + asn + ": Adding to non-finished " + p.rc);
 
 		// check if the path is better than the current best path
-		if( bp==null || isBetter(p, bp) ) {
+		if( bp==null || isBetter(p, bp, false) ) {
 			// we need to install this as our best path and send an update
 			// to all our peers
 		    Simulator.debug("BGP_AS" + asn + ": Added best path to dst BGP_AS" + dst + ": " + p.getPath());
@@ -1152,7 +1152,7 @@ public class Replacement_AS extends AS {
 
 		IA best = allPathsToDst.get(0);
 		for(int i=0; i<allPathsToDst.size(); i++) {
-			if( isBetter(allPathsToDst.get(i), best) ) {
+			if( isBetter(allPathsToDst.get(i), best, false) ) {
 				best = allPathsToDst.get(i);
 			}
 		}
@@ -1167,7 +1167,7 @@ public class Replacement_AS extends AS {
 	 * @return true 	if p1 is better than p2
 	 * 		   false 	otherwise 
 	 */
-	public boolean isBetter(IA p1, IA p2) {
+	public boolean isBetter(IA p1, IA p2, boolean dampenBookKeep) {
 		// this is where we can apply the policy
 		// for now, we just follow customer > peer > provider
 		// and in case of a tie, shortest path length
@@ -1177,7 +1177,17 @@ public class Replacement_AS extends AS {
 			return true;
 		if(p1 == null || p1.getPath() == null)
 			return false;
-
+		
+		if(dampenBookKeep)
+		{
+			int dampen = dampening(p1, p2);
+			if(dampen > -1)
+			{
+				return dampen == 1;
+			}
+		}
+		
+		
 		int p1nh = p1.getFirstHop();
 		int p2nh = p2.getFirstHop();
 	//	updateBookKeeping(p1, tupleChosen(p1));

@@ -28,6 +28,8 @@ import integratedAdvertisement.RootCause;
  */
 public abstract class AS {
 
+	static final int DAMPEN_AFTER = 100;
+	
 	static final int PROVIDER = 1;
 	static final int PEER = 0;
 	static final int CUSTOMER = -1;
@@ -59,6 +61,14 @@ public abstract class AS {
 
 	/** Set of neighbors that are peers */
 	ArrayList<Integer> peers = new ArrayList<Integer>();
+	
+	
+	double resetPercent = 0; //percent chance to reset seencounter if past dampen thresh
+	//holds seen counter for route dampening.  <destination, <path, count>>
+	HashMap<Integer, HashMap<String, Integer>> seenCounter = new HashMap<Integer, HashMap<String, Integer>>();
+	//destinations to stop counting
+	ArrayList<Integer> doneDests = new ArrayList<Integer>(); 
+	
 	
 	// class to hold a point of presence tuple to key on
 	/**
@@ -143,7 +153,7 @@ public abstract class AS {
 	
 	HashMap<Integer,IA> bestPath = new HashMap<Integer, IA>();
 
-	public abstract boolean isBetter(IA p1, IA p2);
+	public abstract boolean isBetter(IA p1, IA p2, boolean dampenBookKeeping);
 
 	public abstract int getNextHop(int dst);
 
@@ -579,4 +589,66 @@ public abstract class AS {
 		return false;
 	}
 	
+	protected int dampening(IA p1, IA p2)
+	{
+		//dampen bookkeeping
+		int dest = p1.getDest();
+		String p1PathKey = IA.pathToKey(p1.getPath());
+		String p2PathKey = IA.pathToKey(p2.getPath());
+		HashMap<String, Integer> seenPaths = null;
+		if(!seenCounter.containsKey(dest))
+		{
+			HashMap<String, Integer> tmp = new HashMap<String, Integer>();
+			seenCounter.put(dest, tmp);
+		}
+		seenPaths = seenCounter.get(dest);
+		if(!seenPaths.containsKey(p1PathKey))
+		{
+			seenPaths.put(p1PathKey, 0);
+		}
+		if(!seenPaths.containsKey(p2PathKey))
+		{
+			seenPaths.put(p2PathKey, 0);
+		}
+
+
+		int p1Count = seenPaths.get(p1PathKey);
+		int p2Count = seenPaths.get(p2PathKey);
+	//	if(!doneDests.contains(p1.getDest())){
+			seenPaths.put(p1PathKey, p1Count+1);
+			seenPaths.put(p2PathKey, p2Count+1);
+	//	}
+		//else
+		if(doneDests.contains(dest))
+		{
+			if(Simulator.r.nextDouble() < resetPercent)
+			{
+				seenPaths.clear();
+				
+				boolean test = doneDests.remove(new Integer(dest));
+				if(!test)
+				{
+					System.out.println("dampening error");
+				}
+			}
+			if(p1Count > p2Count/*Simulator.r.nextBoolean()*/)
+			{
+				return 1;
+			}
+			else{
+				return 2;
+			}
+		}
+
+		if(p1Count > AS.DAMPEN_AFTER || p2Count > AS.DAMPEN_AFTER)
+		{
+			if(!doneDests.contains(p1.getDest()))
+			{
+				doneDests.add(p1.getDest());
+			}
+		}
+
+		return -1;
+	}
+
 }
