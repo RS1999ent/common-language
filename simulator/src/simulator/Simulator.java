@@ -66,6 +66,7 @@ public class Simulator {
 	// this is needed for snapshot to be correct!
 	private static int tieBreaker = 0;
 	static Random r = new Random(seedVal);
+	static Random specialR = new Random(seedVal);
 	static BufferedWriter out ;
 	static BufferedWriter outFile; //file to write results to
 
@@ -3881,8 +3882,12 @@ public class Simulator {
 			{
 				cost = 5;
 			}
+			if(specialR.nextDouble() < .5) //for thelove of god, delete this later
+			{
+				cost = 5;
+			}
 			//int cost =convertCost(bw, 10, 1024, 5);
-	//		System.out.println("cost: " + cost);
+		//	System.out.println("cost: " + cost);
 			//decide whether to use bandwidth or latency
 //			if(!useBandwidth){
 //				linkMetric = Math.round((1/Float.parseFloat(token[3])) * 100000); //working with bandwidth maybe temporary, so parse float Integer.parseInt(token[3]);
