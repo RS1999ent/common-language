@@ -3883,10 +3883,10 @@ public class Simulator {
 			{
 				cost = 5;
 			}
-			if(specialR.nextDouble() < .5) //for thelove of god, delete this later
-			{
-				cost = 5;
-			}
+//			if(specialR.nextDouble() < .5) //for thelove of god, delete this later
+//			{
+//				cost = 5;
+//			}
 			//int cost =convertCost(bw, 10, 1024, 5);
 		//	System.out.println("cost: " + cost);
 			//decide whether to use bandwidth or latency
