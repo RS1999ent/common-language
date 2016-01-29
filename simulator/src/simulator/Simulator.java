@@ -3879,7 +3879,8 @@ public class Simulator {
 //			int cost =  Math.round((1/Float.parseFloat(token[3])) * 100000); 
 		//	int cost =  (int) Math.round(1/Math.log10(Float.parseFloat(token[3])) * 10000); //log! 
 			float bw = Float.parseFloat(token[3]);
-			float cost = bw;
+			//float cost = bw;
+			float cost = 1/bw;
 //			if(bw < largestBW)
 //			{
 //				System.out.println("largestbwsofar: " + bw ) ;
