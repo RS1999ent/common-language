@@ -1241,8 +1241,11 @@ public class Wiser_AS extends AS {
 			int p2nhType = neighborMap.get(p2nh);
 			boolean wiserP1Better = betterWiser(p1, p2);
 		
-
-	
+			if(wiserP1Better)
+			{
+				return true;
+			}
+			
 			
 			if( p1nhType < p2nhType ) { //
 				return true;
