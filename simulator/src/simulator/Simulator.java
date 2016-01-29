@@ -3877,7 +3877,7 @@ public class Simulator {
 			int linkMetric = 0; 
 //			int cost =  Math.round((1/Float.parseFloat(token[3])) * 100000); 
 		//	int cost =  (int) Math.round(1/Math.log10(Float.parseFloat(token[3])) * 10000); //log! 
-			float bw = Math.round(Float.parseFloat(token[3]));
+			float bw = Float.parseFloat(token[3]);
 			float cost = bw;
 			if(cost > 5)
 			{
