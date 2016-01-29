@@ -3869,6 +3869,7 @@ public class Simulator {
 		// remember to initialize seedVal before calling this function.
 		specialR.setSeed(seedVal);
 		BufferedReader br = new BufferedReader(new FileReader(topologyFile));
+		float largestBW = 1;
 		while(br.ready()) {
 			String[] token = br.readLine().split("\\s+");
 			int as1 = Integer.parseInt(token[0]);
@@ -3879,6 +3880,12 @@ public class Simulator {
 		//	int cost =  (int) Math.round(1/Math.log10(Float.parseFloat(token[3])) * 10000); //log! 
 			float bw = Float.parseFloat(token[3]);
 			float cost = bw;
+//			if(bw < largestBW)
+//			{
+//				System.out.println("largestbwsofar: " + bw ) ;
+//				largestBW = bw;
+//			}
+		//	System.out.println("bw: " + bw);
 			if(cost > 5)
 			{
 				cost = 5;
