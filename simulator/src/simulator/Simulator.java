@@ -1904,23 +1904,24 @@ public class Simulator {
 						asMap.get(key).bestPath.remove(announcedAS);
 						test = asMap.get(key).bestPath.get(announcedAS);
 					}
-					
+					HashMap<Integer, AS> clonedASMap = (HashMap<Integer, AS>) asMap.clone();
+					asMap.clear();
+					try {
+						readTopology(topoFile, false );
+						preProcessReplacement();
+					} catch (Exception e) {
+						// TODO Auto-generated catch block
+						e.printStackTrace();
+					}
+
+					for(int as : asMap.keySet())
+					{
+						asMap.get(as).bestPath = (HashMap<Integer, IA>) clonedASMap.get(as).bestPath.clone();
+						asMap.get(as).ribIn = (HashMap<Integer, HashMap<Integer, IA>>) clonedASMap.get(as).ribIn.clone();
+					}
+
 				}
-				HashMap<Integer, AS> clonedASMap = (HashMap<Integer, AS>) asMap.clone();
-				asMap.clear();
-				try {
-					readTopology(topoFile, false );
-					preProcessReplacement();
-				} catch (Exception e) {
-					// TODO Auto-generated catch block
-					e.printStackTrace();
-				}
-				
-				for(int as : asMap.keySet())
-				{
-					asMap.get(as).bestPath = (HashMap<Integer, IA>) clonedASMap.get(as).bestPath.clone();
-					asMap.get(as).ribIn = (HashMap<Integer, HashMap<Integer, IA>>) clonedASMap.get(as).ribIn.clone();
-				}
+			
 				
 				//System.out.println("iteration complete");
 		//	}
@@ -3866,7 +3867,7 @@ public class Simulator {
 	
 	private static void readTopology(String topologyFile, boolean useBandwidth) throws Exception {
 		// remember to initialize seedVal before calling this function.
-
+		specialR.setSeed(seedVal);
 		BufferedReader br = new BufferedReader(new FileReader(topologyFile));
 		while(br.ready()) {
 			String[] token = br.readLine().split("\\s+");
