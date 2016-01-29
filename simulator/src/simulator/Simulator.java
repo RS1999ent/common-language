@@ -3887,10 +3887,10 @@ public class Simulator {
 //				largestBW = bw;
 //			}
 		//	System.out.println("bw: " + bw);
-			if(cost > 5)
-			{
-				cost = 5;
-			}
+//			if(cost > 5)
+//			{
+//				cost = 5;
+//			}
 //			if(specialR.nextDouble() < .5) //for thelove of god, delete this later
 //			{
 //				cost = 5;
