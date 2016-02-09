@@ -17,9 +17,6 @@ import java.util.Set;
 public class Bandwidth_AS extends AS {
 	private static final int LINK_DELAY = 100; // static link delay of 10 ms
 
-	/** The BGP_AS number of this BGP_AS */
-	//public int asn;
-
 	/** The current epoch */
 	private int currentEpoch;
 
@@ -29,18 +26,6 @@ public class Bandwidth_AS extends AS {
 	/** The MRAI timer value */
 	int mraiValue;
 
-	/** Mapping of neighbor to relationship */
-//	HashMap<Integer, Integer> neighborMap = new HashMap<Integer, Integer>();
-
-	// we also need to store all the paths received from neighbors for each
-	// destination. this would be our rib-in. the rib-in is implemented as
-	// a pair of nested hash tables: hashed on <prefix, neighbor>
-//	HashMap<Integer, HashMap<Integer,IA>> ribIn = new HashMap<Integer, HashMap<Integer, IA>>();
-
-	/** Stores the current best path to each prefix 
-	 *	This is almost equivalent to the forwarding table :) 
-	 */
-	//HashMap<Integer,IA> bestPath = new HashMap<Integer, IA>();
 
 	/** Old/current Stable Forwarding Table */
 	HashMap<Integer,IA> SFT = new HashMap<Integer, IA>();
@@ -99,9 +84,9 @@ public class Bandwidth_AS extends AS {
 	boolean isBasic;
 
 	/**
-	 * The constructor for an BGP_AS
+	 * The constructor for an Bandwidth_AS
 	 * 
-	 * @param asnum The BGP_AS number of this BGP_AS
+	 * @param asnum The Bandwidth_AS number of this Bandwidth_AS
 	 */
 	public Bandwidth_AS(int asnum, int mrai, boolean isBasic) {
 		asn = asnum;
@@ -150,7 +135,7 @@ public class Bandwidth_AS extends AS {
 	}
 
 	/**
-	 * This function is used to reset the state of the BGP_AS
+	 * This function is used to reset the state of the Bandwidth_AS
 	 *
 	 */
 	public void RESET() {
@@ -179,7 +164,7 @@ public class Bandwidth_AS extends AS {
 	}
 	
 	/**
-	 * This function is called when an BGP_AS is brought up, to announce its prefix to
+	 * This function is called when an Bandwidth_AS is brought up, to announce its prefix to
 	 * all its neighbors.
 	 *
 	 */
@@ -188,7 +173,7 @@ public class Bandwidth_AS extends AS {
 	}
 
 	/**
-	 * Adds a path to the RIB-In of this BGP_AS
+	 * Adds a path to the RIB-In of this Bandwidth_AS
 	 * @param p The path to be added
 	 */
 	public void addPathToRib(IA p) {
@@ -204,8 +189,18 @@ public class Bandwidth_AS extends AS {
 		passThrough.addToDatabase(p); //add path and information to passthrough database
 	}
 
-	//adds wiser path attributes to newPath based on what's in oldpath
+	//adds bw path attributes to newPath based on what's in oldpath
 	//newpath is mutated
+	/**
+	 * adds bw path attributes to newPath based on what's in oldpath
+	 * 
+	 * @param newPath
+	 *            the advert to add the bw info to (mutated)
+	 * @param oldPath
+	 *            the oldpath (non prepended) that we use existing info for
+	 * @param advertisedToAS
+	 *            the AS we are advertising to
+	 */
 	void addBottleneckBandwidth(IA newPath, IA oldPath, Integer advertisedToAS)
 	{
 		updateBookKeepingOutward(newPath, advertisedToAS);
@@ -214,15 +209,16 @@ public class Bandwidth_AS extends AS {
 		tupleChosen = tupleChosen(oldPath); //get the downstream poptuple that we choose
 		tupleChosen = tupleChosen == null ? new PoPTuple(-1, -1) : tupleChosen;
 		String[] pBandwidthProps = getBandwidthProps(oldPath, tupleChosen.reverse());//oldPath.getProtocolPathAttribute(new Protocol(AS.WISER), oldPath.getPath());
-		String pWiserProps = null;
-		float currBottleneckBW = pBandwidthProps == null ? Float.MAX_VALUE : Float.valueOf(pBandwidthProps[0]);
-		float pNormalization = 1;
+		float currBottleneckBW = pBandwidthProps == null ? Float.MAX_VALUE : Float.valueOf(pBandwidthProps[0]); //if there are no bw props, the the curr bnbw is max
+		float pNormalization = 1; //dummy normalization
 		newPath.popCosts.clear();//clear popcosts, might contain the old stuff and since we are filling these with new popcosts, then they need to be empty
 		float cost = 0;
-		//add intradomain costs here, instead it is just going to be the same for now		
+		//add intradomain costs here, instead it is just going to be the same for now
+		//for each poptuple to upstream neighbor
 		for(AS.PoPTuple poptuple : neighborMetric.get(advertisedToAS).keySet())
 		{
-			cost = currBottleneckBW;
+			cost = currBottleneckBW; 
+			//if the link has a lower bandwidth than bnbw in advert, then this link is the new bottleneck for this poplink
 			if(neighborMetric.get(advertisedToAS).get(poptuple).get(AS.BW_METRIC) < currBottleneckBW)
 			{
 				cost = neighborMetric.get(advertisedToAS).get(poptuple).get(AS.BW_METRIC);
@@ -231,12 +227,12 @@ public class Bandwidth_AS extends AS {
 			IAInfo popInfo = new IAInfo();
 			String pathAttribute = String.valueOf(cost) + " " + String.valueOf(pNormalization);
 			try {
-				popInfo.setProtocolPathAttribute(pathAttribute.getBytes("UTF-8"), new Protocol(AS.BANDWIDTH_AS), newPath.getPath());
+				popInfo.setProtocolPathAttribute(pathAttribute.getBytes("UTF-8"), new Protocol(AS.BANDWIDTH_AS), newPath.getPath()); //add info fo thisadvert
 			} catch (UnsupportedEncodingException e) {
 				// TODO Auto-generated catch block
 				e.printStackTrace();
 			}
-			newPath.popCosts.put(poptuple, popInfo);
+			newPath.popCosts.put(poptuple, popInfo); //add info to advert
 		}
 //		if(newPath.bookKeepingInfo.get(IA.BNBW_KEY) != cost)
 //		{
@@ -247,57 +243,6 @@ public class Bandwidth_AS extends AS {
 //		System.out.println("cost: " + cost + "\n");
 		passThrough.attachPassthrough(newPath, tupleChosen);
 
-		//not adding wiser cost incoming, will happen when it reaches the next node (wiser or bgp)
-		/*
-			String[] wiserProps = getWiserProps(newPath);
-			int wisercost = 0;
-			int normalization = 1;
-			if(wiserProps != null){
-				wisercost += Integer.valueOf(wiserProps[0]); //add the wiser props
-				normalization = Integer.valueOf(wiserProps[1]);
-			}
-			if(oldPath.getPath().size() > 0){
-				wisercost += neighborLatency.get(oldPath.getFirstHop()).get(tupleChosen);
-			}
-			String pathAttribute = String.valueOf(wisercost) + " " + String.valueOf(normalization);
-			try {
-				newPath.setProtocolPathAttribute(pathAttribute.getBytes("UTF-8"), new Protocol(AS.WISER), newPath.getPath());
-			} catch (UnsupportedEncodingException e) {
-				// TODO Auto-generated catch block
-				e.printStackTrace();
-			}
-		 */
-
-		/* block 1		
-		if(pWiserBytes[0] != (byte) 0xFF)
-		{
-			try {
-				pWiserProps = new String(pWiserBytes, "UTF-8");
-				String[] pProps = pWiserProps.split("\\s+");
-
-				pWisercost = Integer.valueOf(pProps[0]);
-//uncomment				pNormalization = Integer.valueOf(pProps[1]);
-			} catch (UnsupportedEncodingException e) {
-				// TODO Auto-generated catch block
-				e.printStackTrace();
-			}
-		}
-		//get the latency between the two points of presence
-	//	int latency = neighborLatency.get(advertisedToAS).get(newPath.getPoPTuple());
-
-		//wiser cost is just the wisercost received so far (normalized) + the
-		int wiserCost = pWisercost/pNormalization + cost;	// 
-		//normalization is just the wiser cost that came in (normalized) or 1 if we are the first to advertise, since there will only be one advertised path with the same next hops.
-//uncomment		pNormalization = pWisercost == 0 ? 1 : pWisercost/pNormalization;
-		//convert these two things to string (easier to work with) combine and add the bytes to the path attribute.
-		String pathAttribute = String.valueOf(wiserCost) + " " + String.valueOf(pNormalization);
-		try {
-			newPath.setProtocolPathAttribute(pathAttribute.getBytes("UTF-8"), new Protocol(AS.WISER), newPath.getPath());
-		} catch (UnsupportedEncodingException e) {
-			// TODO Auto-generated catch block
-			e.printStackTrace();
-		}
-		 */ //endblock 1	
 	}
 	
 	/**
@@ -317,19 +262,19 @@ public class Bandwidth_AS extends AS {
 	 */
 	public void addPathToUpdates(IA p, boolean simulateTimers) {
 		// TODO: might have to change the RootCause
-		IA newPath = new IA(p);//new IA(p.getPath(), p.getRootCause());
+		IA newPath = new IA(p); // copy path info into newpath. Newpath is the
+								// one that will be sent out, but keep a
+								// reference of the old path
 
-		
-		
-		newPath.prepend(asn);
+		newPath.prepend(asn); //this updates both legacy path and the path hash table
 		int nhType = CUSTOMER; // paths to self should be announced to all
 		int nh = -1;
 		// shadow the global mrai value
-		//int pseudoMraiValue = Math.round(this.mraiValue*Simulator.r.nextFloat()/1000)*1000; //original		
-		int pseudoMraiValue = this.mraiValue;
+		int pseudoMraiValue = Math.round(this.mraiValue*Simulator.r.nextFloat()/1000)*1000; //original		
+//		int pseudoMraiValue = this.mraiValue;
 //		int pseudoMraiValue = Math.round(this.mraiValue*Simulator.r.nextFloat());
 		if(p.getPath().size() > 0) {
-			nh = p.getFirstHop(); // this is the BGP_AS that advertised the path to us
+			nh = p.getFirstHop(); // this is the Bandwidth_AS that advertised the path to us
 			nhType = neighborMap.get(nh);
 			PoPTuple tupleChosen = new PoPTuple(-1, -1);
 			tupleChosen = tupleChosen(p);
@@ -338,57 +283,13 @@ public class Bandwidth_AS extends AS {
 			if(p.popCosts.size()>0){ //we are talkign to a wiser node, have to do the hackish stuff here (see bgp_as), 
 									//in other words, what is the wiser advertisement that would have been advertised for the
 				  					//PoP pair that we choose as our next hop
-	//			updateBookKeeping(p, tupleChosen);
-				
-//				int normalization = 1;
-//				int wisercost = 9999;
-//				//long newTrueCost = newPath.getTrueCost() + getCostInc(p, tupleChosen); //should add intradomain cost
-////				newPath.setTrueCost(newTrueCost);
-//				PoPTuple advertisementTuple = new PoPTuple(tupleChosen.pop2, tupleChosen.pop1);
-//				wisercost = p.popCosts.get(advertisementTuple);
-//				if(p.popCosts.get(advertisementTuple) == null) 
-//				{
-//					System.out.println("there is no point of presence from them to us in advertisement, shouldn't happen");
-//				}
-//				if(wisercost == 9999){
-//					System.out.println("wiseras wisercost 9999");
-//				}
-//				//grab the wiser information (that should be filled, remember, we are talking to a wiser node)
-//				String[] wiserProps = getWiserProps(p);
-//				if(wiserProps != null){
-//					wisercost += Integer.valueOf(wiserProps[0]); //add the wiser props
-//				}
-//	//			else
-//		///		{
-//	//				wisercost += neighborLatency.get(nh).get(tupleChosen);
-//		//		}
-//				
-//				//would compute normalization here
-//				String pathAttribute = String.valueOf(wisercost) + " " + String.valueOf(normalization);
-//				try {
-//					newPath.setProtocolPathAttribute(pathAttribute.getBytes("UTF-8"), new Protocol(AS.WISER), newPath.getPath());
-//				} catch (UnsupportedEncodingException e) {
-//					// TODO Auto-generated catch block
-//					e.printStackTrace();
-//				}
+	//			updateBookKeeping(p, tupleChosen); //we do outbound bookkeeping right now
+
 			}
-			else //its a bgp node, add the true cost bookeeping informaton on its intradomain costs
+			else // there are no popcosts in this advertisement, should not happen
 			{
 				System.out.println("bw_AS advertising?: " + asn);
-//				//grab the intradomian true cost based on the tuple we chose, add it to true cost
-//				//pops reversed because they created advert with inforamtion from them to us, so we
-//				//convert our us to them poptuple to them to us
-//				PoPTuple advertisementTuple = new PoPTuple(tupleChosen.pop2, tupleChosen.pop1);
-//				if(p.truePoPCosts.get(advertisementTuple) == null)
-//				{
-////					System.out.println("wiser_as, no point of presence from them to us, shouldn't happen from non announcing ases");
-//				}
-//				else{
-//				//			System.out.println("HERE");
-//					//System.out.println("truepop: " +p.truePoPCosts.get(advertisementTuple));
-//					newTrueCost += p.truePoPCosts.get(advertisementTuple);
-//				}
-//				//		System.out.println("true cost inc: " + trueCostInc);				
+				
 			}
 	//		newPath.popCosts.clear(); //clear popcosts as we've already used them, local, shouldn't be passed on
 			newPath.truePoPCosts.clear();
@@ -567,7 +468,7 @@ public class Bandwidth_AS extends AS {
 
 	/**
 	 * This function is called when a control message is received. It instructs
-	 * the BGP_AS to send out an update or a withdrawal for some destination to a
+	 * the Bandwidth_AS to send out an update or a withdrawal for some destination to a
 	 * particular peer.
 	 * 
 	 * @param message The control message
@@ -610,7 +511,7 @@ public class Bandwidth_AS extends AS {
 	/**
 	 * This function is called when a flood packet is received. A flood
 	 * packet contains the incomplete update information for a particular
-	 * BGP_AS. We add the information to our set, and forward the packet to
+	 * Bandwidth_AS. We add the information to our set, and forward the packet to
 	 * all the neighbors except the one I received it from.
 	 * 
 	 * We also need to keep track of the flood history so that we don't
@@ -683,7 +584,7 @@ public class Bandwidth_AS extends AS {
 			}
 			// send out the flood message ... 
 //			processFloodMsg(new FloodMessage(asn, inTransit, condIncomplete));
-			Simulator.debug("BGP_AS" + asn + ": nonFinished = " + nonFinishedUpdates );
+			Simulator.debug("Bandwidth_AS" + asn + ": nonFinished = " + nonFinishedUpdates );
 			Simulator.recordFlood(asn, new FloodMessage(asn, inTransit, condIncomplete), nonFinishedUpdates);
 //			HashMap<Short,ArrayList<RootCause>> updateSequence = new HashMap<Short,ArrayList<RootCause>>();
 //			for(Iterator<RIBHist> it = dstRIBHistMap.values().iterator(); it.hasNext(); ) {
@@ -736,8 +637,8 @@ public class Bandwidth_AS extends AS {
 	 * @param peer
 	 */
 	private void sendUpdatesToPeer(int peer) {
-		// the set of prefixes with the same BGP_AS Path
-		// right now, we have just the dest BGP_AS as the prefix
+		// the set of prefixes with the same Bandwidth_AS Path
+		// right now, we have just the dest Bandwidth_AS as the prefix
 		ArrayList<Integer> prefixList; 
 		if(mraiRunning.get(peer))
 			return;
@@ -797,7 +698,7 @@ public class Bandwidth_AS extends AS {
 		if(m.asPath == null) { // invalid message!
 			return;
 		}
-		// The BGP_AS we received the message from
+		// The Bandwidth_AS we received the message from
 		int nextHop = m.asn; 
 		IA p = m.asPath;
 		int dst = p.getRootCause().getDest();
@@ -819,7 +720,7 @@ public class Bandwidth_AS extends AS {
 			// since we are recording this peer, all updates are considered incomplete
 			// maybe we can optimize and consider only those updates which aren't loops :)
 			updatesInTransit.add(m.asPath.getRootCause());
-//			Simulator.debug("BGP_AS" + asn + ": Recorded in transit " + m.asPath.rc);
+//			Simulator.debug("Bandwidth_AS" + asn + ": Recorded in transit " + m.asPath.rc);
 		}
 		
 		IA bp = bestPath.get(dst);
@@ -835,13 +736,13 @@ public class Bandwidth_AS extends AS {
 		// Add the update to the sequence of unfinished updates for this dest
 		dstRIBHistMap.get(dst).addToSequence(p.getRootCause());
 		nonFinishedUpdates.add(p.getRootCause());
-		// Simulator.debug("BGP_AS" + asn + ": Adding to non-finished " + p.rc);
+		// Simulator.debug("Bandwidth_AS" + asn + ": Adding to non-finished " + p.rc);
 
 		// check if the path is better than the current best path
 		if( bp==null || isBetter(p, bp, true) ) {
 			// we need to install this as our best path and send an update
 			// to all our peers
-		    Simulator.debug("BGP_AS" + asn + ": Added best path to dst BGP_AS" + dst + ": " + p.getPath());
+		    Simulator.debug("Bandwidth_AS" + asn + ": Added best path to dst Bandwidth_AS" + dst + ": " + p.getPath());
 			bestPath.put(dst, p);
 //			p = passThrough.attachPassthrough(p); //[COMMENT] added
 			addPathToUpdates(p, Simulator.otherTimers);
@@ -866,13 +767,13 @@ public class Bandwidth_AS extends AS {
 			}
 			bestPath.put(dst, newBestPath);
 			Simulator.changedPath(asn, dst, bp, newBestPath);
-			Simulator.debug("BGP_AS" + asn + ": new Path = " + newBestPath.getPath());
+			Simulator.debug("Bandwidth_AS" + asn + ": new Path = " + newBestPath.getPath());
 			
 			// if newBestPath is completed earlier, then re-root the update
 			if(!nonFinishedUpdates.contains(newBestPath.getRootCause())) {
 				RootCause newRC = new RootCause(asn, currentUpdate++, dst);
 				nonFinishedUpdates.add(newRC);
-				// Simulator.debug("BGP_AS" + asn + ": Adding to non-finished " + newRC);
+				// Simulator.debug("Bandwidth_AS" + asn + ": Adding to non-finished " + newRC);
 				newBestPath.setRootCause(newRC);
 			}
 			RIBHist temp = dstRIBHistMap.get(dst);
@@ -961,7 +862,7 @@ public class Bandwidth_AS extends AS {
 			return;
 		}
 
-		// System.out.println("BGP_AS" + asn + " might need to send: " + newPath.path);
+		// System.out.println("Bandwidth_AS" + asn + " might need to send: " + newPath.path);
 
 		int oldType = neighborMap.get(oldPath.getFirstHop());
 		int newType = neighborMap.get(newPath.getFirstHop());
@@ -1196,7 +1097,7 @@ public class Bandwidth_AS extends AS {
 			// this is where we can apply the policy
 			// for now, we just follow customer > peer > provider
 			// and in case of a tie, shortest path length
-			// and then break tie by lowest BGP_AS number for next hop
+			// and then break tie by lowest Bandwidth_AS number for next hop
 	
 		/*	if(p2 == null || p2.getPath() == null) 
 				return true;
@@ -1222,7 +1123,7 @@ public class Bandwidth_AS extends AS {
 				else if( p1.getPath().size() > p2.getPath().size() ) {
 					return false;
 				}
-				// else .. break tie using BGP_AS number
+				// else .. break tie using Bandwidth_AS number
 				else if (p1.getFirstHop() < p2.getFirstHop())
 				{
 					return true;
@@ -1274,7 +1175,7 @@ public class Bandwidth_AS extends AS {
 //				else if( p1.getPath().size() > p2.getPath().size() ) {
 //					return false;
 //				}
-//				// else .. break tie using BGP_AS number
+//				// else .. break tie using Bandwidth_AS number
 //				else if (p1.getFirstHop() < p2.getFirstHop())
 //				{
 //					return true;
@@ -1546,12 +1447,12 @@ public class Bandwidth_AS extends AS {
 	}
 
 	public String showNeighbors() {
-		String nbrs = "Neighbors of BGP_AS" + asn + " Prov: " + providers + " Cust: " + customers + " Peer: " + peers;
+		String nbrs = "Neighbors of Bandwidth_AS" + asn + " Prov: " + providers + " Cust: " + customers + " Peer: " + peers;
 		return nbrs;
 	}
 
 	public String showFwdTable() {
-		String table = "FWD_TABLE : BGP_AS" + asn + " #paths = " + bestPath.size() + "\n";
+		String table = "FWD_TABLE : Bandwidth_AS" + asn + " #paths = " + bestPath.size() + "\n";
 		for(Iterator<IA> it = bestPath.values().iterator(); it.hasNext();) {
 			table += it.next().getPath() + "\n";
 		}
