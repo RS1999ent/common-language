@@ -26,19 +26,23 @@ public class IA {
 	}
 
 	// used for returning a default path for legacy support with the rest of sim
+	//since ia's only contain one path, this could be thought of as the primary path now, though any changes to it
+	//should also be reflcted in the paths
 	private LinkedList<Integer> legacyPath = new LinkedList<Integer>();
 
 	// hash map of paths. should be keyed on the pathToKey method in this class
 	private HashMap<String, LinkedList<Integer>> paths = new HashMap<String, LinkedList<Integer>>();
 
+	//more extensible way of keeping important value information about this integrated advertisement
 	public HashMap<String, Float> bookKeepingInfo = new HashMap<String, Float>();
 	
 	private RootCause rc; // stores root cause of this integrated advertisement
 	
-	//used to simulate the information that three adverts will contain for different PoPs
+	//used to simulate the information of multiple adverts will contain for different PoPs
 	//inforamtion about the intradomain costs for each pop pair needs to be in single advert
 	//so we need this
-	//should be cleared after use, is used for processing only
+	//should be cleared after use upon receipt, is used for processing only
+	//The poptuple ordering is always the PoP of the advertisemetn sender to the PoP of the advertisement receiver.
 	public HashMap<AS.PoPTuple, IAInfo> popCosts = new HashMap<AS.PoPTuple, IAInfo>();
 
 	//bookkeepign for true cost of as path. like the popcosts, only all nodes use this for true cost updates
@@ -89,6 +93,10 @@ public class IA {
 	// } //old constructor, copy constructor used now because of there is more
 	// than just the path
 
+	/**
+	 * copy constructor
+	 * @param toCopy - IA of fields to copy
+	 */
 	public IA(IA toCopy) {
 		legacyPath = (LinkedList<Integer>) toCopy.legacyPath.clone();
 		paths = (HashMap<String, LinkedList<Integer>>) toCopy.paths.clone();
@@ -106,17 +114,6 @@ public class IA {
 		{
 			truePoPCosts.put(new AS.PoPTuple(tuple.pop1, tuple.pop2), toCopy.truePoPCosts.get(tuple));
 		}
-	//	this.popTuple = toCopy.popTuple;
-		// copy the path attributes, if Values implenets interface "cloneable",
-		// then
-		// we might be able to just call pathValues.clone(). Since it doesn't,
-		// just
-		// use Values copy constructor
-	/*	for (String pathValuesKey : toCopy.pathValues.keySet()) {
-			Values copyValues = new Values(toCopy.pathValues.get(pathValuesKey));
-			pathValues.put(pathValuesKey, copyValues);
-		}*/
-		// pathValues = (HashMap<String, Values>) toCopy.pathValues.clone();
 		rc = new RootCause(toCopy.rc.rcAsn, toCopy.rc.updateNum,
 				toCopy.rc.getDest());
 	}
@@ -129,7 +126,7 @@ public class IA {
 	 */
 	public void prepend(int as) {
 		String key = pathToKey(legacyPath);
-		getPath().addFirst(as);
+		getPath().addFirst(as); //prepends onto legacy path
 		paths.remove(key);
 		removePathAttributes(legacyPath);//pathValues.remove(key);
 		paths.put(pathToKey(legacyPath), legacyPath);
@@ -137,7 +134,7 @@ public class IA {
 	}
 
 	/**
-	 * Get the first hop in the as-path
+	 * Get the first hop in the as-path (legacy path)
 	 * 
 	 * @return the first hop in the path
 	 */
@@ -187,12 +184,16 @@ public class IA {
 	}
 
 	/**
+	 * sets the legacy path and updates the legacy path in the paths.
+	 * note: untested changes fixes a bug, but the bug didn't affect the simulator prior to 2-9-16
 	 * @param path
 	 *            the path to set
 	 */
 	public void setPath_Legacy(LinkedList<Integer> path) {
 		// remove old legacy path from hash table and its corresponding
 		// attributes
+		paths.remove(pathToKey(legacyPath)); //untested change
+		paths.put(pathToKey(path), path); //untested change
 		removePathAttributes(legacyPath);
 		this.legacyPath = path;
 
@@ -204,7 +205,7 @@ public class IA {
 	 * 
 	 * @param path
 	 *            - the path being replaced
-	 */
+	 */ //not called in any of the simulator 2-9-16
 	public void setPath(LinkedList<Integer> path) {
 		paths.put(pathToKey(path), path);
 	}
@@ -214,7 +215,7 @@ public class IA {
 	 * 
 	 * @param pathKey
 	 *            , the key of element to be removed from hash table
-	 */
+	 */ //not called in any of the simulator so far 2-9-16
 	public void removePath(String pathKey) {
 		paths.remove(pathKey);
 	}
@@ -315,7 +316,7 @@ public class IA {
 			}
 			else {
 				byte arr[] = new byte[1];
-				arr[0] = (byte) 0xFF;
+				arr[0] = (byte) 0xFF; //indicates that there is a poptuple that is valid, but that there are no values for the protocol
 				return arr;
 			}
 		}

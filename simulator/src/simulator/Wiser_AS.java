@@ -222,9 +222,9 @@ public class Wiser_AS extends AS {
 		
 		//add intradomain costs here, instead it is just going to be the same for now
 		float cost = 0;
-		for(AS.PoPTuple poptuple : neighborLatency.get(advertisedToAS).keySet())
+		for(AS.PoPTuple poptuple : neighborMetric.get(advertisedToAS).keySet())
 		{
-			cost += neighborLatency.get(advertisedToAS).get(poptuple).get(AS.COST_METRIC);
+			cost += neighborMetric.get(advertisedToAS).get(poptuple).get(AS.COST_METRIC);
 			//			int cost = getTrueCostInc(oldPath); //the true cost inc, will be the wiser cost advertised for now
 			if(tupleChosen.pop1 != -1){
 				cost += getIntraDomainCost(tupleChosen.pop1, poptuple.pop1, advertisedToAS); //cost is equal to just intradomain cost, because we are filling popcosts
@@ -1241,10 +1241,6 @@ public class Wiser_AS extends AS {
 			int p2nhType = neighborMap.get(p2nh);
 			boolean wiserP1Better = betterWiser(p1, p2);
 		
-			if(wiserP1Better)
-			{
-				return true;
-			}
 			
 			
 			if( p1nhType < p2nhType ) { //
@@ -1258,19 +1254,23 @@ public class Wiser_AS extends AS {
 				{
 					return true;
 				}
-				if(p1.getPath().size() < p2.getPath().size()) {
-					return true;
-				}
-				else if( p1.getPath().size() > p2.getPath().size() ) {
+				else
+				{
 					return false;
 				}
-				// else .. break tie using BGP_AS number
-				else if (p1.getFirstHop() < p2.getFirstHop())
-				{
-					return true;
-				}
+//				if(p1.getPath().size() < p2.getPath().size()) {
+//					return true;
+//				}
+//				else if( p1.getPath().size() > p2.getPath().size() ) {
+//					return false;
+//				}
+//				// else .. break tie using BGP_AS number
+//				else if (p1.getFirstHop() < p2.getFirstHop())
+//				{
+//					return true;
+//				}
 			}
-			return false;
+	//		return false;
 	
 		}
 
@@ -1304,7 +1304,7 @@ public class Wiser_AS extends AS {
 				String[] wiserProps = getWiserProps(path, tuple);
 				if (wiserProps == null)
 				{
-					if(neighborLatency.get(path.getFirstHop()).get(tuple.reverse()).get(AS.COST_METRIC) < p1LowestCost)
+					if(neighborMetric.get(path.getFirstHop()).get(tuple.reverse()).get(AS.COST_METRIC) < p1LowestCost)
 					{
 						p1Tuple = tuple.reverse();
 					}

@@ -274,7 +274,7 @@ public class Replacement_AS extends AS {
 		IAInfo infoChosen = null;
 		if(tupleChosen != null){
 			infoChosen = advert.popCosts.get(tupleChosen.reverse()); //get the info that we chose because we are going to clear the costs
-			for(AS.PoPTuple poptuple : neighborLatency.get(advertisedToAS).keySet())
+			for(AS.PoPTuple poptuple : neighborMetric.get(advertisedToAS).keySet())
 			{
 				int intraDomainCost = getIntraDomainCost(tupleChosen.pop1, poptuple.pop1, advertisedToAS);
 				advert.truePoPCosts.put(poptuple, intraDomainCost);
@@ -320,7 +320,7 @@ public class Replacement_AS extends AS {
 			}
 		}
 
-		for(AS.PoPTuple popTuple : neighborLatency.get(advertisedToAS).keySet())
+		for(AS.PoPTuple popTuple : neighborMetric.get(advertisedToAS).keySet())
 		{
 
 			advert.popCosts.put(popTuple, replacementInfo);
@@ -1431,8 +1431,8 @@ public class Replacement_AS extends AS {
 		float lowestMED = Float.MAX_VALUE;			
 		long trueCostInc = 0;
 		PoPTuple chosenTuple = null;
-		for(PoPTuple tuple : neighborLatency.get(nh).keySet()){
-			float latency = neighborLatency.get(nh).get(tuple).get(AS.COST_METRIC);
+		for(PoPTuple tuple : neighborMetric.get(nh).keySet()){
+			float latency = neighborMetric.get(nh).get(tuple).get(AS.COST_METRIC);
 			if(latency < lowestMED)
 			{
 				//			trueCostInc = latency;

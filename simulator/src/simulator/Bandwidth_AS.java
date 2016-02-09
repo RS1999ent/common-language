@@ -220,12 +220,12 @@ public class Bandwidth_AS extends AS {
 		newPath.popCosts.clear();//clear popcosts, might contain the old stuff and since we are filling these with new popcosts, then they need to be empty
 		float cost = 0;
 		//add intradomain costs here, instead it is just going to be the same for now		
-		for(AS.PoPTuple poptuple : neighborLatency.get(advertisedToAS).keySet())
+		for(AS.PoPTuple poptuple : neighborMetric.get(advertisedToAS).keySet())
 		{
 			cost = currBottleneckBW;
-			if(neighborLatency.get(advertisedToAS).get(poptuple).get(AS.BW_METRIC) < currBottleneckBW)
+			if(neighborMetric.get(advertisedToAS).get(poptuple).get(AS.BW_METRIC) < currBottleneckBW)
 			{
-				cost = neighborLatency.get(advertisedToAS).get(poptuple).get(AS.BW_METRIC);
+				cost = neighborMetric.get(advertisedToAS).get(poptuple).get(AS.BW_METRIC);
 			}
 			
 			IAInfo popInfo = new IAInfo();
@@ -1263,20 +1263,24 @@ public class Bandwidth_AS extends AS {
 				{
 					return true;
 				}
-				
-				if(p1.getPath().size() < p2.getPath().size()) {
-					return true;
-				}
-				else if( p1.getPath().size() > p2.getPath().size() ) {
+				else
+				{
 					return false;
 				}
-				// else .. break tie using BGP_AS number
-				else if (p1.getFirstHop() < p2.getFirstHop())
-				{
-					return true;
-				}
+				
+//				if(p1.getPath().size() < p2.getPath().size()) {
+//					return true;
+//				}
+//				else if( p1.getPath().size() > p2.getPath().size() ) {
+//					return false;
+//				}
+//				// else .. break tie using BGP_AS number
+//				else if (p1.getFirstHop() < p2.getFirstHop())
+//				{
+//					return true;
+//				}
 			}
-			return false;
+//			return false;
 	
 		}
 
@@ -1310,10 +1314,10 @@ public class Bandwidth_AS extends AS {
 				String[] bwProps = getBandwidthProps(path, tuple);
 				if (bwProps == null)
 				{
-					if(neighborLatency.get(path.getFirstHop()).get(tuple.reverse()).get(AS.BW_METRIC) > p1bottleneckBW)
+					if(neighborMetric.get(path.getFirstHop()).get(tuple.reverse()).get(AS.BW_METRIC) > p1bottleneckBW)
 					{
 						p1Tuple = tuple.reverse();
-						p1bottleneckBW = neighborLatency.get(path.getFirstHop()).get(tuple.reverse()).get(AS.BW_METRIC);
+						p1bottleneckBW = neighborMetric.get(path.getFirstHop()).get(tuple.reverse()).get(AS.BW_METRIC);
 					}
 				}
 				else

@@ -2249,7 +2249,7 @@ public class Simulator {
 							if(prevNode != -1)
 							{
 								PoPTuple monitorToNode = new PoPTuple(as, prevNode );
-								incomingCost += monitorAS.neighborLatency.get(prevNode).get(monitorToNode).get(AS.COST_METRIC);
+								incomingCost += monitorAS.neighborMetric.get(prevNode).get(monitorToNode).get(AS.COST_METRIC);
 							}
 						}
 						prevNode = node;
@@ -3876,10 +3876,10 @@ public class Simulator {
 			int as2 = Integer.parseInt(token[1]);
 			int relation = Integer.parseInt(token[2]);
 			int linkMetric = 0; 
-			float cost =  Math.round((1/Float.parseFloat(token[3])) * 100000); 
+			//float cost =  Math.round((1/Float.parseFloat(token[3])) * 100000); 
 		//	int cost =  (int) Math.round(1/Math.log10(Float.parseFloat(token[3])) * 10000); //log! 
 			float bw = Float.parseFloat(token[3]);
-			//float cost = bw;
+			float cost = bw;
 		//	float cost = 1/bw;
 //			if(bw < largestBW)
 //			{

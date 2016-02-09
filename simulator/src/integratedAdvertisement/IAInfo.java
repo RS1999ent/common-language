@@ -15,7 +15,7 @@ public class IAInfo {
 	// stores path attributes. should be keyed on pathToKey method
 	public HashMap<String, Values> pathValues = new HashMap<String, Values>();
 
-	// stores the node descriptors for ASes on the path
+	// stores the node descriptors for ASes on the path, currently not used in the sim.
 	public HashMap<String, Values> nodeDescriptor = new HashMap<String, Values>();
 	
 	public IAInfo()
@@ -23,6 +23,10 @@ public class IAInfo {
 		
 	}
 	
+	/**
+	 * copy constructor for the info
+	 * @param toCopy = iainfo to copy
+	 */
 	public IAInfo(IAInfo toCopy)
 	{
 		pathValues = (HashMap<String, Values>)toCopy.pathValues.clone();
