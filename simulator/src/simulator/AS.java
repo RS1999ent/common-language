@@ -161,7 +161,7 @@ public abstract class AS {
 	HashMap<Integer, HashMap<Integer,IA>> ribIn = new HashMap<Integer, HashMap<Integer, IA>>();
 
 	
-	public Integer asn;
+	public int asn;
 	
 	public Integer protocol;
 	
@@ -607,15 +607,15 @@ public abstract class AS {
 
 	/**
 	 * returns the puptuple of us to them that we choose as the point of
-	 * presenes used on the path
+	 * presenes used on the path based on what the particular implementation of
+	 * the AS chooses a particular point of presence to use
 	 * 
 	 * @param advert
 	 *            the advertisement that has the infomration to make this
 	 *            decision
 	 * @return the tuple ponit of presence touble that we chose
 	 */
-	public abstract PoPTuple tupleChosen(IA advert);
-	
+	public abstract PoPTuple tupleChosen(IA advert);	
 	
 	/**
 	 * checks to see if any of the best paths to any of the destinatinos

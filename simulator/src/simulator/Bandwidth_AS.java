@@ -80,7 +80,7 @@ public class Bandwidth_AS extends AS {
 	/** This stores the information on conditionally incomplete updates from all my floods this epoch */ 
 	HashSet<UpdateDependency> floodsConditional = new HashSet<UpdateDependency>();
 	
-	//true if this is a basic transit AS, just means that it doesn't add wiser costs
+	//true if this is a basic transit AS, just means that it doesn't add bw costs
 	boolean isBasic;
 
 	/**
@@ -278,12 +278,11 @@ public class Bandwidth_AS extends AS {
 			nhType = neighborMap.get(nh);
 			PoPTuple tupleChosen = new PoPTuple(-1, -1);
 			tupleChosen = tupleChosen(p);
-	//		long newTrueCost = newPath.getTrueCost() + getCostInc(p, tupleChosen); //should add intradomain cost (only should be used as true cost
-			                                                            //for wiser as that is the only way intradomain costs get in
-			if(p.popCosts.size()>0){ //we are talkign to a wiser node, have to do the hackish stuff here (see bgp_as), 
-									//in other words, what is the wiser advertisement that would have been advertised for the
-				  					//PoP pair that we choose as our next hop
-	//			updateBookKeeping(p, tupleChosen); //we do outbound bookkeeping right now
+			//update the bookkeeping of the information based on the tuple we chose (we do outbound bookkeeping now so this isn't relevent for a bit)
+			if(p.popCosts.size()>0){ 
+	//			updateBookKeeping(p, tupleChosen); //we do outbound bookkeeping right now that is not compatible with multipop because the information
+				//to be bookkept is dependent on what the upstream as chooses.  limiting to one pop per AS makes outbound feasible. outbound was chosen
+				//because it was easier to reason about at the time.
 
 			}
 			else // there are no popcosts in this advertisement, should not happen
@@ -296,10 +295,10 @@ public class Bandwidth_AS extends AS {
 			newPath.setTrueCost(p.getTrueCost());	
 		}
 
-	//	passThrough.attachPassthrough(newPath); //attach passthrough before sending to neighbors, done in addwiserpathattribute
+	//	passThrough.attachPassthrough(newPath); //attach passthrough before sending to neighbors, done in addbottleneckbandwidth()
 		if(nhType == PROVIDER || nhType == PEER) { // announce it only to customers .. and to nextHop in the path 
 			for(int i=0; i<customers.size(); i++) {
-				//add wiser path attributes if this is a full wiser node
+				//add bw path attributes if this is a full wiser node
 				//copy newpath because we are adding multiple stuff to it
 				IA overWritePath = new IA(newPath);
 				if(!isBasic) //this is a problem, if basic because we attach passthrough in the next method.  experimetns dont' use basic nodes anymore though
@@ -315,8 +314,8 @@ public class Bandwidth_AS extends AS {
 				sendUpdatesToPeer(customers.get(i));
 			}
 			IA overWritePath = new IA(newPath);
-			if(!isBasic) //if this a full wiser node, add costs
-				addBottleneckBandwidth(overWritePath, p, nh); //add wiser path attribute.  this is to sending update to peer we received advert from.
+			if(!isBasic) //if this a full bw node, add costs
+				addBottleneckBandwidth(overWritePath, p, nh); //add bw path attribute.  this is to sending update to peer we received advert from.
 			addPathToPendingUpdatesForPeer(overWritePath, nh);
 			if(simulateTimers) {
 				if(!mraiRunning.get(nh)) {
@@ -329,7 +328,7 @@ public class Bandwidth_AS extends AS {
 		}
 		else { // customer path, so announce to all
 			for(int i=0; i<customers.size(); i++) {
-				//add wiser path attributes if this is a wiser node
+				//add bw path attributes if this is a bw node
 				IA overWritePath = new IA(newPath);	
 				if(!isBasic)
 					addBottleneckBandwidth(overWritePath, p, customers.get(i));
@@ -344,7 +343,7 @@ public class Bandwidth_AS extends AS {
 				sendUpdatesToPeer(customers.get(i));
 			}
 			for(int i=0; i<providers.size(); i++) {				
-				//add wiser path attributes if this is a wiser node
+				//add bw path attributes if this is a bw node
 				IA overWritePath = new IA(newPath);
 				if(!isBasic)
 					addBottleneckBandwidth(overWritePath, p, providers.get(i));
@@ -359,7 +358,7 @@ public class Bandwidth_AS extends AS {
 				sendUpdatesToPeer(providers.get(i));
 			}
 			for(int i=0; i<peers.size(); i++) {
-				//add wiser path attributes if this is a wiser node
+				//add bw path attributes if this is a bw node
 				IA overWritePath = new IA(newPath);
 				if(!isBasic)
 					addBottleneckBandwidth(overWritePath, p, peers.get(i));
@@ -744,8 +743,7 @@ public class Bandwidth_AS extends AS {
 			// to all our peers
 		    Simulator.debug("Bandwidth_AS" + asn + ": Added best path to dst Bandwidth_AS" + dst + ": " + p.getPath());
 			bestPath.put(dst, p);
-//			p = passThrough.attachPassthrough(p); //[COMMENT] added
-			addPathToUpdates(p, Simulator.otherTimers);
+			addPathToUpdates(p, Simulator.otherTimers); //relevent information added here
 
 			dstRIBHistMap.get(dst).addUpdateToHistory(p, nextHop);
 			sendWithdrawalsIfNecessary(bp, p);
@@ -1023,21 +1021,17 @@ public class Bandwidth_AS extends AS {
 		//	int p2MaxBW = Integer.MAX_VALUE;
 			AS.PoPTuple p2Tuple = new AS.PoPTuple(-1, -1);
 			p2Tuple = tupleChosen(p2);
-	//		updateBookKeeping(p1, p1Tuple);
-//			updateBookKeeping(p2, p2Tuple);
 	
-			//byte[] p1WiserBytes = p1.getProtocolPathAttribute(new Protocol(AS.WISER), p1.getPath());
-			//byte[] p2WiserBytes = p2.getProtocolPathAttribute(new Protocol(AS.WISER), p2.getPath());
 			String[] p1BWProps = getBandwidthProps(p1, p1Tuple.reverse());
 			String[] p2BWProps = getBandwidthProps(p2, p2Tuple.reverse());
-			float p1BW = p1BWProps != null ? Float.valueOf(p1BWProps[0]) : 0; //pull wisercost out, if the advert has one
-			float p2BW = p2BWProps != null ? Float.valueOf(p2BWProps[0]) : 0; //pull wisercost out, if the advert has one
+			float p1BW = p1BWProps != null ? Float.valueOf(p1BWProps[0]) : 0; //pull bwcost out, if the advert has one
+			float p2BW = p2BWProps != null ? Float.valueOf(p2BWProps[0]) : 0; //pull bwcost out, if the advert has one
 			float p1Normalization = p1BWProps != null ? Float.valueOf(p1BWProps[1]) : 1; //pull normalization out, if the advert has one
 			float p2Normalization = p2BWProps != null ? Float.valueOf(p2BWProps[1]) : 1; //pull normalization out, if the advert has one
 	
 	
 			
-			//if there is a propagated wiser cost, then we will choose one of them
+			//if there is a propagated bw cost, then we will choose one of them
 			//this is a very coarse policy with regards to this, but it can be changed later
 			if(p1BWProps != null || p2BWProps != null)
 			{
@@ -1051,14 +1045,7 @@ public class Bandwidth_AS extends AS {
 				}
 				else
 				{
-	/*				String[] p1Props = p1WiserProps;
-					String[] p2Props = p2WiserProps;
-					
-					int p1Wisercost = Integer.valueOf(p1Props[0]);
-					int p1Normalization = Integer.valueOf(p1Props[1]);
-					
-					int p2Wisercost = Integer.valueOf(p2Props[0]);
-					int p2Normalization = Integer.valueOf(p2Props[1]);*/
+	
 					if(p1BW/p1Normalization == p2BW / p2Normalization)
 					{
 						if (p1.getPath().size() < p2.getPath().size())
@@ -1134,13 +1121,14 @@ public class Bandwidth_AS extends AS {
 				return true;
 			if(p1 == null || p1.getPath() == null)
 				return false;
-						
+			//if this isbetter is called from within process update()			
 			if(dampenBookKeep)
 			{
 				int dampen = dampening(p1, p2);
+				//if we are in dampen mode...
 				if(dampen > -1)
 				{
-					return dampen == 1;
+					return dampen == 1; //if dampen is 1, return true, otherwise it reutrns false
 				}
 			}
 			
@@ -1152,15 +1140,15 @@ public class Bandwidth_AS extends AS {
 	
 	
 			boolean isBWBetter = isBWBetter(p1, p2);
-			
+			//policy routing
 			if( p1nhType < p2nhType ) { //
 				return true;
 			}
 			else if(p1nhType > p2nhType) {
 				return false;
 			}
-			else { // both are similar, so look at path length
-				if(isBWBetter)
+			else { // both are similar, break tie with bw information
+				if(isBWBetter) //if true, p1 is better than p2 with bw info
 				{
 					return true;
 				}
@@ -1187,6 +1175,9 @@ public class Bandwidth_AS extends AS {
 
 
 	
+	/* (non-Javadoc)
+	 * @see simulator.AS#tupleChosen(integratedAdvertisement.IA)
+	 */
 	@Override
 	public PoPTuple tupleChosen(IA path)
 	{
@@ -1197,80 +1188,42 @@ public class Bandwidth_AS extends AS {
 //			return 0; //this path is empty, so it has no cost
 		}
 		
-		//if we are talking to a wiser node for path 1, then popCosts will have some elements in it, work with those
+		//we want to choose the tuple with the max bnbw, so start at 0
 		float p1bottleneckBW = 0;
 		AS.PoPTuple p1Tuple = null;
-		//find the lowest costs if we are talking iwth wiser node.  That is the summation of the intradomain costs + the latency of the link, the lowest of those
+		//find the lowest costs if we are talking iwth bw node.
 		if(path.popCosts.size() > 0)
 		{
 			for(AS.PoPTuple tuple : path.popCosts.keySet())
 			{
-//				int linkCost = 0;
-//				if(neighborLatency.get(path.getFirstHop()).get(new PoPTuple(tuple.pop2, tuple.pop1)) != null){
-//					linkCost = neighborLatency.get(path.getFirstHop()).get(new PoPTuple(tuple.pop2, tuple.pop1));
-//				}
-//				else{
-//					System.out.println("wiser_as: getcostinc: no corresponding link cost, shouldn't be here");
-//				}
 				String[] bwProps = getBandwidthProps(path, tuple);
 				if (bwProps == null)
 				{
+					//there are no bw props in advert, so get the highest bw locally to the pop of our neighbor
 					if(neighborMetric.get(path.getFirstHop()).get(tuple.reverse()).get(AS.BW_METRIC) > p1bottleneckBW)
 					{
-						p1Tuple = tuple.reverse();
+						p1Tuple = tuple.reverse(); //make the tuple an us to downstream neighbor
 						p1bottleneckBW = neighborMetric.get(path.getFirstHop()).get(tuple.reverse()).get(AS.BW_METRIC);
 					}
 				}
 				else
 				{
-					float bottleneckBW = bwProps != null ? Float.valueOf(bwProps[0]) : 0; //pull wisercost out, if the advert has one
+					float bottleneckBW = bwProps != null ? Float.valueOf(bwProps[0]) : 0; //pull bw out, if the advert has one
 					float normalization = bwProps != null ? Float.valueOf(bwProps[1]) : 1; //pull normalization out, if the advert has one
 					if(((float)bottleneckBW)/(float)normalization > p1bottleneckBW)
 					{
-						p1Tuple = tuple.reverse();
+						p1bottleneckBW = bottleneckBW / normalization; //caught bug, but didn't matter for experiments since each AS has 1 pop possible.
+						p1Tuple = tuple.reverse(); //change the tuple we choose
 					}
 				}
-//				if(path.popCosts.get(tuple) < p1LowestCost){
-//					p1LowestCost = path.popCosts.get(tuple); //cost of intradomain to exiting pop + link cost to that pop
-//					p1Tuple = new AS.PoPTuple(tuple.pop2, tuple.pop1); //reverse it because we find latencies via pop (in us) to pop (in them)
-//				}
+
 			}
 		//	tupleChosen.pop1 = p1Tuple.pop1;// = p1Tuple;
 		//	tupleChosen.pop2 = p1Tuple.pop2;
 			return new PoPTuple(p1Tuple.pop1, p1Tuple.pop2);
 	//		return /*neighborLatency.get(path.getFirstHop()).get(p1Tuple) +*/ p1LowestCost; //latency of poptuple link cost and wisercost
 		}
-	//	return 0;
-//		else
-//		{
-//			/*
-//			String[] wiserProps = getWiserProps(path);
-//			if(wiserProps != null)
-//			{
-//				int wiserCost = Integer.valueOf(wiserProps[0]);
-//				int normalization = Integer.valueOf(wiserProps[1]);
-//				//the passthrough is going to be the same on all interpop links, choose the one with lowest cost
-//				//wiser passthrough.  The true cost is just an addition of lowest cost link
-//			}
-//			********/
-//			
-//			
-//			//choose path with lowest outbound latency, simulates lowest med value; wrong, should be lowest passedthrough
-//			//wiser value
-//			//note: does not take into account bgp true intradomain cost.  doesn't matter now because it's always 0
-//			int trueCostInc = Integer.MAX_VALUE;
-//			PoPTuple p2Tuple = null;
-//			for(PoPTuple tuple : neighborLatency.get(path.getFirstHop()).keySet()){				
-//				if(neighborLatency.get(path.getFirstHop()).get(tuple) < trueCostInc)
-//				{
-//					trueCostInc = neighborLatency.get(path.getFirstHop()).get(tuple);
-//					p2Tuple = tuple;
-//				}
-//			}
-//			tupleChosen.pop1 = p2Tuple.pop1;
-//			tupleChosen.pop2 = p2Tuple.pop2;
-//			return trueCostInc;
-//		}
+
 		return null;
 
 	}
@@ -1459,6 +1412,9 @@ public class Bandwidth_AS extends AS {
 		return table;
 	}
 	
+	/* (non-Javadoc)
+	 * @see simulator.AS#clearBookKeeping()
+	 */
 	public void clearBookKeeping(){
 //		pendingUpdates.clear();
 	//	dstRIBHistMap.clear();
