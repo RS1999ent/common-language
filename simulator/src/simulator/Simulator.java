@@ -30,7 +30,7 @@ import net.sourceforge.argparse4j.inf.Namespace;
 public class Simulator {
 
 	public static final boolean bw = true;
-	public static int NUM_PATH_CAP = 10;
+	public static int NUM_PATH_CAP = 10; //default num path cap for replacement, is changed in main based on cmdline arg.
     private static final int MRAI_TIMER_VALUE = 30000; //30 seconds
     	private static final int TIER1_THRESHOLD = 50;
     //	private static final int TIER1_THRESHOLD = 0;
@@ -836,34 +836,33 @@ public class Simulator {
 	}
 
 	//thread to have AS asynchronosly process events.
-	public static class HandleEventThread implements Runnable
-	{
-		public AS targetAS;
-		public Event e;
-		public boolean running;
-		
-		public HandleEventThread(){
-			running = false;
-		}
-		public HandleEventThread(AS targetAS, Event e)
-		{
-			this.targetAS = targetAS;
-			this.e = e;
-		}
-		@Override
-		public void run() {
-			running = true;
-			System.out.println("threadstart");
-			targetAS.handleEvent(e);
-			running = false;
-			System.out.println("threadend");
-			
-		}
-		
-	};
+//	public static class HandleEventThread implements Runnable
+//	{
+//		public AS targetAS;
+//		public Event e;
+//		public boolean running;
+//		
+//		public HandleEventThread(){
+//			running = false;
+//		}
+//		public HandleEventThread(AS targetAS, Event e)
+//		{
+//			this.targetAS = targetAS;
+//			this.e = e;
+//		}
+//		@Override
+//		public void run() {
+//			running = true;
+//			System.out.println("threadstart");
+//			targetAS.handleEvent(e);
+//			running = false;
+//			System.out.println("threadend");
+//			
+//		}
+//		
+//	};
 	
-	private static int NUMTHREADS = 1; //specify number of threads for the threadpool of run()
-	private static long timeout = 30000;
+	private static long timeout = 30000; //timeout for when to forcible stop running (means likely not converging). this is walltime.
 	
 	/**
 	 * This is the main function which runs the simulation. It picks events out of the queue
@@ -876,21 +875,10 @@ public class Simulator {
 //		HashSet<Short> disconnected = new HashSet<Short>();
 		numUpdateMessages = 0;
 		numWithdrawMessages = 0;
-/*		HandleEventThread[] threadPool = new HandleEventThread[NUMTHREADS]; 
-		for(int i = 0; i < NUMTHREADS; i++)
-		{
-			threadPool[i] =  new HandleEventThread();
-		}*/
 		long currentTime = System.currentTimeMillis();
-		PriorityQueue<Event> eventqueuecopy = eventQueue;
-//		for(AS aAS : asMap.values())
-//		{
-//			if(aAS.bestpathNullCheck())
-//			{
-//				System.out.println("a best path has a null value");
-//			}
-//		}
+		PriorityQueue<Event> eventqueuecopy = eventQueue; //debug copy so I could see into the queue during debug
 		while(true) {
+			//if the simulator taken timout time to run
 			if(System.currentTimeMillis() - currentTime > timeout)
 			{
 				System.out.println("taking longer than: " + timeout/1000 + "stopping this run");
@@ -908,27 +896,9 @@ public class Simulator {
 		
 		//	if(eventQueue.size() % 100 == 0)
 			//	System.out.println("eventqueue size: " + eventQueue.size());
-	//		synchronized(eventQueue){ //get lock on eventQueue
-			//	System.out.println(eventQueue.size());
 			Event e = eventQueue.poll();
-	//		}
 			
 			if( e == null) {
-				// system is in a stable state
-				// however, this might not happen if we have snapshot messages periodically
-				//				System.out.println("Queue Empty!");
-			/*	if(!slept){ //if we get here, try sleeping to allow threads to finish if we haven't already done so.
-					try {
-						Thread.sleep(4000);
-					} catch (InterruptedException e1) {
-						// TODO Auto-generated catch block
-						e1.printStackTrace();
-					}
-					slept = true;
-				}
-				else{ //we slept once and no new thread have been added since, we're done
-					return;
-				}*/
 				return true;
 
 			}
@@ -965,25 +935,8 @@ public class Simulator {
 					System.exit(-1);
 				}
 				
-				//get a thread off the thread pool, continue looping until a thread is not running
-				boolean foundThread = false;
-				HandleEventThread availableThread = null;
-			/*	while(!foundThread)
-				{
-					for(int i = 0; i < NUMTHREADS; i++)
-					{
-						availableThread = threadPool[i];
-						if(!availableThread.running) //found a thread that isn't running
-						{
-							foundThread = true;
-							break; //break
-						}
-						
-					}
-				}*/
-			//	availableThread.e = e;
-			//	availableThread.targetAS = targetAS;
-			//	new Thread(availableThread).start();
+	
+			
 				targetAS.handleEvent(e);
 
 				// system is stable once all updates have been processed
@@ -1085,229 +1038,18 @@ public class Simulator {
 		} // end while
 	} // end function run()
 
-	
+
 	public static String topoFile;
-	/**
-		 * Reads input files to figure out topology. Initializes all the ASes
-		 * @param args
-		 */
-		public static void main(String[] args) throws Exception {
-			/*if( args.length != 5 ) {
-				System.err.println("Usage:\n\t java Simulator <topology-file> <link-failure-file> <single-homed-parents-file> <seed-value> <mode>\n");
-				System.exit(-1);
-			}*/
-			
-			ArgumentParser parser = ArgumentParsers.newArgumentParser("Simulator")
-					.defaultHelp(true)
-					.description("Simulator to simulate integrated advertisements and passthroughs");
-			parser.addArgument("ASRelationships").metavar("ASRel").type(String.class);
-			parser.addArgument("ASTypesFile").metavar("ASTypes").type(String.class);
-			parser.addArgument("--IntraDomainFile").metavar("IntraDomain").type(String.class);
-			parser.addArgument("outFile").metavar("file to output results").type(String.class);
-			parser.addArgument("--failLinksFile").metavar("FailLinks").type(String.class);
-			parser.addArgument("--parentsFile").metavar("ParentsFile").type(String.class);
-			parser.addArgument("--seed").required(true).metavar("seed").type(Long.class);
-			parser.addArgument("--sim").required(true).metavar("sim").type(Integer.class);
-			parser.addArgument("--monitorFrom").required(true).metavar("monitoring").type(Integer.class);
-			parser.addArgument("--useBandwidth").required(true).metavar("useBandwidth").type(Integer.class);
-			parser.addArgument("--forX").required(true).metavar("forX").type(Float.class);
-			parser.addArgument("--metric").required(true).metavar("metric to use").type(Integer.class);
-			parser.addArgument("--maxPaths").metavar("max paths for replacement").type(Integer.class).setDefault(10);
-			Namespace arguments = null;
-			try{
-	//			System.out.println(parser.parseArgs(args));
-				arguments = parser.parseArgs(args);				
-			}
-			catch(ArgumentParserException e){
-				parser.handleError(e);
-				System.exit(1);
-			}
-				
-			
-			NUM_PATH_CAP = arguments.getInt("maxPaths");			
-			System.out.println("numpathcap: " + NUM_PATH_CAP);
-			out = new BufferedWriter(new FileWriter("output.log"));
-			outFile = new BufferedWriter(new FileWriter(arguments.getString("outFile")));
-			seedVal = arguments.getLong("seed");
-			String topologyFile = arguments.getString("ASRelationships");
-			topoFile = topologyFile; 
-			//file for AStypes
-			String typeFile = arguments.getString("ASTypesFile");
-			String intraFile = arguments.getString("IntraDomainFile");
-			String linkFile = arguments.getString("--failLinksFile");
-			String parentsFile = arguments.getString("--parentsFile");
-			int monitorFrom = arguments.getInt("monitorFrom");
-			boolean useBandwidth = (arguments.getInt("useBandwidth") == 1) ? true : false;
-			simMode = arguments.getInt("sim");
-			float xVal = arguments.getFloat("forX");
-			int metric = arguments.getInt("metric");			
-			int primaryType = readTypes(typeFile); //reading types must go before readtopology, otherwise allnodes will be bgp
-			readTopology(topologyFile, useBandwidth);
-			preProcessReplacement();
-		//	readIntraDomain(intraFile);
-			//readLinks(linkFile);
-			//readParents(parentsFile);
-			r = new Random(seedVal);
-			trimASMap(largestConnectedComponent()); //trims the AS map to be one connected component
-			numAses = asMap.size();
-			if(xVal == 0)
-			{
-				monitorFrom = ALL;
-			}
-			switch(simMode) {
-			case 0:
-		//	    runFCPSimulations();
-			    break;
-	
-			case 1:
-		//	    runFCPRandomSimulations();
-			    break;
-	
-			case 2:
-		//	    runNewRegularSimulations();
-			    break;
-	
-			case 3:
-				iaBasicSimulationRichWorld(monitorFrom, useBandwidth, xVal, metric, primaryType);
-			    break;
-	
-			case 4:
-				iaBasicSimulationReplacementNumPaths(monitorFrom, useBandwidth, xVal, metric);
-			    break;
-	
-			case 5:
-			//    runTAASSimulations();
-				iaBasicSimulationTransitsOnlyTrueCost(monitorFrom, useBandwidth, xVal, metric);
-			    break;
-	
-			case 6:
-			//	iaBasicSimulation();
-				iaBasicSimulationTransitsOnlyWiserCost(monitorFrom);
-			    break;
-			  
-			case 7:
-	//			System.out.println("Number of connected components: " + numConnectedComponents() + "\n");
-	//			System.out.println("Number of connected components: " + numConnectedComponents() + "\n");
-			//	iaBasicSimulation();
-				//iaSumSimulation();
-				iaBasicSimulationTransitsOnlySBGP(monitorFrom);
-				break;
-	
-			default:
-			    System.err.println("Invalid simulation mode!");
-			    break;
-			}
-			out.close();
-		}
-
-
-	/**
-		 * Reads input files to figure out topology. Initializes all the ASes
-		 * @param args
-		 *//*
-		public static void main(String[] args) throws Exception {
-			if( args.length != 5 ) {
-				System.err.println("Usage:\n\t java Simulator <topology-file> <link-failure-file> <single-homed-parents-file> <seed-value> <mode>\n");
-				System.exit(-1);
-			}
-			
-			ArgumentParser parser = ArgumentParsers.newArgumentParser("Simulator")
-					.defaultHelp(true)
-					.description("Simulator to simulate integrated advertisements and passthroughs");
-			parser.addArgument("ASRelationships").metavar("ASRel").type(String.class);
-			parser.addArgument("ASTypesFile").metavar("ASTypes").type(String.class);
-			parser.addArgument("--IntraDomainFile").metavar("IntraDomain").type(String.class);
-			parser.addArgument("outFile").metavar("file to output results").type(String.class);
-			parser.addArgument("--failLinksFile").metavar("FailLinks").type(String.class);
-			parser.addArgument("--parentsFile").metavar("ParentsFile").type(String.class);
-			parser.addArgument("--seed").required(true).metavar("seed").type(Long.class);
-			parser.addArgument("--sim").required(true).metavar("sim").type(Integer.class);
-			Namespace arguments = null;
-			try{
-	//			System.out.println(parser.parseArgs(args));
-				arguments = parser.parseArgs(args);				
-			}
-			catch(ArgumentParserException e){
-				parser.handleError(e);
-				System.exit(1);
-			}
-				
-			
-			
-			out = new BufferedWriter(new FileWriter("output.log"));
-			outFile = new BufferedWriter(new FileWriter(arguments.getString("outFile")));
-			seedVal = arguments.getLong("seed");
-			String topologyFile = arguments.getString("ASRelationships");
-			//file for AStypes
-			String typeFile = arguments.getString("ASTypesFile");
-			String intraFile = arguments.getString("IntraDomainFile");
-			String linkFile = arguments.getString("--failLinksFile");
-			String parentsFile = arguments.getString("--parentsFile");
-			simMode = arguments.getInt("sim");
-			readTypes(typeFile); //reading types must go before readtopology, otherwise allnodes will be bgp
-			readTopology(topologyFile);
-		//	readIntraDomain(intraFile);
-			//readLinks(linkFile);
-			//readParents(parentsFile);
-			
-			r = new Random(seedVal);
-			trimASMap(largestConnectedComponent()); //trims the AS map to be one connected component
-			numAses = asMap.size();
-			switch(simMode) {
-			case 0:
-		//	    runFCPSimulations();
-			    break;
-	
-			case 1:
-		//	    runFCPRandomSimulations();
-			    break;
-	
-			case 2:
-		//	    runNewRegularSimulations();
-			    break;
-	
-			case 3:
-				iaBasicSimulationStubsOnly();
-			    break;
-	
-			case 4:
-				verificationSimulation();
-			    break;
-	
-			case 5:
-			//    runTAASSimulations();
-				iaBasicSimulationTransitsOnlyTrueCost();
-			    break;
-	
-			case 6:
-			//	iaBasicSimulation();
-				iaBasicSimulationTransitsOnlyWiserCost();
-			    break;
-			  
-			case 7:
-	//			System.out.println("Number of connected components: " + numConnectedComponents() + "\n");
-	//			System.out.println("Number of connected components: " + numConnectedComponents() + "\n");
-			//	iaBasicSimulation();
-				iaSumSimulation();
-				break;
-	
-			default:
-			    System.err.println("Invalid simulation mode!");
-			    break;
-			}
-			out.close();
-		}*/
-
 	/**
 	 * Reads input files to figure out topology. Initializes all the ASes
 	 * @param args
 	 */
-	/*public static void main(String[] args) throws Exception {
-		if( args.length != 5 ) {
-			System.err.println("Usage:\n\t java Simulator <topology-file> <link-failure-file> <single-homed-parents-file> <seed-value> <mode>\n");
-			System.exit(-1);
-		}
-		
+	public static void main(String[] args) throws Exception {
+		/*if( args.length != 5 ) {
+				System.err.println("Usage:\n\t java Simulator <topology-file> <link-failure-file> <single-homed-parents-file> <seed-value> <mode>\n");
+				System.exit(-1);
+			}*/
+
 		ArgumentParser parser = ArgumentParsers.newArgumentParser("Simulator")
 				.defaultHelp(true)
 				.description("Simulator to simulate integrated advertisements and passthroughs");
@@ -1319,80 +1061,98 @@ public class Simulator {
 		parser.addArgument("--parentsFile").metavar("ParentsFile").type(String.class);
 		parser.addArgument("--seed").required(true).metavar("seed").type(Long.class);
 		parser.addArgument("--sim").required(true).metavar("sim").type(Integer.class);
+		parser.addArgument("--monitorFrom").required(true).metavar("monitoring").type(Integer.class);
+		parser.addArgument("--useBandwidth").required(true).metavar("useBandwidth").type(Integer.class);
+		parser.addArgument("--forX").required(true).metavar("forX").type(Float.class);
+		parser.addArgument("--metric").required(true).metavar("metric to use").type(Integer.class);
+		parser.addArgument("--maxPaths").metavar("max paths for replacement").type(Integer.class).setDefault(10);
 		Namespace arguments = null;
 		try{
-//			System.out.println(parser.parseArgs(args));
+			//			System.out.println(parser.parseArgs(args));
 			arguments = parser.parseArgs(args);				
 		}
 		catch(ArgumentParserException e){
 			parser.handleError(e);
 			System.exit(1);
 		}
-			
-		
-		
+
+
+		NUM_PATH_CAP = arguments.getInt("maxPaths");			
+		System.out.println("numpathcap: " + NUM_PATH_CAP);
 		out = new BufferedWriter(new FileWriter("output.log"));
 		outFile = new BufferedWriter(new FileWriter(arguments.getString("outFile")));
 		seedVal = arguments.getLong("seed");
 		String topologyFile = arguments.getString("ASRelationships");
+		topoFile = topologyFile; 
 		//file for AStypes
 		String typeFile = arguments.getString("ASTypesFile");
 		String intraFile = arguments.getString("IntraDomainFile");
 		String linkFile = arguments.getString("--failLinksFile");
 		String parentsFile = arguments.getString("--parentsFile");
+		int monitorFrom = arguments.getInt("monitorFrom");
+		boolean useBandwidth = (arguments.getInt("useBandwidth") == 1) ? true : false;
 		simMode = arguments.getInt("sim");
-		readTypes(typeFile); //reading types must go before readtopology, otherwise allnodes will be bgp
-		readTopology(topologyFile);
-	//	readIntraDomain(intraFile);
+		float xVal = arguments.getFloat("forX");
+		int metric = arguments.getInt("metric");			
+		int primaryType = readTypes(typeFile); //reading types must go before readtopology, otherwise allnodes will be bgp
+		readTopology(topologyFile, useBandwidth);
+		preProcessReplacement();
+		//	readIntraDomain(intraFile);
 		//readLinks(linkFile);
 		//readParents(parentsFile);
-		
 		r = new Random(seedVal);
 		trimASMap(largestConnectedComponent()); //trims the AS map to be one connected component
 		numAses = asMap.size();
+		if(xVal == 0)
+		{
+			monitorFrom = ALL;
+		}
 		switch(simMode) {
 		case 0:
-	//	    runFCPSimulations();
-		    break;
+			//	    runFCPSimulations();
+			break;
 
 		case 1:
-	//	    runFCPRandomSimulations();
-		    break;
+			//	    runFCPRandomSimulations();
+			break;
 
 		case 2:
-	//	    runNewRegularSimulations();
-		    break;
+			//	    runNewRegularSimulations();
+			break;
 
 		case 3:
-			iaBasicSimulationStubsOnly();
-		    break;
+			iaBasicSimulationAllTests(monitorFrom, useBandwidth, xVal, metric, primaryType);
+			break;
 
 		case 4:
-			verificationSimulation();
-		    break;
+			iaBasicSimulationReplacementNumPaths(monitorFrom, useBandwidth, xVal, metric);
+			break;
 
 		case 5:
-		//    runTAASSimulations();
-			iaBasicSimulationTransitsOnly();
-		    break;
+			//    runTAASSimulations();
+			iaBasicSimulationTransitsOnlyTrueCost(monitorFrom, useBandwidth, xVal, metric);
+			break;
 
 		case 6:
-			iaBasicSimulation();
-		    break;
-		  
+			//	iaBasicSimulation();
+			iaBasicSimulationTransitsOnlyWiserCost(monitorFrom);
+			break;
+
 		case 7:
-//			System.out.println("Number of connected components: " + numConnectedComponents() + "\n");
-//			System.out.println("Number of connected components: " + numConnectedComponents() + "\n");
-		//	iaBasicSimulation();
-			iaSumSimulation();
+			//			System.out.println("Number of connected components: " + numConnectedComponents() + "\n");
+			//			System.out.println("Number of connected components: " + numConnectedComponents() + "\n");
+			//	iaBasicSimulation();
+			//iaSumSimulation();
+			iaBasicSimulationTransitsOnlySBGP(monitorFrom);
 			break;
 
 		default:
-		    System.err.println("Invalid simulation mode!");
-		    break;
+			System.err.println("Invalid simulation mode!");
+			break;
 		}
 		out.close();
-	}*/
+	}
+
 
 	/**
 	 * method that figures via breadthfirst search the number of connected components in the 
@@ -1820,6 +1580,7 @@ public class Simulator {
 	public static void runSimulation(ArrayList<Integer> monitorASes, ArrayList<Integer> announcedASes, int monitorFrom)
 	{
 
+		//fill the monitoring set based on the incoming param monitorfrom
 		switch (monitorFrom)
 		{
 		case PARTICIPATING: 
@@ -1868,13 +1629,14 @@ public class Simulator {
 //		}
 		
 	//	System.out.println("total stubs: " + computeStubs().size());
+		//announce from all stubs
 		for(Integer key : computeStubs())
 		{
 			announcedASes.add(key);
 		}
 		
 		//go through and have all wiser nodes announce themselves, only announce some constant at a time, let the sim go.
-		int batchSize = BATCH_PERCENT;//(int) (asTypeDef.size() * BATCH_PERCENT);
+		int batchSize = BATCH_PERCENT;//(int) (asTypeDef.size() * BATCH_PERCENT); unused now, always 1, very necessary for it to be this way
 		int counter= 0;
 		int globalCounter = 0;
 		for(int i = 0; i < announcedASes.size(); i++)
@@ -1894,6 +1656,8 @@ public class Simulator {
 				{
 					asMap.get(key).clearBookKeeping();
 				}
+				//if it isn't completed, we need to remove the entries form all ASes to make it fair and reset the state of the system to initial (besides the 
+				//rib and fib entries
 				if(!completed)
 				{
 					System.out.println("removing rib and fib entries for : " + announcedAS);
@@ -1904,11 +1668,11 @@ public class Simulator {
 						asMap.get(key).bestPath.remove(announcedAS);
 						test = asMap.get(key).bestPath.get(announcedAS);
 					}
-					HashMap<Integer, AS> clonedASMap = (HashMap<Integer, AS>) asMap.clone();
+					HashMap<Integer, AS> clonedASMap = (HashMap<Integer, AS>) asMap.clone(); //backup asmap to use later
 					asMap.clear();
 					try {
-						readTopology(topoFile, false );
-						preProcessReplacement();
+						readTopology(topoFile, false ); //reset the state
+						preProcessReplacement(); //preprocess paths again
 					} catch (Exception e) {
 						// TODO Auto-generated catch block
 						e.printStackTrace();
@@ -1927,6 +1691,7 @@ public class Simulator {
 		//	}
 		}
 		
+		//check to make sure all ases have a non null best path an AS if it is in their bestpath
 		boolean cleared = true;
 		do {
 			cleared = true;
@@ -1953,31 +1718,31 @@ public class Simulator {
 			}
 		} while(!cleared);
 		
-		System.out.println("HERE");
-		do {
-			cleared = true;
-			for(int announcedAS : announcedASes)
-			{
-				for(int monitorAS: monitorASes)
-				{
-					AS sanityAS = asMap.get(monitorAS);
-					if(sanityAS.bestPath.get(announcedAS) != null){
-						try{
-							sanityAS.bestPath.get(announcedAS).getPath().size();
-						}
-						catch (Exception e)
-						{	
-							sanityAS.bestPath.remove(announcedAS);
-							sanityAS.ribIn.remove(announcedAS);
-							System.out.println("rerunning for: " + monitorAS + " " + announcedAS);
-							asMap.get(announcedAS).announceSelf();
-							run();
-							cleared = false;
-						}
-					}
-				}
-			}
-		} while(!cleared);
+//		System.out.println("HERE");
+//		do {
+//			cleared = true;
+//			for(int announcedAS : announcedASes)
+//			{
+//				for(int monitorAS: monitorASes)
+//				{
+//					AS sanityAS = asMap.get(monitorAS);
+//					if(sanityAS.bestPath.get(announcedAS) != null){
+//						try{
+//							sanityAS.bestPath.get(announcedAS).getPath().size();
+//						}
+//						catch (Exception e)
+//						{	
+//							sanityAS.bestPath.remove(announcedAS);
+//							sanityAS.ribIn.remove(announcedAS);
+//							System.out.println("rerunning for: " + monitorAS + " " + announcedAS);
+//							asMap.get(announcedAS).announceSelf();
+//							run();
+//							cleared = false;
+//						}
+//					}
+//				}
+//			}
+//		} while(!cleared);
 
 		//		System.out.println("Number of announced ASes: " + announcedASes.size());
 		//run for any missing ASes
@@ -2259,7 +2024,7 @@ public class Simulator {
 			return incomingCost;
 		}
 	
-		public static void iaBasicSimulationRichWorld(int monitorFrom, boolean bwTest, float forX, int metric, int primaryType){
+		public static void iaBasicSimulationAllTests(int monitorFrom, boolean bwTest, float forX, int metric, int primaryType){
 			
 			
 			//ases that will be used for observation
@@ -2275,7 +2040,8 @@ public class Simulator {
 			ArrayList<Integer> announcedASes = new ArrayList<Integer>();
 			
 //			runSimulation(monitorASes, announcedASes, monitorFrom);
-			runSimulation(monitorASes, announcedASes, ALL);
+			runSimulation(monitorASes, announcedASes, ALL); //monitor from all as we do some local bookkeeping to keep track of updated.
+			//this is so we can do all experiments at once
 			
 			int incomingCost = 0;
 			float receivedFIBBW = 0;
@@ -2356,15 +2122,6 @@ public class Simulator {
 					{
 						continue;
 					}
-					//what is the lowest cost outgoing link of announced Node
-	//				int lowestCost = Integer.MAX_VALUE;
-		//			for(Integer neighbor: compareAS.neighborLatency.keySet())
-		//			{
-		//				if(compareAS.neighborLatency.get(neighbor) < lowestCost)
-		//				{
-		//					lowestCost = compareAS.neighborLatency.get(neighbor);
-		//				}
-		//			}
 					if(monitoredAS.bestPath.get(announcedAS) != null)
 					{
 						IA bestPath = monitoredAS.bestPath.get(announcedAS);
@@ -2477,15 +2234,14 @@ public class Simulator {
 				}
 			}
 	//		if(!bwTest){
+			//if x is 0, then use the all stat for the 0th adoption point (status quo)
 			if(forX != 0.0){
 				System.out.println("WISER_RIB_GRAPH " + forX + " " + String.valueOf(((float) partRibCostSum)/wiserTotal) + " END");
 				System.out.println("WISER_FIB_GRAPH " + forX + " " + String.valueOf(((float) bestpathTruecost)/wiserTotal) + " END");
-				//		}
-				//		else
-				//		{
+			
 				System.out.println("BW_RIB_GRAPH " + forX + " " + String.valueOf(((float) partRibBwSum)/bwTotal) + " END");
 				System.out.println("BW_FIB_GRAPH " + forX + " " + String.valueOf(((float) bestpathBWSum)/bwTotal) + " END");
-			//		}
+
 			}
 			else{
 				System.out.println("WISER_RIB_GRAPH " + forX + " " + String.valueOf(((float) totalRibCostSum)/total) + " END" );
@@ -2697,895 +2453,6 @@ public class Simulator {
 		
 		System.out.println("Average percentage of secure paths received for transit ASes: " + String.valueOf((float) percentSecure/total));
 	}
-	/**
-	 * runs a basic IA simulation
-	 */
-//	public static void iaBasicSimulation(){
-//		
-//		// the set of ASes whose paths are affected by this failure
-//		HashSet<Integer> relevantASes = new HashSet<Integer>();
-//		HashSet<Integer> validASes = new HashSet<Integer>();
-//		
-//		//ases that will be used for observation
-//		ArrayList<Integer> monitorASes = new ArrayList<Integer>();
-//	//	tier1ASes = computeTier1();
-//
-//	//	 Obtaining tier-1 paths 
-//
-//		// We first announce all the tier-1 ASes and save 
-//		// the paths from each of our failure-provider to the tier1
-//		simTime = 0;
-//		upstreamASes.clear();
-//		r = new Random(seedVal);
-//		ArrayList<Integer> announcedASes = new ArrayList<Integer>();
-//		
-//		//Find AS to use as monitor
-//		//monitorASes.add((Integer) asMap.keySet().toArray()[r.nextInt(asMap.size())]); //doesn't check for overlap with special ASes, fix later
-//		
-//		//go through and have all wiser nodes announce themselves
-//		for( Integer asMapKey : asTypeDef.keySet())
-//		{
-//			
-//			if(asTypeDef.get(asMapKey) == AS.WISER){
-//				asMap.get(asMapKey).announceSelf();
-//				announcedASes.add(asMapKey);
-////				System.out.println("[debug] num neighbors of wiser AS: " + asMap.get(asMapKey).neighborMap.size());
-//			}
-//			
-////			int rVal = r.nextInt() % 1600;
-//	//		if(rVal == 0){
-//	//			asMap.get(asMapKey).announceSelf();
-//	//			announcedASes.add(asMapKey);
-//
-////			}
-//		}
-////		System.out.println("Number of announced ASes: " + announcedASes.size());
-//		instrumented = false;
-//		run();
-//		
-//		int costSum = 0;
-//		int total = asMap.size();
-//		//for all ASes, see how many got the lowest path cost path to the announced ASes.
-//		for(Integer as : asMap.keySet())
-//		{
-//			//for each announced AS, compare their lowest outgoing wiser cost with what was received
-//			AS monitoredAS = asMap.get(as); //the AS we are measuring from, should eventually be all but announced
-//			for(Integer announcedAS : announcedASes)
-//			{
-//				//make sure that the we aren't comparing the AS who announced this to itself
-//				if(as == announcedAS){
-//					continue;
-//				}
-//				AS compareAS = asMap.get(announcedAS); //the AS that announced
-//				//what is the lowest cost outgoing link of announced Node
-//				int lowestCost = Integer.MAX_VALUE;
-//	//			for(Integer neighbor: compareAS.neighborLatency.keySet())
-//	//			{
-//	//				if(compareAS.neighborLatency.get(neighbor) < lowestCost)
-//	//				{
-//	//					lowestCost = compareAS.neighborLatency.get(neighbor);
-//	//				}
-//	//			}
-//				//System.out.println("[DEBUG] lowest cost: " + lowestCost);
-//				// see if monitored AS has that path in the RIB_in, //if it doesn't have a path, that means policy
-//				//disconnection, don't include it in our percentage.
-//				if (monitoredAS.ribIn.get(announcedAS) != null) {
-//					for (IA path : monitoredAS.ribIn.get(announcedAS).values()) {
-//						// all paths should have wiser information in them
-//						byte[] wiserBytes = path.getProtocolPathAttribute(
-//								new Protocol(AS.WISER), path.getPath());
-//						String wiserProps = null;
-//						int wiserCost = 0;
-//						int normalization = 1;
-//						// if ther is wiser props
-//						if (wiserBytes[0] != (byte) 0xFF) {
-//							try {
-//								// fill them into our variables
-//								wiserProps = new String(wiserBytes, "UTF-8");
-//								String[] split = wiserProps.split("\\s+");
-//								wiserCost = Integer.valueOf(split[0]);
-//								normalization = Integer.valueOf(split[1]);
-//							} catch (UnsupportedEncodingException e) {
-//								// TODO Auto-generated catch block
-//								e.printStackTrace();
-//							}
-//						} else {
-//							if(!monitoredAS.neighborMap.containsKey(announcedAS))
-//								System.out.println("[DEBUG] NO WISER PROPS FOR: " + monitoredAS.asn + " "
-//									+ announcedAS);
-//						}
-//						
-//						costSum += path.getTrueCost();
-//						
-//						//debug if statement
-//						if(monitoredAS.neighborMap.containsKey(compareAS.asn))
-//						{							
-//						//	System.out.println("[DEBUG] AS " + monitoredAS.asn + " neighbor of: " + compareAS.asn);
-//							//System.out.println("[DEBUG] received lowest cost: " + wiserProps);
-//							//System.out.println("[DEBUG] rib of AS is : " + monitoredAS.ribIn.toString());
-//						}
-//						
-////						System.out.println("[DEBUG] received lowest cost: " + wiserCost);
-//						//this is used for percent lowest cost
-//			//			if (wiserCost == lowestCost) {
-//							
-//		//					costSum++;
-//		//					break;
-//			//			}
-//
-//					}// endfor
-//					
-//				}
-//				else
-//				{
-//					total--;
-//				}
-//			}
-//		}
-//		
-//		System.out.println("Average cost sum for all ASes: " + String.valueOf((float) costSum/total));
-//		//show forarding tables of monitoring ases
-//	//	for(Integer as: monitorASes){
-//		//	System.out.println(asMap.get(as).showFwdTable());
-//	//	}
-//		
-//		//show forwarding tables of announced ases
-////		for(Integer as : announcedASes)
-//	//	{
-//	///		System.out.println("num upstream ases: " + upstreamASes.get(as).size());
-//	//		System.out.println(asMap.get(as).showFwdTable());
-//	//	}
-//		
-//	//	System.out.println(disconnectedASes.size());
-//	//	for(Integer asMapKey : asMap.keySet())
-//	//	{
-//		//	AS as = asMap.get(asMapKey);
-////			System.out.println(as.showFwdTable());			
-//	//	}
-//		
-//		
-//	/*	for( Integer upstreamASKey : upstreamASes.keySet())
-//		{
-//			int numUpstreamAses = upstreamASes.get(upstreamASKey).size();
-//			if (announcedASes.contains(upstreamASKey) && (numUpstreamAses) != numAses)
-//			{
-//				System.out.println("not fully connect graph for " + upstreamASKey);
-//				System.out.println("num upstream ases: " + numUpstreamAses);
-//				System.out.println("total num of ases: " + numAses);
-//			}
-//			
-//			else if(numUpstreamAses != numAses)
-//			{
-//				System.out.println("not fully connect graph for " + upstreamASKey);
-//				System.out.println("num upstream ases: " + numUpstreamAses);
-//				System.out.println("total num of ases: " + numAses);
-//				
-//			}
-//		}*/
-//		//for(Iterator<Integer>it = tier1ASes.iterator(); it.hasNext();) {
-////			int tier1 = it.next();
-//			//asMap.get(tier1).announceSelf();
-//		//}
-//		
-//	}
-	
-//	public static void iaSumSimulation() {
-//
-//		simTime = 0;
-//		upstreamASes.clear();
-//		r = new Random(seedVal);
-//		ArrayList<Integer> announcedASes = new ArrayList<Integer>();
-//
-//		// Find AS to use as monitor
-//		// monitorASes.add((Integer)
-//		// asMap.keySet().toArray()[r.nextInt(asMap.size())]); //doesn't check
-//		// for overlap with special ASes, fix later
-//
-//		// go through and have all wiser nodes announce themselves
-//		for (Integer asMapKey : asTypeDef.keySet()) {
-//
-//			if (asTypeDef.get(asMapKey) == AS.WISER) {
-//				asMap.get(asMapKey).announceSelf();
-//				announcedASes.add(asMapKey);
-//				// System.out.println("[debug] num neighbors of wiser AS: " +
-//				// asMap.get(asMapKey).neighborMap.size());
-//			}
-//
-//			/*
-//			 * int rVal = r.nextInt() % 1600; if(rVal == 0){
-//			 * asMap.get(asMapKey).announceSelf(); announcedASes.add(asMapKey);
-//			 * 
-//			 * }
-//			 */
-//		}
-//		// System.out.println("Number of announced ASes: " +
-//		// announcedASes.size());
-//		instrumented = false;
-//		run();
-//
-//		// int gotLowestCost = 0;
-//		// int total = asMap.size();
-//		// for all stub ASes, see how many got the lowest path cost path to the
-//		// announced ASes.
-//		for (Integer as : computeStubs()) {
-//			// for each announced AS, compare their lowest outgoing wiser cost
-//			// with what was received
-//			AS monitoredAS = asMap.get(as); // the AS we are measuring from,
-//											// should eventually be all but
-//											// announced
-//			for (Integer announcedAS : announcedASes) {
-//				// make sure that the we aren't comparing the AS who announced
-//				// this to itself
-//				if (as == announcedAS) {
-//					continue;
-//				}
-//				AS compareAS = asMap.get(announcedAS); // the AS that announced
-//
-//				// System.out.println("[DEBUG] lowest cost: " + lowestCost);
-//				// see if monitored AS has that path in the RIB_in, //if it
-//				// doesn't have a path, that means policy
-//				// disconnection, don't include it in our percentage.
-//				if (monitoredAS.ribIn.get(announcedAS) != null) {
-//					int costSum = 0; // hold sum of advertised paths
-//					for (IA path : monitoredAS.ribIn.get(announcedAS).values()) {
-//						// all paths should have wiser information in them
-//						byte[] wiserBytes = path.getProtocolPathAttribute(
-//								new Protocol(AS.WISER), path.getPath());
-//						String wiserProps = null;
-//						int wiserCost = 0;
-//						int normalization = 1;
-//						// if ther is wiser props
-//						if (wiserBytes[0] != (byte) 0xFF) {
-//							try {
-//								// fill them into our variables
-//								wiserProps = new String(wiserBytes, "UTF-8");
-//								String[] split = wiserProps.split("\\s+");
-//								wiserCost = Integer.valueOf(split[0]);
-//								normalization = Integer.valueOf(split[1]);
-//							} catch (UnsupportedEncodingException e) {
-//								// TODO Auto-generated catch block
-//								e.printStackTrace();
-//							}
-//						} else {
-//							System.out.println("[DEBUG] NO WISER PROPS FOR: "
-//									+ announcedAS);
-//						}
-//
-//						costSum += wiserCost / normalization; // add the wiser
-//																// cost received
-//
-//					}// endfor
-//					String resultLine = String.valueOf(monitoredAS.asn) + " "
-//							+ String.valueOf(costSum) + " "
-//							+ monitoredAS.bestPath.get(announcedAS).getPath().size() + "\n";
-//					try {
-//						outFile.write(resultLine);
-//						outFile.flush();
-//					} catch (IOException e) {
-//						// TODO Auto-generated catch block
-//						e.printStackTrace();
-//					}
-//
-//				}
-//			}
-//		}
-//	}
-	
-	public static void runBGPOverheadSimulations() {
-		int numLinks = failureCustomer.size();
-		for (int i = 0; i < numLinks; i++) {
-			int customer = failureCustomer.get(i);
-			int provider = failureProvider.get(i);
-			if (customer != currentCustomer) {
-				currentCustomer = customer;
-				for (Iterator<AS> it = asMap.values().iterator(); it.hasNext();) {
-					it.next().RESET();
-				}
-				simTime = 0;
-				upstreamASes.clear();
-				r = new Random(seedVal);
-				asMap.get(customer).announceSelf();
-				run();
-			} else {
-				// we are continuing with the same customer .. we need to
-				// re-announce the
-				// previously failed link
-				simTime = 0;
-				simulateAnnouncement(customer, customer, currentTarget,
-						(long) 10);
-				run();
-			}
-			// now we have to simulate the withdrawal!
-			simTime = 0;
-			simulateWithdrawal(customer, customer, provider, (long) 10);
-			run();
-
-			System.out.println("Failure: " + customer + " -> " + provider);
-			System.out.println("ASes: " + asMap.size());
-			System.out.println("" + numUpdateMessages + " "
-					+ numWithdrawMessages);
-			System.out.println();
-		}
-
-	}
-
-	public static void runOverheadSimulations() {
-		final int EPOCH_DURATION = 60000 * 2;
-		final int WITHDRAW_TIME = 10000;
-		transitASes = computeTransit();
-		numTransitASes = transitASes.size();
-
-		tier1ASes = computeTier1();
-
-		getDistanceToTier1(transitASes);
-
-		// System.out.println("Num ASes = " + numAses);
-		int numLinks = failureCustomer.size();
-		for (int i = 0; i < numLinks; i++) {
-			int customer = failureCustomer.get(i);
-			int provider = failureProvider.get(i);
-			currentCustomer = customer;
-			for (Iterator<AS> it = asMap.values().iterator(); it.hasNext();) {
-				it.next().RESET();
-			}
-			simTime = 0;
-			r = new Random(seedVal);
-			numBGPEnqueued = 0;
-			numUpdatesEnqueued = 0;
-			numUpdateMessages = numWithdrawMessages = 0;
-			eventQueue.clear();
-			asMap.get(customer).announceSelf();
-			run();
-			int numValidASes = upstreamASes.get(customer).size();
-			activeTriggers.clear();
-			numFloods = 0;
-			floodMap.clear();
-			unfinishedThisEpoch.clear();
-			// now we have to simulate the withdrawal!
-			System.out.println("Failure: " + customer + " -> " + provider);
-			System.out.println("Num Valid = " + numValidASes
-					+ " Num Invalid = " + (numAses - numValidASes)
-					+ " Num Transit = " + numTransitASes);
-			// numFloodsDone = 2;
-			simTime = 0;
-			// the system is in a stable state .. take the snapshot
-			startSnapshot((int) 243, (long) 10);
-			simulateWithdrawal(customer, customer, provider,
-					(long) WITHDRAW_TIME);
-			for (int k = 1; k <= 60000 * 5 / EPOCH_DURATION; k++) {
-				startSnapshot((int) 243, (long) (WITHDRAW_TIME + k
-						* EPOCH_DURATION));
-			}
-			numUpdateMessages = numWithdrawMessages = 0;
-			run();
-			// System.out.println("\nStable at : " + lastSimTime);
-			System.out.println("\nTransit at : " + lastTransitSimTime);
-			System.out.println("" + numUpdateMessages + " "
-					+ numWithdrawMessages);
-			System.out.println();
-		}
-
-	}
-
-
-	public static void runFCPRandomSimulations() {
-		// the set of ASes whose paths are affected by this failure
-		HashSet<Integer> relevantASes = new HashSet<Integer>();
-		HashSet<Integer> validASes = new HashSet<Integer>();
-		tier1ASes = computeTier1();
-
-		/* Obtaining tier-1 paths */
-
-		// We first announce all the tier-1 ASes and save 
-		// the paths from each of our failure-provider to the tier1
-		simTime = 0;
-		upstreamASes.clear();
-		r = new Random(seedVal);
-		for(Iterator<Integer>it = tier1ASes.iterator(); it.hasNext();) {
-			int tier1 = it.next();
-			asMap.get(tier1).announceSelf();
-		}
-		run();
-		// now all nodes know paths to the tier-1 ASes
-		// we are interested in paths from the set of failure providers
-		HashSet<Integer> failureProviderSet = new HashSet<Integer>(failureProvider);
-		HashMap<Integer, HashMap<Integer,IA>> tier1Paths = new HashMap<Integer, HashMap<Integer,IA>>(failureProvider.size());  
-		for(Iterator<Integer>provIt = failureProviderSet.iterator(); provIt.hasNext();) {
-			int fp = provIt.next(); 
-			HashMap<Integer, IA> temp = new HashMap<Integer, IA>(tier1ASes.size());
-			for(Iterator<Integer>tierIt = tier1ASes.iterator(); tierIt.hasNext();) {
-				int t1 = tierIt.next();
-				// p is the path from fp to t1
-				IA p = asMap.get(fp).bestPath.get(t1);
-				temp.put(t1,p);
-			}
-			tier1Paths.put(fp, temp);
-		}
-//		System.err.println("Done with Tier-1 computations");
-		// DONE with TIER-1 PATHS
-
-		int numLinks = failureCustomer.size();
-		for(int i=0; i<numLinks; i++) {
-			int customer = failureCustomer.get(i);
-			int provider = failureProvider.get(i);
-			if(customer != currentCustomer) {
-				currentCustomer = customer;
-				for(Iterator<AS> it = asMap.values().iterator(); it.hasNext();) {
-					it.next().RESET();
-				}
-//				System.out.println("Announced all tier-1");
-				simTime = 0;
-				upstreamASes.clear();
-				r = new Random(seedVal);
-				asMap.get(customer).announceSelf();
-				run();
-//				System.out.println("Announced customer");
-
-			}
-			// now we have to simulate the withdrawal followed by FCP!
-			relevantASes.clear();
-			relevantASes.addAll(upstreamASes.get(provider));
-
-			// we are detouring from the provider to a tier1 node to the destination
-			// for each tier1 node, print path length from prov->tier1 and tier1->cust
-			System.out.println("\nFailure: " + customer + " -> " + provider);
-			System.out.println("Relevant: " + relevantASes.size());
-			System.out.print("Path Length: ");
-			for(Iterator<Integer> it = tier1ASes.iterator(); it.hasNext();) {
-				int t1 = it.next();
-				IA p1 = tier1Paths.get(provider).get(t1);
-				int p1length;
-				if(p1 == null || p1.getPath() == null)
-					p1length = -1;
-				else
-					p1length = p1.getPath().size();
-
-				// now find the shortest path from t1 to dst
-				int p2length = findShortestPath(asMap.get(t1).getAllPaths(customer), provider, customer, t1);
-				System.out.print(t1 + ":" + p1length + ":" + p2length + " ");
-			}
-			System.out.println();
-
-		}
-	}	
-
-	public static void runTAASSimulations() {
-		// the set of ASes whose paths are affected by this failure
-		HashSet<Integer> relevantASes = new HashSet<Integer>();
-		tier1ASes = computeTier1();
-
-		// XXX: Read from file
-		// ArrayList<Short> sourceList = new ArrayList<Short>();
-		// sourceList.add(Short.parseShort("2"));
-
-		// HashSet<Short> failureProviderSet = new HashSet<Short>(sourceList);
-		// HashMap<Short, HashMap<Short,Path>> tier1Paths = new HashMap<Short, HashMap<Short,Path>>(failureProvider.size());  
-		// for(Iterator<Short>provIt = failureProviderSet.iterator(); provIt.hasNext();) {
-		// 	short fp = provIt.next(); 
-		// 	HashMap<Short, Path> temp = new HashMap<Short, Path>(tier1ASes.size());
-		// 	for(Iterator<Short>tierIt = tier1ASes.iterator(); tierIt.hasNext();) {
-		// 		short t1 = tierIt.next();
-		// 		// p is the path from fp to t1
-		// 		// System.out.println("Looking at: " + fp);
-		// 		Path p = asMap.get(fp).bestPath.get(t1);
-		// 		temp.put(t1,p);
-		// 	}
-		// 	tier1Paths.put(fp, temp);
-		// }
-//		System.err.println("Done with Tier-1 computations");
-		// DONE with TIER-1 PATHS
-
-		int numLinks = failureCustomer.size();
-		int numASes;
-		for(int i=0; i<numLinks; i++) {
-			int customer = failureCustomer.get(i);
-			int provider = failureProvider.get(i);
-			currentCustomer = customer;
-			for(Iterator<AS> it = asMap.values().iterator(); it.hasNext();) {
-			    it.next().RESET();
-			}
-
-			// We first announce all the tier-1 ASes
-			simTime = 0;
-			upstreamASes.clear();
-			r = new Random(seedVal);
-			for(Iterator<Integer>it = tier1ASes.iterator(); it.hasNext();) {
-			    int tier1 = it.next();
-			    asMap.get(tier1).announceSelf();
-			}
-			instrumented = false;
-			run();
-			// now all nodes know paths to the tier-1 ASes
-			// Now announce the failure customer
-
-			simTime = 0;
-			upstreamASes.clear();
-			r = new Random(seedVal);
-			asMap.get(customer).announceSelf();
-			run();
-			numASes = upstreamASes.get(customer).size();
-
-			// now we have to simulate the withdrawal!
-			simTime = 0;
-			totalDownTime.clear();
-			prevDisconTime.clear();
-			disconnectedASes.clear();
-			affectedASes.clear();
-			loopAffectedASes.clear();
-			allLoopAffectedASes.clear();
-			loopMarkerAS.clear();
-			loopStart = -1;
-			loopResolved = -1;
-			asLoopMap.clear();
-			loopTimeMap.clear();
-			longestLoop = 0;
-
-			// System.out.println("TaaS NO WITHDRAWAL\n");
-			simulateWithdrawal(customer,customer,provider,(long)10);
-			// the instrumented version keeps track of availability/connectedness after each message
-			// is processed
-			instrumented = true;
-			run(); //Instrumented();
-
-			HashSet<Integer> finallyConnectedASes = upstreamASes.get(customer);
-
-			HashSet<Integer> permDisconnectedASes = new HashSet<Integer>(asMap.keySet());
-			permDisconnectedASes.removeAll(finallyConnectedASes);
-
-			HashSet<Integer> loopOrDisconnectedASes = new HashSet<Integer>();
-			loopOrDisconnectedASes.addAll(loopAffectedASes);
-			loopOrDisconnectedASes.addAll(disconnectedASes);
-
-			// now we have to simulate the withdrawal followed by FCP!
-			// relevantASes.clear();
-			// relevantASes.addAll(upstreamASes.get(provider));
-
-			// we are detouring from the provider to a tier1 node to the destination
-			// for each tier1 node, print path length from prov->tier1 and tier1->cust
-			System.out.println("\nFailure: " + customer + " -> " + provider);
-			// System.out.println("Number of Disconnected ASes = " + disconnectedASes.size() + " : " + disconnectedASes);
-			System.out.println("Number of Disconnected ASes = " + disconnectedASes.size());
-			disconnectedASes.removeAll(permDisconnectedASes);
-			// System.out.println("Number of Temp Disconnected ASes = " + disconnectedASes.size() + ", " + disconnectedASes);
-			System.out.println("Number of Temp Disconnected ASes = " + disconnectedASes.size());
-			// System.out.println("Relevant: " + relevantASes.size());
-			totalLoopDuration = loopResolved - loopStart;
-			System.out.println("Longest Loop Duration = " + longestLoop);
-			// System.out.println("Loop affected ASes (long duration loops)= " + loopAffectedASes.size() + ", " + loopAffectedASes);
-			System.out.println("Loop affected ASes (long duration loops)= " + loopAffectedASes.size());
-			// System.out.println("Loop Or Disconnected ASes = " + loopOrDisconnectedASes.size() + " : " + loopOrDisconnectedASes);
-			System.out.println("Loop Or Disconnected ASes = " + loopOrDisconnectedASes.size());
-			System.out.println("Loop affected ASes (all loops)" + allLoopAffectedASes.size());
-			System.out.println("Num connected domains = " + (upstreamASes.get(customer).size()-1));
-			System.out.println("Num valid ASes = " + numASes);
-
-			System.out.println("Convergence time = " + lastSimTime);
-
-			HashMap<Integer, HashMap<Integer,IA>> tier1Paths = new HashMap<Integer, HashMap<Integer,IA>>();
-			for(Iterator<Integer>provIt = loopOrDisconnectedASes.iterator(); provIt.hasNext();) {
-			// for(Iterator<Short>provIt = failureProviderSet.iterator(); provIt.hasNext();) {
-			    int fp = provIt.next(); 
-
-			    // Compute path lengths from source -> t1 and from t1 -> dest
-			    System.out.print("Tier1 detour from AS " + fp + " : ");
-			    for(Iterator<Integer> it = tier1ASes.iterator(); it.hasNext();) {
-				int t1 = it.next();
-
-				if(!tier1Paths.containsKey(fp) || !tier1Paths.get(fp).containsKey(t1)) {
-				    // Cache path from this AS to Tier 1
-				    // p is the path from fp to t1
-				    IA p = asMap.get(fp).bestPath.get(t1);
-				    if(!tier1Paths.containsKey(fp)) {
-					tier1Paths.put(fp, new HashMap<Integer, IA>());
-				    }
-				    tier1Paths.get(fp).put(t1, p);
-				}
-				IA p1 = tier1Paths.get(fp).get(t1);
-				int p1length;
-				if(fp == t1)
-				    p1length = 0;
-				else if(p1 == null || p1.getPath() == null)
-				    p1length = -1;
-				else
-				    p1length = p1.getPath().size();
-
-				// now find the shortest path from t1 to dst
-				int p2length = findShortestPath(asMap.get(t1).getAllPaths(customer), provider, customer, t1);
-
-				// Was this particular Tier 1 also affected by the outage?
-				String disc = disconnectedASes.contains(t1) ? "T" : "N";
-				if(permDisconnectedASes.contains(t1)) {
-				    disc = "P";
-				}
-
-				System.out.print(t1 + ":" + disc + ":" + p1length + ":" + p2length + " ");
-			    }
-			    System.out.println();
-			}
-
-		}
-	}	
-
-	public static void runTAASASSimulations() {
-		// the set of ASes whose paths are affected by this failure
-		HashSet<Integer> relevantASes = new HashSet<Integer>();
-		tier1ASes = computeTier1();
-
-		// XXX: Read from file
-		// ArrayList<Short> sourceList = new ArrayList<Short>();
-		// sourceList.add(Short.parseShort("2"));
-
-		// HashSet<Short> failureProviderSet = new HashSet<Short>(sourceList);
-		// HashMap<Short, HashMap<Short,Path>> tier1Paths = new HashMap<Short, HashMap<Short,Path>>(failureProvider.size());  
-		// for(Iterator<Short>provIt = failureProviderSet.iterator(); provIt.hasNext();) {
-		// 	short fp = provIt.next(); 
-		// 	HashMap<Short, Path> temp = new HashMap<Short, Path>(tier1ASes.size());
-		// 	for(Iterator<Short>tierIt = tier1ASes.iterator(); tierIt.hasNext();) {
-		// 		short t1 = tierIt.next();
-		// 		// p is the path from fp to t1
-		// 		// System.out.println("Looking at: " + fp);
-		// 		Path p = asMap.get(fp).bestPath.get(t1);
-		// 		temp.put(t1,p);
-		// 	}
-		// 	tier1Paths.put(fp, temp);
-		// }
-//		System.err.println("Done with Tier-1 computations");
-		// DONE with TIER-1 PATHS
-
-		int numLinks = failureCustomer.size();
-		int numASes;
-		for(int i=0; i<numLinks; i++) {
-			int customer = failureCustomer.get(i);
-			int provider = failureProvider.get(i);
-			currentCustomer = customer;
-			for(Iterator<AS> it = asMap.values().iterator(); it.hasNext();) {
-			    it.next().RESET();
-			}
-
-			// We first announce all the tier-1 ASes
-			simTime = 0;
-			upstreamASes.clear();
-			r = new Random(seedVal);
-			for(Iterator<Integer>it = tier1ASes.iterator(); it.hasNext();) {
-			    int tier1 = it.next();
-			    asMap.get(tier1).announceSelf();
-			}
-			instrumented = false;
-			run();
-			// now all nodes know paths to the tier-1 ASes
-			// Now announce the failure customer
-
-			simTime = 0;
-			upstreamASes.clear();
-			r = new Random(seedVal);
-			asMap.get(customer).announceSelf();
-			run();
-			numASes = upstreamASes.get(customer).size();
-
-			// now we have to simulate the withdrawal!
-			simTime = 0;
-			totalDownTime.clear();
-			prevDisconTime.clear();
-			disconnectedASes.clear();
-			affectedASes.clear();
-			loopAffectedASes.clear();
-			allLoopAffectedASes.clear();
-			loopMarkerAS.clear();
-			loopStart = -1;
-			loopResolved = -1;
-			asLoopMap.clear();
-			loopTimeMap.clear();
-			longestLoop = 0;
-
-			// System.out.println("TaaS NO WITHDRAWAL\n");
-			simulateWithdrawal(customer,customer,provider,(long)10);
-			// the instrumented version keeps track of availability/connectedness after each message
-			// is processed
-			instrumented = true;
-			run(); //Instrumented();
-
-			HashSet<Integer> finallyConnectedASes = upstreamASes.get(customer);
-
-			HashSet<Integer> permDisconnectedASes = new HashSet<Integer>(asMap.keySet());
-			permDisconnectedASes.removeAll(finallyConnectedASes);
-
-			HashSet<Integer> loopOrDisconnectedASes = new HashSet<Integer>();
-			loopOrDisconnectedASes.addAll(loopAffectedASes);
-			loopOrDisconnectedASes.addAll(disconnectedASes);
-
-			// now we have to simulate the withdrawal followed by FCP!
-			// relevantASes.clear();
-			// relevantASes.addAll(upstreamASes.get(provider));
-
-			// we are detouring from the provider to a tier1 node to the destination
-			// for each tier1 node, print path length from prov->tier1 and tier1->cust
-			System.out.println("\nFailure: " + customer + " -> " + provider);
-			// System.out.println("Number of Disconnected ASes = " + disconnectedASes.size() + " : " + disconnectedASes);
-			System.out.println("Number of Disconnected ASes = " + disconnectedASes.size());
-			disconnectedASes.removeAll(permDisconnectedASes);
-			// System.out.println("Number of Temp Disconnected ASes = " + disconnectedASes.size() + ", " + disconnectedASes);
-			System.out.println("Number of Temp Disconnected ASes = " + disconnectedASes.size());
-			// System.out.println("Relevant: " + relevantASes.size());
-			totalLoopDuration = loopResolved - loopStart;
-			System.out.println("Longest Loop Duration = " + longestLoop);
-			// System.out.println("Loop affected ASes (long duration loops)= " + loopAffectedASes.size() + ", " + loopAffectedASes);
-			System.out.println("Loop affected ASes (long duration loops)= " + loopAffectedASes.size());
-			// System.out.println("Loop Or Disconnected ASes = " + loopOrDisconnectedASes.size() + " : " + loopOrDisconnectedASes);
-			System.out.println("Loop Or Disconnected ASes = " + loopOrDisconnectedASes.size());
-			System.out.println("Loop affected ASes (all loops)" + allLoopAffectedASes.size());
-			System.out.println("Num connected domains = " + (upstreamASes.get(customer).size()-1));
-			System.out.println("Num valid ASes = " + numASes);
-
-			System.out.println("Convergence time = " + lastSimTime);
-
-			HashMap<Integer, HashMap<Integer,IA>> tier1Paths = new HashMap<Integer, HashMap<Integer,IA>>();
-			for(Iterator<Integer>provIt = loopOrDisconnectedASes.iterator(); provIt.hasNext();) {
-			// for(Iterator<Short>provIt = failureProviderSet.iterator(); provIt.hasNext();) {
-			    int fp = provIt.next(); 
-
-			    // Compute path lengths from source -> t1 and from t1 -> dest
-			    System.out.print("Tier1 detour from AS " + fp + " : ");
-			    for(Iterator<Integer> it = tier1ASes.iterator(); it.hasNext();) {
-				int t1 = it.next();
-
-				if(!tier1Paths.containsKey(fp) || !tier1Paths.get(fp).containsKey(t1)) {
-				    // Cache path from this AS to Tier 1
-				    // p is the path from fp to t1
-				    IA p = asMap.get(fp).bestPath.get(t1);
-				    if(!tier1Paths.containsKey(fp)) {
-					tier1Paths.put(fp, new HashMap<Integer, IA>());
-				    }
-				    tier1Paths.get(fp).put(t1, p);
-				}
-				IA p1 = tier1Paths.get(fp).get(t1);
-				int p1length;
-				if(fp == t1)
-				    p1length = 0;
-				else if(p1 == null || p1.getPath() == null)
-				    p1length = -1;
-				else
-				    p1length = p1.getPath().size();
-
-				// now find the shortest path from t1 to dst
-				int p2length = findShortestPath(asMap.get(t1).getAllPaths(customer), provider, customer, t1);
-
-				// Was this particular Tier 1 also affected by the outage?
-				String disc = disconnectedASes.contains(t1) ? "T" : "N";
-				if(permDisconnectedASes.contains(t1)) {
-				    disc = "P";
-				}
-
-				System.out.print(t1 + ":" + disc + ":" + p1length + ":" + p2length + " ");
-			    }
-			    System.out.println();
-			}
-
-		}
-	}	
-
-	public static void runFCPSimulations() {
-		// the set of ASes whose paths are affected by this failure
-		HashSet<Integer> relevantASes = new HashSet<Integer>();
-		HashSet<Integer> seenASes = new HashSet<Integer>();
-		HashSet<Integer> noPathASes = new HashSet<Integer>();
-
-		// this is used to store the number of ASes for each path inflation (+1, +2, etc)
-		HashMap<Integer,Integer> inflationMap = new HashMap<Integer,Integer>();
-		HashMap<Integer,Integer> backtrackMap = new HashMap<Integer,Integer>();
-
-		int numLinks = failureCustomer.size();
-		int numASes;
-		for(int i=0; i<numLinks; i++) {
-			int customer = failureCustomer.get(i);
-			int provider = failureProvider.get(i);
-			if(customer != currentCustomer) {
-				currentCustomer = customer;
-				for(Iterator<AS> it = asMap.values().iterator(); it.hasNext();) {
-					it.next().RESET();
-				}
-				simTime = 0;
-				upstreamASes.clear();
-				r = new Random(seedVal);
-//				System.out.println("Customer = " + customer);
-				asMap.get(customer).announceSelf();
-				run();
-			}
-//			checkForRoutingProblems(customer);
-			// now we have to simulate the withdrawal followed by FCP!
-			relevantASes.clear();
-			seenASes.clear();
-			noPathASes.clear();
-			inflationMap.clear();
-			backtrackMap.clear();
-
-			relevantASes.addAll(upstreamASes.get(provider));
-//			System.out.println("Upstream of provider = " + relevantASes);
-			// first check if the provider has an alternate path .. if so everyone will use that!
-			Collection<IA> allPaths = asMap.get(provider).getAllPaths(customer);
-			// any path that doesn't traverse the customer-provider link is valid
-			// pick the shortest among the valid paths.
-			int pathLength = findShortestPath(allPaths, provider, customer, provider);
-			if(pathLength != -1) { // alternate path to destination exists
-				System.out.println("\nFailure: " + customer + " -> " + provider);
-				System.out.println("Relevant: " + relevantASes.size());
-				System.out.println("Disconnected: 0");
-				System.out.println("Inflation: " + (pathLength-1) + ":" + relevantASes.size());
-				System.out.println("Backtrack: 0:" + relevantASes.size());
-				continue;
-			}
-			noPathASes.add(provider);
-
-			for(Iterator<Integer> it = relevantASes.iterator(); it.hasNext(); ) {
-				int as = it.next();
-				if(seenASes.contains(as) || noPathASes.contains(as)) // already accounted for this
-					continue;
-				IA p = asMap.get(as).bestPath.get(customer);
-//				System.out.println(p.path);
-				// we know that p is a path which has the last link as provider-customer
-				for(int j=p.getPath().size()-2; j>=-1; j--) {
-					int current = as;
-					if(j>=0)
-						current = p.getPath().get(j);
-					if(noPathASes.contains(current) || seenASes.contains(current)) {
-						continue;
-					}
-
-					allPaths = asMap.get(current).getAllPaths(customer);
-					pathLength = findShortestPath(allPaths, provider, customer, current);
-					if(pathLength == -1) {
-						// no path from current
-						noPathASes.add(current);
-						continue;
-					}
-					else {
-						// alternate path found! inflation = pathLength -1 + (size-2)-j
-						int backtrack = (p.getPath().size()-2) - j;
-						int inflation = pathLength-1 + backtrack;
-						int value = 0;
-						if(inflationMap.containsKey(inflation))
-							value = inflationMap.get(inflation);
-						value += upstreamASes.get(current).size();
-						inflationMap.put(inflation, value);
-
-						seenASes.addAll(upstreamASes.get(current));
-
-						value = 0;
-						if(backtrackMap.containsKey(backtrack))
-							value = backtrackMap.get(backtrack);
-						value += upstreamASes.get(current).size();
-						backtrackMap.put(backtrack, value);
-
-						break;
-					}
-				}
-				// walk along the path from this AS to the destination
-			}
-
-			// for FCP-backtrack1: if(provider) knows alternate path (best path from neighbor), then
-			// #unsuccessful = 0 : inflation = length(P,D)-1 for all upstream nodes
-			numASes = upstreamASes.get(customer).size();
-			// the only ASes that would use this failed link are the ones that
-			// use the 'upstream' node
-			System.out.println("\nFailure: " + customer + " -> " + provider);
-			System.out.println("Relevant: " + relevantASes.size());
-			System.out.println("Disconnected: " + noPathASes.size());
-			System.out.print("Inflation: " ); //+ (pathLength-1) + " " + relevantASes.size());
-			for(Iterator<Integer> it = inflationMap.keySet().iterator(); it.hasNext();) {
-				int key = it.next();
-				System.out.print(key + ":" + inflationMap.get(key) + " ");
-			}
-			System.out.println();
-
-			System.out.print("Backtrack: " ); //+ (pathLength-1) + " " + relevantASes.size());
-			for(Iterator<Integer> it = backtrackMap.keySet().iterator(); it.hasNext();) {
-				int key = it.next();
-				System.out.print(key + ":" + backtrackMap.get(key) + " ");
-			}
-			System.out.println();
-
-		}
-	}
-
 	/**
 	 * This function returns the path length of the shortest path to the destination that doesn't go
 	 * through the link upstream-downstream.
