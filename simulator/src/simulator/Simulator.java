@@ -1101,7 +1101,7 @@ public class Simulator {
 		//readLinks(linkFile);
 		//readParents(parentsFile);
 		r = new Random(seedVal);
-		trimASMap(largestConnectedComponent()); //trims the AS map to be one connected component
+	//	trimASMap(largestConnectedComponent()); //trims the AS map to be one connected component
 		numAses = asMap.size();
 		if(xVal == 0)
 		{
