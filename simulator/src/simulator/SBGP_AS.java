@@ -21,7 +21,8 @@ public class SBGP_AS extends AS {
 	
 	private static final int LINK_DELAY = 100; // static link delay of 10 ms
 
-
+	/** The BGP_AS number of this BGP_AS */
+	//public int asn;
 
 	/** The current epoch */
 	private int currentEpoch;
@@ -31,6 +32,19 @@ public class SBGP_AS extends AS {
 
 	/** The MRAI timer value */
 	int mraiValue;
+
+	/** Mapping of neighbor to relationship */
+//	HashMap<Integer, Integer> neighborMap = new HashMap<Integer, Integer>();
+
+	// we also need to store all the paths received from neighbors for each
+	// destination. this would be our rib-in. the rib-in is implemented as
+	// a pair of nested hash tables: hashed on <prefix, neighbor>
+//	HashMap<Integer, HashMap<Integer,IA>> ribIn = new HashMap<Integer, HashMap<Integer, IA>>();
+
+	/** Stores the current best path to each prefix 
+	 *	This is almost equivalent to the forwarding table :) 
+	 */
+	//HashMap<Integer,IA> bestPath = new HashMap<Integer, IA>();
 
 	/** Old/current Stable Forwarding Table */
 	HashMap<Integer,IA> SFT = new HashMap<Integer, IA>();
@@ -86,9 +100,9 @@ public class SBGP_AS extends AS {
 	HashSet<UpdateDependency> floodsConditional = new HashSet<UpdateDependency>();
 
 	/**
-	 * The constructor for an SBGP_AS
+	 * The constructor for an BGP_AS
 	 * 
-	 * @param asnum The SBGP_AS number of this SBGP_AS
+	 * @param asnum The BGP_AS number of this BGP_AS
 	 */
 	public SBGP_AS(int asnum, int mrai) {
 		asn = asnum;
@@ -137,7 +151,7 @@ public class SBGP_AS extends AS {
 
 	
 	/**
-	 * This function is used to reset the state of the SBGP_AS
+	 * This function is used to reset the state of the BGP_AS
 	 *
 	 */
 	public void RESET() {
@@ -166,7 +180,7 @@ public class SBGP_AS extends AS {
 	}
 	
 	/**
-	 * This function is called when an SBGP_AS is brought up, to announce its prefix to
+	 * This function is called when an BGP_AS is brought up, to announce its prefix to
 	 * all its neighbors.
 	 *
 	 */
@@ -177,7 +191,7 @@ public class SBGP_AS extends AS {
 	}
 
 	/**
-	 * Adds a path to the RIB-In of this SBGP_AS
+	 * Adds a path to the RIB-In of this BGP_AS
 	 * @param p The path to be added
 	 */
 	public void addPathToRib(IA p) {
@@ -214,7 +228,7 @@ public class SBGP_AS extends AS {
 		IAInfo infoChosen = null;
 		if(tupleChosen != null){
 			infoChosen = advert.popCosts.get(tupleChosen.reverse()); //get the info that we chose because we are going to clear the costs
-			for(AS.PoPTuple poptuple : neighborMetric.get(advertisedToAS).keySet())
+			for(AS.PoPTuple poptuple : neighborLatency.get(advertisedToAS).keySet())
 			{
 				int intraDomainCost = getIntraDomainCost(tupleChosen.pop1, poptuple.pop1, advertisedToAS);
 				advert.truePoPCosts.put(poptuple, intraDomainCost);
@@ -224,7 +238,7 @@ public class SBGP_AS extends AS {
 		advert.popCosts.clear();
 		//initialize our pop to pop advertisement info.  That is, initialize a blank IA info for each place we're advertising to
 		//a little hackish using neighborlatency to get this, but it works
-		for(AS.PoPTuple popTuple : neighborMetric.get(advertisedToAS).keySet())
+		for(AS.PoPTuple popTuple : neighborLatency.get(advertisedToAS).keySet())
 		{
 			advert.popCosts.put(popTuple, new IAInfo());
 		}
@@ -244,7 +258,7 @@ public class SBGP_AS extends AS {
 //		}
 //		else
 //		{
-//			System.out.println("SBGP_AS, can't update costs");
+//			System.out.println("bgp_as, can't update costs");
 //		}
 //	}
 	
@@ -279,14 +293,71 @@ public class SBGP_AS extends AS {
 			nhType = neighborMap.get(nh);
 			
 			tupleChosen = tupleChosen(p);
-
+			//choose a tuple based on lowest MED
+//			long lowestMED = Long.MAX_VALUE;			
+//			long trueCostInc = 0;
+//			for(PoPTuple tuple : neighborLatency.get(nh).keySet()){
+//				int latency = neighborLatency.get(nh).get(tuple);
+//				if(latency < lowestMED)
+//				{
+//		//			trueCostInc = latency;
+//					tupleChosen = tuple;
+//				}
+//			}
+			//put the wiser information that would have been there if we weren't hacking a solution here
+			//this is only if our neighbor is a wiser node, simulates the advertisemetns received from multiple pops
+			//COMPUTES WHAT THE POINT OF PRESENCE THAT WE CHOOSE WOULD HAVE ADVETISED. hackish, i know.
 			if(p.popCosts.size() > 0)
 			{
 	//			updateBookKeeping(p, tupleChosen); //update the bookkeeping on p, (getfirsthop is used in method so we use p instead of newpath)
-				//do outward bookkeeping now.
+//				int wisercost = 9999; //debug, shows something is wrong if this shows up
+//				int normalization = 1;
+//				//reversed because we chose a tuple from us to them, in the advertisement the tuple
+//				//will be in form from them to us.
+//				PoPTuple advertisementTuple = new PoPTuple(tupleChosen.pop2, tupleChosen.pop1);
+//				wisercost = p.popCosts.get(advertisementTuple); //this is also the true cost (intradomain of wisernode)
+//				trueCostInc += wisercost;
+//				if(p.popCosts.get(advertisementTuple) == null) 
+//				{
+//	//				System.out.println("there is no point of presence from them to us in advertisement, shouldn't happen");
+//				}
+//				if(wisercost == 9999){
+//					System.out.println("bgp_as wisercost 9999");
+//				}
+//				
+//				String[] wiserProps = getWiserProps(p);
+//				if(wiserProps != null){
+//					wisercost += Integer.valueOf(wiserProps[0]); //add the wiser props
+//				}
+//				//would compute normalization here
+//				String pathAttribute = String.valueOf(wisercost) + " " + String.valueOf(normalization);
+//				try {
+//					newPath.setProtocolPathAttribute(pathAttribute.getBytes("UTF-8"), new Protocol(AS.WISER), newPath.getPath());
+//				} catch (UnsupportedEncodingException e) {
+//					// TODO Auto-generated catch block
+//					e.printStackTrace();
+//				}
+//				
+//				//clear the popcosts from newpath, this is a bgp node
+	//			newPath.popCosts.clear();
 			}
 			else{
-				System.out.println("SBGP_AS, AS advertising?: " + asn);
+				System.out.println("bgp_as, AS advertising?: " + asn);
+//				//grab the intradomian true cost based on the tuple we chose, add it to true cost
+//				//pops reversed because they created advert with inforamtion from them to us, so we
+//				//convert our us to them poptuple to them to us
+//				PoPTuple advertisementTuple = new PoPTuple(tupleChosen.pop2, tupleChosen.pop1);
+//				if(p.truePoPCosts.get(advertisementTuple) == null)
+//				{
+////					System.out.println("bgp_as, no point of presence from them to us, shouldn't happen from non announcing");
+//				}
+//				else{
+//					//		System.out.println("HERE");
+//		//			System.out.println("tpopcosts: " + p.truePoPCosts.get(advertisementTuple));
+//					trueCostInc += p.truePoPCosts.get(advertisementTuple);
+//				}
+//				trueCostInc += neighborLatency.get(nh).get(tupleChosen); //add the latency link to true cost
+//				//		System.out.println("true cost inc: " + trueCostInc);
 			}
 			newPath.truePoPCosts.clear();
 			newPath.setTrueCost(p.getTrueCost());
@@ -466,7 +537,7 @@ public class SBGP_AS extends AS {
 
 	/**
 	 * This function is called when a control message is received. It instructs
-	 * the SBGP_AS to send out an update or a withdrawal for some destination to a
+	 * the BGP_AS to send out an update or a withdrawal for some destination to a
 	 * particular peer.
 	 * 
 	 * these are broken, passthrough information nnot pasthed through, we don't use that for our experiments it doesn't matter
@@ -511,7 +582,7 @@ public class SBGP_AS extends AS {
 	/**
 	 * This function is called when a flood packet is received. A flood
 	 * packet contains the incomplete update information for a particular
-	 * SBGP_AS. We add the information to our set, and forward the packet to
+	 * BGP_AS. We add the information to our set, and forward the packet to
 	 * all the neighbors except the one I received it from.
 	 * 
 	 * We also need to keep track of the flood history so that we don't
@@ -584,7 +655,7 @@ public class SBGP_AS extends AS {
 			}
 			// send out the flood message ... 
 //			processFloodMsg(new FloodMessage(asn, inTransit, condIncomplete));
-			Simulator.debug("SBGP_AS" + asn + ": nonFinished = " + nonFinishedUpdates );
+			Simulator.debug("BGP_AS" + asn + ": nonFinished = " + nonFinishedUpdates );
 			Simulator.recordFlood(asn, new FloodMessage(asn, inTransit, condIncomplete), nonFinishedUpdates);
 //			HashMap<Short,ArrayList<RootCause>> updateSequence = new HashMap<Short,ArrayList<RootCause>>();
 //			for(Iterator<RIBHist> it = dstRIBHistMap.values().iterator(); it.hasNext(); ) {
@@ -720,7 +791,7 @@ public class SBGP_AS extends AS {
 			// since we are recording this peer, all updates are considered incomplete
 			// maybe we can optimize and consider only those updates which aren't loops :)
 			updatesInTransit.add(m.asPath.getRootCause());
-//			Simulator.debug("SBGP_AS" + asn + ": Recorded in transit " + m.asPath.rc);
+//			Simulator.debug("BGP_AS" + asn + ": Recorded in transit " + m.asPath.rc);
 		}
 		
 		IA bp = bestPath.get(dst);
@@ -736,13 +807,13 @@ public class SBGP_AS extends AS {
 		// Add the update to the sequence of unfinished updates for this dest
 		dstRIBHistMap.get(dst).addToSequence(p.getRootCause());
 		nonFinishedUpdates.add(p.getRootCause());
-		// Simulator.debug("SBGP_AS" + asn + ": Adding to non-finished " + p.rc);
+		// Simulator.debug("BGP_AS" + asn + ": Adding to non-finished " + p.rc);
 
 		// check if the path is better than the current best path
 		if( bp==null || isBetter(p, bp, true) ) {
 			// we need to install this as our best path and send an update
 			// to all our peers
-		    Simulator.debug("SBGP_AS" + asn + ": Added best path to dst BGP_AS" + dst + ": " + p.getPath());
+		    Simulator.debug("BGP_AS" + asn + ": Added best path to dst BGP_AS" + dst + ": " + p.getPath());
 			bestPath.put(dst, p);
 //			p = passThrough.attachPassthrough(p); //[COMMENT] added
 			addPathToUpdates(p, Simulator.otherTimers);
@@ -767,13 +838,13 @@ public class SBGP_AS extends AS {
 			}
 			bestPath.put(dst, newBestPath);
 			Simulator.changedPath(asn, dst, bp, newBestPath);
-			Simulator.debug("SBGP_AS" + asn + ": new Path = " + newBestPath.getPath());
+			Simulator.debug("BGP_AS" + asn + ": new Path = " + newBestPath.getPath());
 			
 			// if newBestPath is completed earlier, then re-root the update
 			if(!nonFinishedUpdates.contains(newBestPath.getRootCause())) {
 				RootCause newRC = new RootCause(asn, currentUpdate++, dst);
 				nonFinishedUpdates.add(newRC);
-				// Simulator.debug("SBGP_AS" + asn + ": Adding to non-finished " + newRC);
+				// Simulator.debug("BGP_AS" + asn + ": Adding to non-finished " + newRC);
 				newBestPath.setRootCause(newRC);
 			}
 			RIBHist temp = dstRIBHistMap.get(dst);
@@ -862,7 +933,7 @@ public class SBGP_AS extends AS {
 			return;
 		}
 
-		// System.out.println("SBGP_AS" + asn + " might need to send: " + newPath.path);
+		// System.out.println("BGP_AS" + asn + " might need to send: " + newPath.path);
 
 		int oldType = neighborMap.get(oldPath.getFirstHop());
 		int newType = neighborMap.get(newPath.getFirstHop());
@@ -1022,19 +1093,19 @@ public class SBGP_AS extends AS {
 			return true;
 		if(p1 == null || p1.getPath() == null)
 			return false;
-//		if(p1.secure) //not conducive to policy routing, moving below
-//		{
-//			if(!p2.secure){
-//				return true;
-//			}
-//		}
-//		if(p2.secure)
-//		{
-//			if(!p1.secure)
-//			{
-//				return false;
-//			}
-//		}
+		if(p1.secure)
+		{
+			if(!p2.secure){
+				return true;
+			}
+		}
+		if(p2.secure)
+		{
+			if(!p1.secure)
+			{
+				return false;
+			}
+		}
 		int p1nh = p1.getFirstHop();
 		int p2nh = p2.getFirstHop();
 		
@@ -1048,11 +1119,6 @@ public class SBGP_AS extends AS {
 			return false;
 		}
 		else { // both are similar, so look at path length
-			//if they aren't the same... untested change
-			if(p1.secure != p2.secure)
-			{
-				return p1.secure; //if they aren't the same, then if p1 is not secure, then p2 is, return false, which is p1.secure
-			}
 			if(p1.getPath().size() < p2.getPath().size()) {
 				return true;
 			}
@@ -1060,10 +1126,6 @@ public class SBGP_AS extends AS {
 				return false;
 			}
 			// else .. break tie using BGP_AS number
-			else if (p1.getFirstHop() < p2.getFirstHop())
-			{
-				return true;
-			}
 		}
 		return false;
 	}
@@ -1240,12 +1302,12 @@ public class SBGP_AS extends AS {
 	}
 
 	/*public String showNeighbors() {
-		String nbrs = "Neighbors of SBGP_AS" + asn + " Prov: " + providers + " Cust: " + customers + " Peer: " + peers;
+		String nbrs = "Neighbors of BGP_AS" + asn + " Prov: " + providers + " Cust: " + customers + " Peer: " + peers;
 		return nbrs;
 	}*/
 
 	public String showFwdTable() {
-		String table = "FWD_TABLE : SBGP_AS" + asn + " #paths = " + bestPath.size() + "\n";
+		String table = "FWD_TABLE : BGP_AS" + asn + " #paths = " + bestPath.size() + "\n";
 		for(Iterator<IA> it = bestPath.values().iterator(); it.hasNext();) {
 			IA bestPath = it.next();
 			table += bestPath.getPath() +  " cost: " + bestPath.getTrueCost() + "\n";
@@ -1279,8 +1341,8 @@ public class SBGP_AS extends AS {
 		float lowestMED = Float.MAX_VALUE;			
 		long trueCostInc = 0;
 		PoPTuple chosenTuple = null;
-		for(PoPTuple tuple : neighborMetric.get(nh).keySet()){
-			float latency = neighborMetric.get(nh).get(tuple).get(AS.COST_METRIC);
+		for(PoPTuple tuple : neighborLatency.get(nh).keySet()){
+			float latency = neighborLatency.get(nh).get(tuple).get(AS.COST_METRIC);
 			if(latency < lowestMED)
 			{
 				//			trueCostInc = latency;

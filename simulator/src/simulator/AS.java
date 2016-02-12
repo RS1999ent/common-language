@@ -22,30 +22,19 @@ import integratedAdvertisement.Protocol;
 import integratedAdvertisement.RootCause;
 
 /**
- * AS abstract class that holds the methods that any derrived AS must implement
- * so the simulator class can exploit polymorphism
  * 
  * @author David
  *
  */
 public abstract class AS {
 
-	static final int DAMPEN_AFTER = 100; // used in dampening to assist with
-											// convergence, the number of times
-											// a path has to be seen before we
-											// start making choices arbitrarily
-											// in order to stop oscillating
-	double resetPercent = 0; // percent chance to reset seencounter if past
-								// dampen thresh, get some randomness in order
-								// to help with convergence
+	static final int DAMPEN_AFTER = 100;
 	
-	//relationship constants
 	static final int PROVIDER = 1;
 	static final int PEER = 0;
 	static final int CUSTOMER = -1;
 	static final int SIBLING = 2;
 	
-	//protocol constants
 	static final int BGP = 500;
 	static final int WISER = 501;
 	static final int TRANSIT = 502;
@@ -56,12 +45,11 @@ public abstract class AS {
 	static final int REPLACEMENT_AS = 507;
 	static final int REPLACEMENT_TRANSIT = 506;
 	
-	//what to index on in the link costs
 	static final int COST_METRIC = 1;
 	static final int BW_METRIC = 2;
 	
 	
-	public int type = 0; // what type of AS is this (look toward protocol constants)
+	public int type = 0;
 	
 	//did this as announce itself
 	public boolean announced = false;
@@ -75,7 +63,7 @@ public abstract class AS {
 	ArrayList<Integer> peers = new ArrayList<Integer>();
 	
 	
-	
+	double resetPercent = 0; //percent chance to reset seencounter if past dampen thresh
 	//holds seen counter for route dampening.  <destination, <path, count>>
 	HashMap<Integer, HashMap<String, Integer>> seenCounter = new HashMap<Integer, HashMap<String, Integer>>();
 	//destinations to stop counting
@@ -142,13 +130,11 @@ public abstract class AS {
 	
 	}
 
-	// hashmap to see the link metric to neighbor. <NeighborAs, <poptuples to that neighbor, <metric, metricvalue>>>
-	HashMap<Integer, HashMap<PoPTuple, HashMap<Integer, Float>>> neighborMetric = new HashMap<Integer, HashMap<PoPTuple, HashMap<Integer, Float>>>();
+	// hashmap to find latencies. neighbor (int) -> hashmap of point of presense to hashmap of metric
+	HashMap<Integer, HashMap<PoPTuple, HashMap<Integer, Float>>> neighborLatency = new HashMap<Integer, HashMap<PoPTuple, HashMap<Integer, Float>>>();
 
-	// adjacency list for intradomain pop adjacencies. <PoP, <another pop, latency to that pop>>
+	// adjacency list for intradomain pop adjacencies. Goes Pop -> hash adjacentpop -> latency
 	HashMap<Integer, HashMap<Integer, Integer>> intraD = new HashMap<Integer, HashMap<Integer, Integer>>();
-	//intradomain latencies within pops of an AS
-	HashMap<PoPTuple, Integer> intraDomainLatencies = new HashMap<PoPTuple, Integer>();
 	
 	protected PassThrough passThrough = new PassThrough(); //enable passthroughfunctionality for AS
 	
@@ -161,20 +147,12 @@ public abstract class AS {
 	HashMap<Integer, HashMap<Integer,IA>> ribIn = new HashMap<Integer, HashMap<Integer, IA>>();
 
 	
-	public int asn;
+	public Integer asn;
 	
 	public Integer protocol;
 	
 	HashMap<Integer,IA> bestPath = new HashMap<Integer, IA>();
 
-	/**
-	 * This function determines if the first path is better than the second
-	 * @param p1 The first path
-	 * @param p2 The second path
-	 * 
-	 * @return true 	if p1 is better than p2
-	 * 		   false 	otherwise 
-	 */
 	public abstract boolean isBetter(IA p1, IA p2, boolean dampenBookKeeping);
 
 	public abstract int getNextHop(int dst);
@@ -204,11 +182,11 @@ public abstract class AS {
 	public void addLinkMetric(int as, PoPTuple popPair, int metric, float metricVal) {
 		// grab reference to the has table if it exists for this neighbor
 		HashMap<PoPTuple, HashMap<Integer, Float>> temp;
-		if (!neighborMetric.containsKey(as)) {
+		if (!neighborLatency.containsKey(as)) {
 			temp = new HashMap<PoPTuple, HashMap<Integer, Float>>();
-			neighborMetric.put(as, temp);
+			neighborLatency.put(as, temp);
 		}
-		temp = neighborMetric.get(as);
+		temp = neighborLatency.get(as);
 		if(!temp.containsKey(popPair))
 		{
 			temp.put(popPair, new HashMap<Integer, Float>());
@@ -297,7 +275,7 @@ public abstract class AS {
 	}
 	
 	
-	
+	HashMap<PoPTuple, Integer> intraDomainLatencies = new HashMap<PoPTuple, Integer>();
 	/**
 	 * precomutes intradomain costs between all pairs of points of presence
 	 */
@@ -321,7 +299,6 @@ public abstract class AS {
 	
 	public int getIntraDomainCost(int pop1, int pop2, Integer advertisedToAS)
 	{
-		//we are not computing intradomain costs because of scalability issues with iplane dataset
 		if (true)
 			return 0;
 		if(!precomputed)
@@ -340,7 +317,6 @@ public abstract class AS {
 		
 	}
 	
-	//not used, and probalby doesn't work.  will need to be reexamined if we decide to add intradomain costs again
 	private int dijkstra(int pop1, int pop2, Integer advertisedToAS)
 	{
 		//no intradomain topo information, return 0
@@ -358,7 +334,7 @@ public abstract class AS {
 			return 0;
 		}
 		//check to see if 0 hop from pop1 to pop2 (there is a direct connection from pop1 to pop2 in another AS, 0 cost)
-		if(!intraD.containsKey(pop2) && neighborMetric.get(advertisedToAS).containsKey(new PoPTuple(pop1, pop2)))
+		if(!intraD.containsKey(pop2) && neighborLatency.get(advertisedToAS).containsKey(new PoPTuple(pop1, pop2)))
 		{
 			System.out.println("0 intradomain hops to neighbor");
 			return 0;
@@ -491,7 +467,6 @@ public abstract class AS {
 		return splitProps;
 	}
 	
-	//same method as above, except for bw props
 	public static String[] getBandwidthProps(IA advert, PoPTuple forTuple)
 	{
 		byte[] pBandwidthBytes = advert.getProtocolPathAttribute(forTuple, new Protocol(AS.BANDWIDTH_AS), advert.getPath());
@@ -515,7 +490,6 @@ public abstract class AS {
 		
 	}
 	
-	//more extensible method for any protocol type
 	public static String[] getProtoProps(IA advert, PoPTuple forTuple, Protocol protocol)
 	{
 		byte[] protoBytes = advert.getProtocolPathAttribute(forTuple, protocol, advert.getPath());
@@ -552,19 +526,15 @@ public abstract class AS {
 	 * @param chosenTuple - what tuple we are choicing from us to them
 	 */
 	protected  void updateBookKeeping(IA advert, PoPTuple chosenTuple){
-		//make sure that the advert received from some neighbor is actually a neighbor (should never be false)
-		if(neighborMetric.containsKey(advert.getFirstHop()))
+		if(neighborLatency.containsKey(advert.getFirstHop()))
 		{
-			//increment the truecost for the link and chosen poptuple
-			advert.setTrueCost(advert.getTrueCost() + neighborMetric.get(advert.getFirstHop()).get(chosenTuple).get(AS.COST_METRIC));
-	
-			//compute bw bookkeeping info
+			advert.setTrueCost(advert.getTrueCost() + neighborLatency.get(advert.getFirstHop()).get(chosenTuple).get(AS.COST_METRIC));
 			if(!advert.bookKeepingInfo.containsKey(IA.BNBW_KEY))
 			{				
 				advert.bookKeepingInfo.put(IA.BNBW_KEY, Float.MAX_VALUE);
 			}
 			float currBNBW = Float.valueOf(advert.bookKeepingInfo.get(IA.BNBW_KEY));
-			float neighborBW = neighborMetric.get(advert.getFirstHop()).get(chosenTuple).get(AS.BW_METRIC); 
+			float neighborBW = neighborLatency.get(advert.getFirstHop()).get(chosenTuple).get(AS.BW_METRIC); 
 			if( neighborBW < currBNBW)
 			{
 				advert.bookKeepingInfo.put(IA.BNBW_KEY, neighborBW );
@@ -572,27 +542,23 @@ public abstract class AS {
 		}
 		else
 		{
-			System.out.println("AS, can't update costs");
-			
+			System.out.println("BW_as, can't update costs");
 		}
 	}	
 	
 	//DOES NOT WORK WITH MULTIPLUE POPS
-	//same method as above, except with the assumption that there is only one PoP between ASes.
-	//this method is used when sending an advert outbound
 	protected void updateBookKeepingOutward(IA advert, int toAS){
-		if(neighborMetric.containsKey(toAS))
+		if(neighborLatency.containsKey(toAS))
 		{
-			//this for loop is only entered once (since we are assuming one pop between two different ASes)
-			for(PoPTuple neighborTuple : neighborMetric.get(toAS).keySet())
+			for(PoPTuple neighborTuple : neighborLatency.get(toAS).keySet())
 			{
-				advert.setTrueCost(advert.getTrueCost() + neighborMetric.get(toAS).get(neighborTuple).get(AS.COST_METRIC));
+				advert.setTrueCost(advert.getTrueCost() + neighborLatency.get(toAS).get(neighborTuple).get(AS.COST_METRIC));
 				if(!advert.bookKeepingInfo.containsKey(IA.BNBW_KEY))
 				{				
 					advert.bookKeepingInfo.put(IA.BNBW_KEY, Float.MAX_VALUE);
 				}
 				float currBNBW = Float.valueOf(advert.bookKeepingInfo.get(IA.BNBW_KEY));
-				float neighborBW = neighborMetric.get(toAS).get(neighborTuple).get(AS.BW_METRIC); 
+				float neighborBW = neighborLatency.get(toAS).get(neighborTuple).get(AS.BW_METRIC); 
 				if( neighborBW < currBNBW)
 				{
 					advert.bookKeepingInfo.put(IA.BNBW_KEY, neighborBW );
@@ -601,27 +567,16 @@ public abstract class AS {
 		}
 		else
 		{
-			System.out.println("AS, can't update costs");
+			System.out.println("as, can't update costs");
 		}
 	}
-
 	/**
-	 * returns the puptuple of us to them that we choose as the point of
-	 * presenes used on the path based on what the particular implementation of
-	 * the AS chooses a particular point of presence to use
-	 * 
-	 * @param advert
-	 *            the advertisement that has the infomration to make this
-	 *            decision
+	 * returns the puptuple of us to them that we choose as the point of presenes used on the path
+	 * @param advert the advertisement that has the infomration to make this decision
 	 * @return the tuple ponit of presence touble that we chose
 	 */
-	public abstract PoPTuple tupleChosen(IA advert);	
+	public abstract PoPTuple tupleChosen(IA advert);
 	
-	/**
-	 * checks to see if any of the best paths to any of the destinatinos
-	 * is empty. Actually doesn't work, but this doesn't matter because it is not used anymore
-	 * @return 
-	 */
 	public boolean bestpathNullCheck()
 	{
 		for(IA element : bestPath.values())
@@ -634,54 +589,38 @@ public abstract class AS {
 		return false;
 	}
 	
-	/**
-	 * given two paths, figure out which to choose based on our dampening solution.
-	 * This should only be called within isbetter method
-	 * @param p1 an advert
-	 * @param p2 another advert
-	 * @return 1 to choose p1, 2 to choose p2, -1 to continue with normal processing
-	 */
 	protected int dampening(IA p1, IA p2)
 	{
 		//dampen bookkeeping
 		int dest = p1.getDest();
-		
-		//get the path keys
 		String p1PathKey = IA.pathToKey(p1.getPath());
 		String p2PathKey = IA.pathToKey(p2.getPath());
 		HashMap<String, Integer> seenPaths = null;
-		
-		//make sure seencounter has some information about the destination
 		if(!seenCounter.containsKey(dest))
 		{
 			HashMap<String, Integer> tmp = new HashMap<String, Integer>();
 			seenCounter.put(dest, tmp);
 		}
-		seenPaths = seenCounter.get(dest); //get the paths that we've seen to a dest
-		//if we haven't seen the path yet, then initialize its counter
+		seenPaths = seenCounter.get(dest);
 		if(!seenPaths.containsKey(p1PathKey))
 		{
 			seenPaths.put(p1PathKey, 0);
 		}
-		//same with p2
 		if(!seenPaths.containsKey(p2PathKey))
 		{
 			seenPaths.put(p2PathKey, 0);
 		}
 
-		//get how many times we've seen them
+
 		int p1Count = seenPaths.get(p1PathKey);
 		int p2Count = seenPaths.get(p2PathKey);
-		//increment the count, used to be only if we haven't decided to dampen, but now will increment each path indefinetely
 	//	if(!doneDests.contains(p1.getDest())){
 			seenPaths.put(p1PathKey, p1Count+1);
 			seenPaths.put(p2PathKey, p2Count+1);
 	//	}
 		//else
-		//if we need to dampen paths to a destination
 		if(doneDests.contains(dest))
 		{
-			//some randomness in how dampening occurs. There's a certain chance that we reset the process
 			if(Simulator.r.nextDouble() < resetPercent)
 			{
 				seenPaths.clear();
@@ -692,7 +631,6 @@ public abstract class AS {
 					System.out.println("dampening error");
 				}
 			}
-			//chose the path that has been seen more
 			if(p1Count > p2Count/*Simulator.r.nextBoolean()*/)
 			{
 				return 1;
@@ -701,7 +639,7 @@ public abstract class AS {
 				return 2;
 			}
 		}
-		//if one of the paths is past the damepening thesh, dampen a dest
+
 		if(p1Count > AS.DAMPEN_AFTER || p2Count > AS.DAMPEN_AFTER)
 		{
 			if(!doneDests.contains(p1.getDest()))
@@ -710,7 +648,7 @@ public abstract class AS {
 			}
 		}
 
-		return -1; //process as normal
+		return -1;
 	}
 
 }

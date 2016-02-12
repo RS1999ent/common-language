@@ -17,7 +17,7 @@ import simulator.AS.PoPTuple;
  */
 public class PassThrough {
 	
-	private static final boolean USE_PASSTHROUGH = false; //used for contiguous deployment experiments
+	private static final boolean USE_PASSTHROUGH = true;
 
 	// keyed on pathTokey. links to aggregated values that were received. IA
 	// value contains info for a single path, for each poitn of presence that we are connected to 
@@ -41,13 +41,14 @@ public class PassThrough {
 	 * @param advertisement
 	 *            the advertisement to attach passthrough information to (this
 	 *            object is mutated)
+	 * @param infoChosen 
 	 * @return advertisement with passthrough information attached, this is
 	 *         redundant given how java does references
 	 */
 	public IA attachPassthrough(IA advertisement, PoPTuple chosenTuple) {
 		if(!USE_PASSTHROUGH)
 		{
-			return advertisement; //don't use passthrough, return unmodified advert (this is redundent)
+			return advertisement;
 		}
 		// for each path, attach values from passthroughdatabase
 		for (String pathKey : advertisement.getPathKeys()) {
@@ -56,7 +57,7 @@ public class PassThrough {
 			// you have a fully formed path ready to be advertised
 			LinkedList<Integer> path = (LinkedList<Integer>) advertisement
 					.getPath(pathKey).clone();
-			path.remove(); //remove prepended self so we can index into db on the path received
+			path.remove();
 			String passThroughPathKey = IA.pathToKey(path);
 			// merge pasthrough information into advertisement if there is
 			// somethign in database
@@ -65,7 +66,20 @@ public class PassThrough {
 			if (passThroughDatabase.containsKey(passThroughPathKey)) {
 				IAInfo passThroughInfo = passThroughDatabase
 						.get(passThroughPathKey).get(chosenTuple);
-				//the same passthrough info is going out to all usTOThem PoPs		
+				
+	//			Values val1 = advertisement.getPathAttributes(chosenTuple.reverse(), pathKey);
+				//if(infoChosen != null){
+//					val1 = infoChosen.pathValues.get(pathKey);//advertisement.getPathAttributes(chosenTuple, pathKey);
+//				}
+				// if there was no path attribute values set for the
+				// advertisement, then make a new values
+//				if (val1 == null) {
+//					val1 = new Values();
+//				}
+//				Values val2 = passThroughInfo
+//						.getPathAttributes(passThroughPathKey);
+				//				Values mergedVal = mergeValues(val1, val2);
+				//				
 				for(PoPTuple usToThemAdvert : advertisement.popCosts.keySet()){
 					Values val1 = advertisement.getPathAttributes(usToThemAdvert, pathKey);
 					if (val1 == null) {
@@ -73,7 +87,7 @@ public class PassThrough {
 					}
 					Values val2 = passThroughInfo
 							.getPathAttributes(passThroughPathKey);
-					Values mergedVal = mergeValues(val1, val2); //val1 contains updated info, so merge val2 into it as to not ruin it
+					Values mergedVal = mergeValues(val1, val2);
 					advertisement.setPathAttributes(usToThemAdvert, mergedVal,
 							advertisement.getPath(pathKey));
 				}
@@ -94,23 +108,25 @@ public class PassThrough {
 	 *            the advertismeent recieved from a neighbor
 	 */
 	public void addToDatabase(IA receivedAdvert) {
-		//for each path
 		for (String key : receivedAdvert.getPathKeys()) {
-			//entry to add to database
 			HashMap<PoPTuple, IAInfo> toDatabase = passThroughDatabase.containsKey(key) ? passThroughDatabase
-					.get(key) : new HashMap<PoPTuple, IAInfo>(); // if the passthrough db contains information about 
-																//that path then get it, otherwise it doesn't exist, then create something blank
-					//for each poptuple in the advertisement
+					.get(key) : new HashMap<PoPTuple, IAInfo>(); // if the passthrogh
+
 					for(PoPTuple themToUs : receivedAdvert.popCosts.keySet()){
-						PoPTuple usToThem = new PoPTuple(themToUs.pop2, themToUs.pop1); //reverse it so that it is an "us to them" poptuple
+						PoPTuple usToThem = new PoPTuple(themToUs.pop2, themToUs.pop1);
 						//if we don't have a tuple for this, insert a blank one
-						if(!toDatabase.containsKey(usToThem)) //if there is no such info in the database, add it with blank info
+						if(!toDatabase.containsKey(usToThem))
 						{
 							toDatabase.put(usToThem, new IAInfo());
 						}
+						// database already has an
+						// entry for this path, then
+						// use that as base,
+						// otherwise craete new
+						// entry
 						
-						Values val1 = toDatabase.get(usToThem).getPathAttributes(key); //grab the info that is to be passedthrough (will be null if none exists)				
-						Values val2 = receivedAdvert.getPathAttributes(themToUs, key); //grab the advert info received from the point of PoP under examination
+						Values val1 = toDatabase.get(usToThem).getPathAttributes(key);				
+						Values val2 = receivedAdvert.getPathAttributes(themToUs, key);
 						// if either val1 or val2 is null, give it a fresh blank vlaues.
 						val1 = val1 == null ? new Values() : val1;
 						val2 = val2 == null ? new Values() : val2;

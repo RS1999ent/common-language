@@ -29,7 +29,6 @@ public class Protocol {
 		m_uniqueID = newUniqueID;
 	}
 	
-	//old protobuf stuff
 	//converts data structure to protobuf format
 //	public ProtoClass toProtoClass()
 //	{

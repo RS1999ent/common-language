@@ -29,6 +29,8 @@ public class BGP_AS extends AS {
 	
 	private static final int LINK_DELAY = 100; // static link delay of 10 ms
 
+	/** The BGP_AS number of this BGP_AS */
+	//public int asn;
 
 	/** The current epoch */
 	private int currentEpoch;
@@ -39,6 +41,18 @@ public class BGP_AS extends AS {
 	/** The MRAI timer value */
 	int mraiValue;
 
+	/** Mapping of neighbor to relationship */
+//	HashMap<Integer, Integer> neighborMap = new HashMap<Integer, Integer>();
+
+	// we also need to store all the paths received from neighbors for each
+	// destination. this would be our rib-in. the rib-in is implemented as
+	// a pair of nested hash tables: hashed on <prefix, neighbor>
+//	HashMap<Integer, HashMap<Integer,IA>> ribIn = new HashMap<Integer, HashMap<Integer, IA>>();
+
+	/** Stores the current best path to each prefix 
+	 *	This is almost equivalent to the forwarding table :) 
+	 */
+	//HashMap<Integer,IA> bestPath = new HashMap<Integer, IA>();
 
 	/** Old/current Stable Forwarding Table */
 	HashMap<Integer,IA> SFT = new HashMap<Integer, IA>();
@@ -147,9 +161,7 @@ public class BGP_AS extends AS {
 	
 	/**
 	 * This function is used to reset the state of the BGP_AS
-	 * 
-	 *	not used as it doesn't really work as intended because there is 
-	 *	some unaccounted state that makes this not at the starting state
+	 *
 	 */
 	public void RESET() {
 		int peer;
@@ -215,20 +227,26 @@ public class BGP_AS extends AS {
 	 */
 	public void fillAdvertisementPoP(IA advert, Integer advertisedToAS, PoPTuple tupleChosen)
 	{
+//		if(tupleChosen.pop1 == -1)
+//		{
+//			System.out.println("[debug] intradomaintruecost: shouldn't be here (maybe(");		
+//		}
+//		else{
 		updateBookKeepingOutward(advert, advertisedToAS);
+		IAInfo infoChosen = null;
 		if(tupleChosen != null){
-//			infoChosen = advert.popCosts.get(tupleChosen.reverse()); //get the info that we chose because we are going to clear the costs
-			for(AS.PoPTuple poptuple : neighborMetric.get(advertisedToAS).keySet())
+			infoChosen = advert.popCosts.get(tupleChosen.reverse()); //get the info that we chose because we are going to clear the costs
+			for(AS.PoPTuple poptuple : neighborLatency.get(advertisedToAS).keySet())
 			{
-				int intraDomainCost = getIntraDomainCost(tupleChosen.pop1, poptuple.pop1, advertisedToAS); //returns 0
-				advert.truePoPCosts.put(poptuple, intraDomainCost); //truepopcosts not used anywhere else anymore
+				int intraDomainCost = getIntraDomainCost(tupleChosen.pop1, poptuple.pop1, advertisedToAS);
+				advert.truePoPCosts.put(poptuple, intraDomainCost);
 			}
 		}
 				
 		advert.popCosts.clear();
 		//initialize our pop to pop advertisement info.  That is, initialize a blank IA info for each place we're advertising to
-		//This is for when we attach passthrough
-		for(AS.PoPTuple popTuple : neighborMetric.get(advertisedToAS).keySet())
+		//a little hackish using neighborlatency to get this, but it works
+		for(AS.PoPTuple popTuple : neighborLatency.get(advertisedToAS).keySet())
 		{
 			advert.popCosts.put(popTuple, new IAInfo());
 		}
@@ -237,6 +255,20 @@ public class BGP_AS extends AS {
 //		}
 		
 	}
+
+	
+//	@Override 
+//	protected void updateBookKeeping(IA advert, PoPTuple chosenTuple)
+//	{
+//		if(neighborLatency.containsKey(advert.getFirstHop()))
+//		{
+//			advert.setTrueCost(advert.getTrueCost() + neighborLatency.get(advert.getFirstHop()).get(chosenTuple));
+//		}
+//		else
+//		{
+//			System.out.println("bgp_as, can't update costs");
+//		}
+//	}
 	
 	/**
 	 * This function adds a path to the set of path
@@ -269,20 +301,77 @@ public class BGP_AS extends AS {
 			nhType = neighborMap.get(nh);
 			
 			tupleChosen = tupleChosen(p);
-		
+			//choose a tuple based on lowest MED
+//			long lowestMED = Long.MAX_VALUE;			
+//			long trueCostInc = 0;
+//			for(PoPTuple tuple : neighborLatency.get(nh).keySet()){
+//				int latency = neighborLatency.get(nh).get(tuple);
+//				if(latency < lowestMED)
+//				{
+//		//			trueCostInc = latency;
+//					tupleChosen = tuple;
+//				}
+//			}
+			//put the wiser information that would have been there if we weren't hacking a solution here
+			//this is only if our neighbor is a wiser node, simulates the advertisemetns received from multiple pops
+			//COMPUTES WHAT THE POINT OF PRESENCE THAT WE CHOOSE WOULD HAVE ADVETISED. hackish, i know.
 			if(p.popCosts.size() > 0)
 			{
 	//			updateBookKeeping(p, tupleChosen); //update the bookkeeping on p, (getfirsthop is used in method so we use p instead of newpath)
-				//we do outward bookkeeping, was easier to reason about.  see bandwidth_as.java for more detailed explanation
+//				int wisercost = 9999; //debug, shows something is wrong if this shows up
+//				int normalization = 1;
+//				//reversed because we chose a tuple from us to them, in the advertisement the tuple
+//				//will be in form from them to us.
+//				PoPTuple advertisementTuple = new PoPTuple(tupleChosen.pop2, tupleChosen.pop1);
+//				wisercost = p.popCosts.get(advertisementTuple); //this is also the true cost (intradomain of wisernode)
+//				trueCostInc += wisercost;
+//				if(p.popCosts.get(advertisementTuple) == null) 
+//				{
+//	//				System.out.println("there is no point of presence from them to us in advertisement, shouldn't happen");
+//				}
+//				if(wisercost == 9999){
+//					System.out.println("bgp_as wisercost 9999");
+//				}
+//				
+//				String[] wiserProps = getWiserProps(p);
+//				if(wiserProps != null){
+//					wisercost += Integer.valueOf(wiserProps[0]); //add the wiser props
+//				}
+//				//would compute normalization here
+//				String pathAttribute = String.valueOf(wisercost) + " " + String.valueOf(normalization);
+//				try {
+//					newPath.setProtocolPathAttribute(pathAttribute.getBytes("UTF-8"), new Protocol(AS.WISER), newPath.getPath());
+//				} catch (UnsupportedEncodingException e) {
+//					// TODO Auto-generated catch block
+//					e.printStackTrace();
+//				}
+//				
+//				//clear the popcosts from newpath, this is a bgp node
+	//			newPath.popCosts.clear();
 			}
 			else{
 				System.out.println("bgp_as, AS advertising?: " + asn);
+//				//grab the intradomian true cost based on the tuple we chose, add it to true cost
+//				//pops reversed because they created advert with inforamtion from them to us, so we
+//				//convert our us to them poptuple to them to us
+//				PoPTuple advertisementTuple = new PoPTuple(tupleChosen.pop2, tupleChosen.pop1);
+//				if(p.truePoPCosts.get(advertisementTuple) == null)
+//				{
+////					System.out.println("bgp_as, no point of presence from them to us, shouldn't happen from non announcing");
+//				}
+//				else{
+//					//		System.out.println("HERE");
+//		//			System.out.println("tpopcosts: " + p.truePoPCosts.get(advertisementTuple));
+//					trueCostInc += p.truePoPCosts.get(advertisementTuple);
+//				}
+//				trueCostInc += neighborLatency.get(nh).get(tupleChosen); //add the latency link to true cost
+//				//		System.out.println("true cost inc: " + trueCostInc);
 			}
 			newPath.truePoPCosts.clear();
 			newPath.setTrueCost(p.getTrueCost());
 		}
 
-		newPath.secure = false; //for sbgp, this path is not secure.
+		newPath.secure = false;
 //		passThrough.attachPassthrough(newPath, tupleChosen); //attach passthrough info before sending to neighbors (put into another method)
 		if(nhType == PROVIDER || nhType == PEER) { // announce it only to customers .. and to nextHop in the path 
 			for(int i=0; i<customers.size(); i++) {
@@ -730,14 +819,13 @@ public class BGP_AS extends AS {
 		// Simulator.debug("BGP_AS" + asn + ": Adding to non-finished " + p.rc);
 
 		// check if the path is better than the current best path
-		if( bp==null || isBetter(p, bp, false) ) { //currently set so we don't do dampening at bgp ASes.  Reasoning is that 
-													//we want some ASes to act as they have always done
+		if( bp==null || isBetter(p, bp, false) ) {
 			// we need to install this as our best path and send an update
 			// to all our peers
 		    Simulator.debug("BGP_AS" + asn + ": Added best path to dst BGP_AS" + dst + ": " + p.getPath());
 			bestPath.put(dst, p);
 //			p = passThrough.attachPassthrough(p); //[COMMENT] added
-			addPathToUpdates(p, Simulator.otherTimers); //passthorugh added in here
+			addPathToUpdates(p, Simulator.otherTimers);
 
 			dstRIBHistMap.get(dst).addUpdateToHistory(p, nextHop);
 			sendWithdrawalsIfNecessary(bp, p);
@@ -1265,8 +1353,8 @@ public class BGP_AS extends AS {
 		float lowestMED = Float.MAX_VALUE;			
 		long trueCostInc = 0;
 		PoPTuple chosenTuple = null;
-		for(PoPTuple tuple : neighborMetric.get(nh).keySet()){
-			float latency = neighborMetric.get(nh).get(tuple).get(AS.COST_METRIC); //assuming cost is equivelent to latency
+		for(PoPTuple tuple : neighborLatency.get(nh).keySet()){
+			float latency = neighborLatency.get(nh).get(tuple).get(AS.COST_METRIC);
 			if(latency < lowestMED)
 			{
 				//			trueCostInc = latency;
