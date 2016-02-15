@@ -193,7 +193,9 @@ public class IA {
 		// remove old legacy path from hash table and its corresponding
 		// attributes
 		paths.remove(pathToKey(legacyPath)); //untested change
-		paths.put(pathToKey(path), path); //untested change
+		if(path != null){
+			paths.put(pathToKey(path), path); //untested change
+		}
 		removePathAttributes(legacyPath);
 		this.legacyPath = path;
 

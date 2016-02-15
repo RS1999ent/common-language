@@ -17,7 +17,7 @@ import simulator.AS.PoPTuple;
  */
 public class PassThrough {
 	
-	private static final boolean USE_PASSTHROUGH = false; //used for contiguous deployment experiments
+	private static final boolean USE_PASSTHROUGH = true; //used for contiguous deployment experiments
 
 	// keyed on pathTokey. links to aggregated values that were received. IA
 	// value contains info for a single path, for each poitn of presence that we are connected to 

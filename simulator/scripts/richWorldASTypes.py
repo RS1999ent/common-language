@@ -383,7 +383,7 @@ if SBGP_NUMBER == int(sim):
     putToOutput(chosenASes, SBGP_NUMBER)
     
 if BW_NUMBER == int(sim):
-    putToOutput(chosenASes, BW_TRANSIT)
+    putToOutput(chosenASes, BW_NUMBER)
     if richworld:
         assignRemaining(leftoverASes, BW_NUMBER, distList)
 if REPLACEMENT_NUMBER == int(sim):

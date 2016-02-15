@@ -1095,7 +1095,7 @@ public class Simulator {
 		float xVal = arguments.getFloat("forX");
 		int metric = arguments.getInt("metric");			
 		int primaryType = readTypes(typeFile); //reading types must go before readtopology, otherwise allnodes will be bgp
-		readTopology(topologyFile, useBandwidth);
+		readTopology(topologyFile, useBandwidth, false);
 		preProcessReplacement();
 		//	readIntraDomain(intraFile);
 		//readLinks(linkFile);
@@ -1671,7 +1671,7 @@ public class Simulator {
 					HashMap<Integer, AS> clonedASMap = (HashMap<Integer, AS>) asMap.clone(); //backup asmap to use later
 					asMap.clear();
 					try {
-						readTopology(topoFile, false ); //reset the state
+						readTopology(topoFile, false, false); //reset the state
 						preProcessReplacement(); //preprocess paths again
 					} catch (Exception e) {
 						// TODO Auto-generated catch block
@@ -2024,6 +2024,215 @@ public class Simulator {
 			return incomingCost;
 		}
 	
+	public static void doBGPStatistics(float forX, ArrayList<Integer> monitorASes, ArrayList<Integer> announcedASes) {
+		
+		int incomingCost = 0;
+		float receivedFIBBW = 0;
+		float receivedFIBTrueBW = 0;
+		float receivedFIBWiserCost = 0;
+		float receivedFIBTrueCost = 0;
+		int partRibCostSum = 0;
+		float partRibBwSum = 0;
+		float totalFibCostSum = 0;
+		float totalFibBwSum = 0;
+		float totalRibCostSum = 0;
+		float totalRibBwSum = 0;
+		float totalRIBSize = 0;
+		float total = monitorASes.size();
+		float wiserTotal = 0;
+		float bwTotal = 0;
+		float replacementTotal = 0;
+		float replacementStubTotal = 0;
+		float totalBestPaths = 0;
+		float totalStubBestPaths = 0;
+		float totalRIBPaths = 0;
+		float totalStubRIBPaths = 0;
+		float totalBestPathNodes = 0;
+		float bestpathTruecost = 0;
+		float bestpathBWSum = 0;
+		ArrayList<Integer> removedASes = new ArrayList<Integer>();
+		// for transit ASes only, see the sum of received paths
+		for (int as : monitorASes) {
+			// for each monitored AS, compare their lowest outgoing wiser cost
+			// with what was received
+			AS monitoredAS = asMap.get(as); // the AS we are measuring from (all
+											// transits eventually)
+			boolean isStub = (monitoredAS.customers.size() == 0);
+			monitoredAS.type = asTypeDef.get(as) != null ? asTypeDef.get(as) : -1;
+			switch (monitoredAS.type) {
+			case AS.WISER:
+				wiserTotal++;
+				incomingCost += getIncomingCosts(as);
+				break;
+			case AS.BANDWIDTH_AS:
+				bwTotal++;
+				break;
+			case AS.REPLACEMENT_AS:
+				replacementTotal++;
+				if (isStub) {
+					replacementStubTotal++;
+				}
+				break;
+			}
+			for (int announcedAS : announcedASes) {
+				// make sure that the we aren't comparing the AS who announced
+				// this to itself
+				if (as == announcedAS) {
+					continue;
+				}
+				AS compareAS = asMap.get(announcedAS); // the AS that announced
+				// sanity check, if any monitor as to this as causes an
+				// exception, do not add to costs
+				boolean skip = false;
+				for (int sanity : monitorASes) {
+					AS sanityAS = asMap.get(sanity);
+					if (sanityAS.bestPath.get(announcedAS) != null) {
+						try {
+							monitoredAS.bestPath.get(announcedAS).getPath()
+									.size();
+						} catch (Exception e) {
+							if (!removedASes.contains(announcedAS)) {
+								System.out.println("removed: " + announcedAS);
+								removedASes.add(announcedAS);
+							}
+							skip = true;
+						}
+					}
+				}
+				if (skip) {
+					continue;
+				}
+				if (monitoredAS.bestPath.get(announcedAS) != null) {
+					IA bestPath = monitoredAS.bestPath.get(announcedAS);
+					// try{
+
+					if (monitoredAS.type == AS.REPLACEMENT_AS) {
+						String[] replacementProps = AS.getProtoProps(bestPath,
+								bestPath.popCosts.keySet().iterator().next(),
+								new Protocol(AS.REPLACEMENT_AS));
+						if (replacementProps == null) {
+							totalBestPaths += 1;
+							if (isStub) {
+								totalStubBestPaths += 1;
+							}
+						} else {
+							totalBestPaths += Long.valueOf(replacementProps[0]);
+							if (isStub) {
+								totalStubBestPaths += Long
+										.valueOf(replacementProps[0]);
+							}
+						}
+					}
+					totalBestPathNodes += monitoredAS.bestPath.get(announcedAS)
+							.getPath().size();
+					if (monitoredAS.type == AS.WISER) {
+						bestpathTruecost += monitoredAS.bestPath.get(
+								announcedAS).getTrueCost();
+						String wiserProps[] = AS.getWiserProps(bestPath,
+								bestPath.popCosts.keySet().iterator().next());
+						if (wiserProps != null) {
+							float wiserVal = Float.valueOf(wiserProps[0]);
+							float normalization = Float.valueOf(wiserProps[1]);
+							// System.out.println("normalization: " +
+							// normalization);
+							receivedFIBWiserCost += ((float) wiserVal)
+									/ normalization;
+							receivedFIBTrueCost += ((float) bestPath
+									.getTrueCost()) / normalization;
+						}
+					}//
+					if (monitoredAS.type == AS.BANDWIDTH_AS) {
+						bestpathBWSum += monitoredAS.bestPath.get(announcedAS).bookKeepingInfo
+								.get(IA.BNBW_KEY);
+						String bwProps[] = AS.getBandwidthProps(bestPath,
+								bestPath.popCosts.keySet().iterator().next());
+						if (bwProps != null) {
+							float bw = Float.valueOf(bwProps[0]);
+							receivedFIBBW += bw;
+							receivedFIBTrueBW += monitoredAS.bestPath
+									.get(announcedAS).bookKeepingInfo
+									.get(IA.BNBW_KEY);
+						}
+
+					}
+					totalFibCostSum += monitoredAS.bestPath.get(announcedAS)
+							.getTrueCost();
+					totalFibBwSum += monitoredAS.bestPath.get(announcedAS).bookKeepingInfo
+							.get(IA.BNBW_KEY);
+
+					// }
+					// catch(Exception e)
+					// {
+					// System.out.println("exception for <monitor, anounced>: "
+					// + monitoredAS.asn + " " + announcedAS);
+					// System.exit(1);
+					// }
+				} //
+					//
+				// System.out.println("[DEBUG] lowest cost: " + lowestCost);
+				// see if monitored AS has that path in the RIB_in, //if it
+				// doesn't have a path, that means policy
+				// disconnection, don't include it in our percentage.
+				if (monitoredAS.ribIn.get(announcedAS) != null) { //
+					totalRIBSize += monitoredAS.ribIn.get(announcedAS).size(); //
+					for (IA path : monitoredAS.ribIn.get(announcedAS).values()) { //
+						totalRibCostSum += path.getTrueCost();
+						totalRibBwSum += path.bookKeepingInfo.get(IA.BNBW_KEY);
+						if (monitoredAS.type == AS.REPLACEMENT_AS) {
+							String[] replacementProps = AS.getProtoProps(path,
+									path.popCosts.keySet().iterator().next(),
+									new Protocol(AS.REPLACEMENT_AS));
+							if (replacementProps == null) {
+								totalRIBPaths += 1;
+								if (isStub) {
+									totalStubRIBPaths += 1;
+								}
+							} else {
+								totalRIBPaths += Long
+										.valueOf(replacementProps[0]);
+								if (isStub) {
+									totalStubRIBPaths += Long
+											.valueOf(replacementProps[0]);
+								}
+							}
+						}
+						if (monitoredAS.type == AS.WISER) {
+							partRibCostSum += path.getTrueCost();
+						}
+						if (monitoredAS.type == AS.BANDWIDTH_AS) {
+							partRibBwSum += path.bookKeepingInfo
+									.get(IA.BNBW_KEY);
+						}
+
+						// debug if statement
+						if (monitoredAS.neighborMap.containsKey(compareAS.asn)) {
+							// System.out.println("[DEBUG] AS " +
+							// monitoredAS.asn + " neighbor of: " +
+							// compareAS.asn);
+							// System.out.println("[DEBUG] received lowest cost: "
+							// + wiserProps);
+							// System.out.println("[DEBUG] rib of AS is : " +
+							// monitoredAS.ribIn.toString());
+						}
+
+					}// endfor
+
+				}
+				// else
+				// {
+				// total--;
+				// }
+			}
+		}
+		
+		System.out.println("WISER_RIB_BGP_GRAPH " + forX + " " + String.valueOf(((float) partRibCostSum)/wiserTotal) + " END");
+		System.out.println("WISER_FIB_BGP_GRAPH " + forX + " " + String.valueOf(((float) bestpathTruecost)/wiserTotal) + " END");
+		
+		System.out.println("BW_RIB_BGP_GRAPH " + forX + " " + String.valueOf(((float) partRibBwSum)/bwTotal) + " END");
+		System.out.println("BW_FIB_BGP_GRAPH " + forX + " " + String.valueOf(((float) bestpathBWSum)/bwTotal) + " END");
+				
+	}
+
 		public static void iaBasicSimulationAllTests(int monitorFrom, boolean bwTest, float forX, int metric, int primaryType){
 			
 			
@@ -2069,171 +2278,178 @@ public class Simulator {
 			float bestpathBWSum = 0;
 			ArrayList<Integer> removedASes = new ArrayList<Integer>();
 			//for transit ASes only, see the sum of received paths
-			for(int as : monitorASes)
-			{
-				//for each monitored AS, compare their lowest outgoing wiser cost with what was received
-				AS monitoredAS = asMap.get(as); //the AS we are measuring from (all transits eventually)
-				boolean isStub = (monitoredAS.customers.size() == 0);
-				switch(monitoredAS.type)
-				{
-				case AS.WISER:
-					wiserTotal++;
-					incomingCost += getIncomingCosts(as);
-					break;
-				case AS.BANDWIDTH_AS:
-					bwTotal++;
-					break;
-				case AS.REPLACEMENT_AS:
-					replacementTotal++;
-					if(isStub)
-					{
-						replacementStubTotal++;
-					}
-					break;
+		for (int as : monitorASes) {
+			// for each monitored AS, compare their lowest outgoing wiser cost
+			// with what was received
+			AS monitoredAS = asMap.get(as); // the AS we are measuring from (all
+											// transits eventually)
+			boolean isStub = (monitoredAS.customers.size() == 0);
+			switch (monitoredAS.type) {
+			case AS.WISER:
+				wiserTotal++;
+				incomingCost += getIncomingCosts(as);
+				break;
+			case AS.BANDWIDTH_AS:
+				bwTotal++;
+				break;
+			case AS.REPLACEMENT_AS:
+				replacementTotal++;
+				if (isStub) {
+					replacementStubTotal++;
 				}
-				for(int announcedAS : announcedASes)
-				{
-					//make sure that the we aren't comparing the AS who announced this to itself
-					if(as == announcedAS){
-						continue;
-					}
-					AS compareAS = asMap.get(announcedAS); //the AS that announced
-					//sanity check, if any monitor as to this as causes an exception, do not add to costs
-					boolean skip = false;
-					for(int sanity : monitorASes)
-					{
-						AS sanityAS = asMap.get(sanity);
-						if(sanityAS.bestPath.get(announcedAS) != null){
-							try{
-								monitoredAS.bestPath.get(announcedAS).getPath().size();
-							}
-							catch (Exception e)
-							{		
-								if (!removedASes.contains(announcedAS))
-								{
-									System.out.println("removed: " + announcedAS);
-									removedASes.add(announcedAS);
-								}
-								skip = true;
-							}
-						}
-					}
-					if(skip)
-					{
-						continue;
-					}
-					if(monitoredAS.bestPath.get(announcedAS) != null)
-					{
-						IA bestPath = monitoredAS.bestPath.get(announcedAS);
-//						try{
-
-
-
-						if(monitoredAS.type == AS.REPLACEMENT_AS){								
-							String[] replacementProps = AS.getProtoProps(bestPath, bestPath.popCosts.keySet().iterator().next(), new Protocol(AS.REPLACEMENT_AS));
-							if(replacementProps == null)
-							{
-								totalBestPaths += 1;
-								if(isStub)
-								{
-									totalStubBestPaths += 1;
-								}
-							}
-							else
-							{
-								totalBestPaths += Long.valueOf(replacementProps[0]);
-								if(isStub)
-								{
-									totalStubBestPaths += Long.valueOf(replacementProps[0]);
-								}
-							}
-						}
-						totalBestPathNodes+= monitoredAS.bestPath.get(announcedAS).getPath().size();
-						if(monitoredAS.type == AS.WISER){
-							bestpathTruecost += monitoredAS.bestPath.get(announcedAS).getTrueCost();
-							String wiserProps[] = AS.getWiserProps(bestPath, bestPath.popCosts.keySet().iterator().next());
-							if(wiserProps != null)
-							{
-								float wiserVal = Float.valueOf(wiserProps[0]);
-								float normalization = Float.valueOf(wiserProps[1]);
-								//	System.out.println("normalization: " + normalization);
-								receivedFIBWiserCost += ((float) wiserVal) / normalization;
-								receivedFIBTrueCost += ((float)bestPath.getTrueCost()) / normalization;
-							}
-						}//
-						if(monitoredAS.type == AS.BANDWIDTH_AS){
-							bestpathBWSum += monitoredAS.bestPath.get(announcedAS).bookKeepingInfo.get(IA.BNBW_KEY);
-							String bwProps[] = AS.getBandwidthProps(bestPath, bestPath.popCosts.keySet().iterator().next());
-							if(bwProps != null){
-								float bw = Float.valueOf(bwProps[0]);
-								receivedFIBBW += bw;
-								receivedFIBTrueBW +=  monitoredAS.bestPath.get(announcedAS).bookKeepingInfo.get(IA.BNBW_KEY);
-							}
-
-						}
-						totalFibCostSum += monitoredAS.bestPath.get(announcedAS).getTrueCost();
-						totalFibBwSum += monitoredAS.bestPath.get(announcedAS).bookKeepingInfo.get(IA.BNBW_KEY);
-
-//						}
-//						catch(Exception e)
-//						{
-//							System.out.println("exception for <monitor, anounced>: " + monitoredAS.asn + " " + announcedAS);
-//							System.exit(1);
-//						}
-					}	// 
-						// 
-					//System.out.println("[DEBUG] lowest cost: " + lowestCost);
-					// see if monitored AS has that path in the RIB_in, //if it doesn't have a path, that means policy
-					//disconnection, don't include it in our percentage.
-					if (monitoredAS.ribIn.get(announcedAS) != null) {	// 
-						totalRIBSize += monitoredAS.ribIn.get(announcedAS).size();	// 
-						for (IA path : monitoredAS.ribIn.get(announcedAS).values()) {	// 
-							totalRibCostSum += path.getTrueCost();
-							totalRibBwSum += path.bookKeepingInfo.get(IA.BNBW_KEY);
-							if(monitoredAS.type == AS.REPLACEMENT_AS){
-								String[] replacementProps = AS.getProtoProps(path, path.popCosts.keySet().iterator().next(), new Protocol(AS.REPLACEMENT_AS));
-								if(replacementProps == null)
-								{
-									totalRIBPaths += 1;
-									if(isStub)
-									{
-										totalStubRIBPaths += 1;
-									}
-								}
-								else
-								{
-									totalRIBPaths += Long.valueOf(replacementProps[0]);
-									if(isStub)
-									{
-										totalStubRIBPaths += Long.valueOf(replacementProps[0]);
-									}
-								}
-							}
-							if(monitoredAS.type == AS.WISER){
-								partRibCostSum += path.getTrueCost();
-							}
-							if(monitoredAS.type == AS.BANDWIDTH_AS){
-								partRibBwSum += path.bookKeepingInfo.get(IA.BNBW_KEY);
-							}
-							
-							//debug if statement
-							if(monitoredAS.neighborMap.containsKey(compareAS.asn))
-							{							
-							//	System.out.println("[DEBUG] AS " + monitoredAS.asn + " neighbor of: " + compareAS.asn);
-								//System.out.println("[DEBUG] received lowest cost: " + wiserProps);
-								//System.out.println("[DEBUG] rib of AS is : " + monitoredAS.ribIn.toString());
-							}
-	
-						}// endfor
-						
-					}
-//					else
-//					{
-//						total--;
-//					}
-				}
+				break;
 			}
-	//		if(!bwTest){
+			for (int announcedAS : announcedASes) {
+				// make sure that the we aren't comparing the AS who announced
+				// this to itself
+				if (as == announcedAS) {
+					continue;
+				}
+				AS compareAS = asMap.get(announcedAS); // the AS that announced
+				// sanity check, if any monitor as to this as causes an
+				// exception, do not add to costs
+				boolean skip = false;
+				for (int sanity : monitorASes) {
+					AS sanityAS = asMap.get(sanity);
+					if (sanityAS.bestPath.get(announcedAS) != null) {
+						try {
+							monitoredAS.bestPath.get(announcedAS).getPath()
+									.size();
+						} catch (Exception e) {
+							if (!removedASes.contains(announcedAS)) {
+								System.out.println("removed: " + announcedAS);
+								removedASes.add(announcedAS);
+							}
+							skip = true;
+						}
+					}
+				}
+				if (skip) {
+					continue;
+				}
+				if (monitoredAS.bestPath.get(announcedAS) != null) {
+					IA bestPath = monitoredAS.bestPath.get(announcedAS);
+					// try{
+
+					if (monitoredAS.type == AS.REPLACEMENT_AS) {
+						String[] replacementProps = AS.getProtoProps(bestPath,
+								bestPath.popCosts.keySet().iterator().next(),
+								new Protocol(AS.REPLACEMENT_AS));
+						if (replacementProps == null) {
+							totalBestPaths += 1;
+							if (isStub) {
+								totalStubBestPaths += 1;
+							}
+						} else {
+							totalBestPaths += Long.valueOf(replacementProps[0]);
+							if (isStub) {
+								totalStubBestPaths += Long
+										.valueOf(replacementProps[0]);
+							}
+						}
+					}
+					totalBestPathNodes += monitoredAS.bestPath.get(announcedAS)
+							.getPath().size();
+					if (monitoredAS.type == AS.WISER) {
+						bestpathTruecost += monitoredAS.bestPath.get(
+								announcedAS).getTrueCost();
+						String wiserProps[] = AS.getWiserProps(bestPath,
+								bestPath.popCosts.keySet().iterator().next());
+						if (wiserProps != null) {
+							float wiserVal = Float.valueOf(wiserProps[0]);
+							float normalization = Float.valueOf(wiserProps[1]);
+							// System.out.println("normalization: " +
+							// normalization);
+							receivedFIBWiserCost += ((float) wiserVal)
+									/ normalization;
+							receivedFIBTrueCost += ((float) bestPath
+									.getTrueCost()) / normalization;
+						}
+					}//
+					if (monitoredAS.type == AS.BANDWIDTH_AS) {
+						bestpathBWSum += monitoredAS.bestPath.get(announcedAS).bookKeepingInfo
+								.get(IA.BNBW_KEY);
+						String bwProps[] = AS.getBandwidthProps(bestPath,
+								bestPath.popCosts.keySet().iterator().next());
+						if (bwProps != null) {
+							float bw = Float.valueOf(bwProps[0]);
+							receivedFIBBW += bw;
+							receivedFIBTrueBW += monitoredAS.bestPath
+									.get(announcedAS).bookKeepingInfo
+									.get(IA.BNBW_KEY);
+						}
+
+					}
+					totalFibCostSum += monitoredAS.bestPath.get(announcedAS)
+							.getTrueCost();
+					totalFibBwSum += monitoredAS.bestPath.get(announcedAS).bookKeepingInfo
+							.get(IA.BNBW_KEY);
+
+					// }
+					// catch(Exception e)
+					// {
+					// System.out.println("exception for <monitor, anounced>: "
+					// + monitoredAS.asn + " " + announcedAS);
+					// System.exit(1);
+					// }
+				} //
+					//
+				// System.out.println("[DEBUG] lowest cost: " + lowestCost);
+				// see if monitored AS has that path in the RIB_in, //if it
+				// doesn't have a path, that means policy
+				// disconnection, don't include it in our percentage.
+				if (monitoredAS.ribIn.get(announcedAS) != null) { //
+					totalRIBSize += monitoredAS.ribIn.get(announcedAS).size(); //
+					for (IA path : monitoredAS.ribIn.get(announcedAS).values()) { //
+						totalRibCostSum += path.getTrueCost();
+						totalRibBwSum += path.bookKeepingInfo.get(IA.BNBW_KEY);
+						if (monitoredAS.type == AS.REPLACEMENT_AS) {
+							String[] replacementProps = AS.getProtoProps(path,
+									path.popCosts.keySet().iterator().next(),
+									new Protocol(AS.REPLACEMENT_AS));
+							if (replacementProps == null) {
+								totalRIBPaths += 1;
+								if (isStub) {
+									totalStubRIBPaths += 1;
+								}
+							} else {
+								totalRIBPaths += Long
+										.valueOf(replacementProps[0]);
+								if (isStub) {
+									totalStubRIBPaths += Long
+											.valueOf(replacementProps[0]);
+								}
+							}
+						}
+						if (monitoredAS.type == AS.WISER) {
+							partRibCostSum += path.getTrueCost();
+						}
+						if (monitoredAS.type == AS.BANDWIDTH_AS) {
+							partRibBwSum += path.bookKeepingInfo
+									.get(IA.BNBW_KEY);
+						}
+
+						// debug if statement
+						if (monitoredAS.neighborMap.containsKey(compareAS.asn)) {
+							// System.out.println("[DEBUG] AS " +
+							// monitoredAS.asn + " neighbor of: " +
+							// compareAS.asn);
+							// System.out.println("[DEBUG] received lowest cost: "
+							// + wiserProps);
+							// System.out.println("[DEBUG] rib of AS is : " +
+							// monitoredAS.ribIn.toString());
+						}
+
+					}// endfor
+
+				}
+				// else
+				// {
+				// total--;
+				// }
+			}
+		}
+			
 			//if x is 0, then use the all stat for the 0th adoption point (status quo)
 			if(forX != 0.0){
 				System.out.println("WISER_RIB_GRAPH " + forX + " " + String.valueOf(((float) partRibCostSum)/wiserTotal) + " END");
@@ -2271,6 +2487,22 @@ public class Simulator {
 			System.out.println("WISER_FIB_COST_IN_ADVERT " + forX + " " + String.valueOf(((float) receivedFIBWiserCost) / wiserTotal) );
 			System.out.println("bestpath_receivedcost:truecost_ratio: " + forX + " " + String.valueOf(((float) receivedFIBWiserCost) / receivedFIBTrueCost) + " END");
 			System.out.println("bwratio_received:true " + forX + " " + String.valueOf(((float) receivedFIBBW) / receivedFIBTrueBW) + " END");
+			
+			//reset state for default bgp run
+			try {
+				asMap.clear();
+				readTopology(topoFile, false, true);
+				preProcessReplacement();
+				monitorASes.clear();
+				announcedASes.clear();
+				runSimulation(monitorASes, announcedASes, ALL); //monitor from all as we do some local bookkeeping to keep track of updated.	
+				doBGPStatistics(forX, monitorASes, announcedASes);
+			} catch (Exception e) {
+				// TODO Auto-generated catch block
+				e.printStackTrace();
+			} //read, but set all to bgp
+			
+			
 		}
 		
 	
@@ -2732,7 +2964,14 @@ public class Simulator {
 		return 5;
 	}
 	
-	private static void readTopology(String topologyFile, boolean useBandwidth) throws Exception {
+	/**
+	 * takes in topology file and creates the ASes based on the format
+	 * Format: AS1 AS2 relationship metric pop1 pop2
+	 * @param topologyFile - file to read topology from
+	 * @param useBandwidth
+	 * @throws Exception
+	 */
+	private static void readTopology(String topologyFile, boolean useBandwidth, boolean allBGP) throws Exception {
 		// remember to initialize seedVal before calling this function.
 		specialR.setSeed(seedVal);
 		BufferedReader br = new BufferedReader(new FileReader(topologyFile));
@@ -2747,31 +2986,7 @@ public class Simulator {
 		//	int cost =  (int) Math.round(1/Math.log10(Float.parseFloat(token[3])) * 10000); //log! 
 			float bw = Float.parseFloat(token[3]);
 			float cost = bw;
-		//	float cost = 1/bw;
-//			if(bw < largestBW)
-//			{
-//				System.out.println("largestbwsofar: " + bw ) ;
-//				largestBW = bw;
-//			}
-		//	System.out.println("bw: " + bw);
-//			if(cost > 5)
-//			{
-//				cost = 5;
-//			}
-//			if(specialR.nextDouble() < .5) //for thelove of god, delete this later
-//			{
-//				cost = 5;
-//			}
-			//int cost =convertCost(bw, 10, 1024, 5);
-		//	System.out.println("cost: " + cost);
-			//decide whether to use bandwidth or latency
-//			if(!useBandwidth){
-//				linkMetric = Math.round((1/Float.parseFloat(token[3])) * 100000); //working with bandwidth maybe temporary, so parse float Integer.parseInt(token[3]);
-//			}
-//			else
-//			{
-//				linkMetric = Math.round(Float.parseFloat(token[3]));
-//			}
+
 			int pop1 = Integer.parseInt(token[4]);
 			int pop2 = Integer.parseInt(token[5]);
 //			int as1Type = Integer.parseInt(token[4]);
@@ -2779,32 +2994,33 @@ public class Simulator {
 			if(relation == AS.SIBLING) // we don't deal with this now
 				continue;
 			AS temp1 = null, temp2 = null;
-			if(!asMap.containsKey(as1)) {
-				int mraiVal = (int)(Math.round((r.nextFloat()*0.25 + 0.75)*MRAI_TIMER_VALUE/1000)*1000);
-//				System.err.println("AS" + as1 + " MRAI: " + mraiVal);
-				//if there is a special as type defined, then use that
-				if(asTypeDef.containsKey(as1)){					
-					if(asTypeDef.get(as1) == AS.TRANSIT)
-						temp1 = new Wiser_AS(as1, mraiVal, false);
-					else if(asTypeDef.get(as1) == AS.WISER)
-						temp1 = new Wiser_AS(as1, mraiVal, false);
-					else if (asTypeDef.get(as1) == AS.SBGP_TRANSIT || asTypeDef.get(as1) == AS.SBGP)
-					{
-						temp1 = new SBGP_AS(as1, mraiVal);
+			if (!asMap.containsKey(as1)) {
+				int mraiVal = (int) (Math.round((r.nextFloat() * 0.25 + 0.75)
+						* MRAI_TIMER_VALUE / 1000) * 1000);
+				// System.err.println("AS" + as1 + " MRAI: " + mraiVal);
+				// if there is a special as type defined, then use that
+				if (!allBGP) {
+					if (asTypeDef.containsKey(as1)) {
+						if (asTypeDef.get(as1) == AS.TRANSIT)
+							temp1 = new Wiser_AS(as1, mraiVal, false);
+						else if (asTypeDef.get(as1) == AS.WISER)
+							temp1 = new Wiser_AS(as1, mraiVal, false);
+						else if (asTypeDef.get(as1) == AS.SBGP_TRANSIT
+								|| asTypeDef.get(as1) == AS.SBGP) {
+							temp1 = new SBGP_AS(as1, mraiVal);
+						} else if (asTypeDef.get(as1) == AS.BANDWIDTH_AS
+								|| asTypeDef.get(as1) == AS.BANDWIDTH_TRANSIT) {
+							temp1 = new Bandwidth_AS(as1, mraiVal, false);
+						} else if (asTypeDef.get(as1) == AS.REPLACEMENT_AS) {
+							temp1 = new Replacement_AS(as1, mraiVal);
+						}
 					}
-					else if (asTypeDef.get(as1) == AS.BANDWIDTH_AS || asTypeDef.get(as1) == AS.BANDWIDTH_TRANSIT)
-					{
-						temp1 = new Bandwidth_AS(as1, mraiVal, false);
+					// temp1 = new BGP_AS(as1, mraiVal); //
+					// else just use efault bgp
+					else {
+						temp1 = new BGP_AS(as1, mraiVal);
 					}
-					else if(asTypeDef.get(as1) == AS.REPLACEMENT_AS)
-					{
-						temp1 = new Replacement_AS(as1, mraiVal);
-					}
-				}
-					//temp1 = new BGP_AS(as1, mraiVal); //
-				//else just use efault bgp
-				else
-				{
+				} else {
 					temp1 = new BGP_AS(as1, mraiVal);
 				}
 	//			temp1.protocol = as1Type;
@@ -2812,29 +3028,29 @@ public class Simulator {
 			}
 			temp1 = asMap.get(as1);
 
-			if(!asMap.containsKey(as2)) {
-				int mraiVal = (int)(Math.round((r.nextFloat()*0.25 + 0.75)*MRAI_TIMER_VALUE/1000)*1000);
-//				System.err.println("AS" + as2 + " MRAI: " + mraiVal);
-				if(asTypeDef.containsKey(as2)){
-					if(asTypeDef.get(as2) == AS.TRANSIT)
-						temp2 = new Wiser_AS(as2, mraiVal, false);
-					else if(asTypeDef.get(as2) == AS.WISER)
-						temp2 = new Wiser_AS(as2, mraiVal, false);
-					else if (asTypeDef.get(as2) == AS.SBGP_TRANSIT || asTypeDef.get(as2) == AS.SBGP)
-					{
-						temp2 = new SBGP_AS(as2, mraiVal);
+			if (!asMap.containsKey(as2)) {
+				int mraiVal = (int) (Math.round((r.nextFloat() * 0.25 + 0.75)
+						* MRAI_TIMER_VALUE / 1000) * 1000);
+				// System.err.println("AS" + as2 + " MRAI: " + mraiVal);
+				if (!allBGP) {
+					if (asTypeDef.containsKey(as2)) {
+						if (asTypeDef.get(as2) == AS.TRANSIT)
+							temp2 = new Wiser_AS(as2, mraiVal, false);
+						else if (asTypeDef.get(as2) == AS.WISER)
+							temp2 = new Wiser_AS(as2, mraiVal, false);
+						else if (asTypeDef.get(as2) == AS.SBGP_TRANSIT
+								|| asTypeDef.get(as2) == AS.SBGP) {
+							temp2 = new SBGP_AS(as2, mraiVal);
+						} else if (asTypeDef.get(as2) == AS.BANDWIDTH_AS
+								|| asTypeDef.get(as2) == AS.BANDWIDTH_TRANSIT) {
+							temp2 = new Bandwidth_AS(as2, mraiVal, false);
+						} else if (asTypeDef.get(as2) == AS.REPLACEMENT_AS) {
+							temp2 = new Replacement_AS(as2, mraiVal);
+						}
+					} else {
+						temp2 = new BGP_AS(as2, mraiVal);
 					}
-					else if (asTypeDef.get(as2) == AS.BANDWIDTH_AS || asTypeDef.get(as2) == AS.BANDWIDTH_TRANSIT)
-					{
-						temp2 = new Bandwidth_AS(as2, mraiVal, false);
-					}
-					else if (asTypeDef.get(as2) == AS.REPLACEMENT_AS)
-					{
-						temp2 = new Replacement_AS(as2, mraiVal);
-					}
-				}
-				else
-				{
+				} else {
 					temp2 = new BGP_AS(as2, mraiVal);
 				}
 //				temp2.protocol = as2Type;
