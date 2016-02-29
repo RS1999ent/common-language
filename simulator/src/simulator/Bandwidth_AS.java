@@ -245,6 +245,23 @@ public class Bandwidth_AS extends AS {
 
 	}
 	
+	void readyForPeer(int pseudoMraiValue, IA newPath, IA oldPath, int forAS, boolean simulateTimers)
+	{
+		IA overWritePath = new IA(newPath);
+		if(!isBasic) //this is a problem, if basic because we attach passthrough in the next method.  experimetns dont' use basic nodes anymore though
+			addBottleneckBandwidth(overWritePath, oldPath, forAS) ;
+		addPathToPendingUpdatesForPeer(overWritePath, forAS);
+		if(simulateTimers) {
+			if(!mraiRunning.get(forAS)) {
+				mraiRunning.put(forAS, true);
+				Simulator.addEvent(new Event(Simulator.getTime() + pseudoMraiValue,
+						asn, forAS));
+			}
+		}
+		sendUpdatesToPeer(forAS);
+	}					
+
+	
 	/**
 	 * This function adds a path to the set of path
 	 * updates. Uses outbound filtering to decide which
@@ -298,79 +315,19 @@ public class Bandwidth_AS extends AS {
 	//	passThrough.attachPassthrough(newPath); //attach passthrough before sending to neighbors, done in addbottleneckbandwidth()
 		if(nhType == PROVIDER || nhType == PEER) { // announce it only to customers .. and to nextHop in the path 
 			for(int i=0; i<customers.size(); i++) {
-				//add bw path attributes if this is a full wiser node
-				//copy newpath because we are adding multiple stuff to it
-				IA overWritePath = new IA(newPath);
-				if(!isBasic) //this is a problem, if basic because we attach passthrough in the next method.  experimetns dont' use basic nodes anymore though
-					addBottleneckBandwidth(overWritePath, p, customers.get(i)) ;
-				addPathToPendingUpdatesForPeer(overWritePath, customers.get(i));
-				if(simulateTimers) {
-					if(!mraiRunning.get(customers.get(i))) {
-						mraiRunning.put(customers.get(i), true);
-						Simulator.addEvent(new Event(Simulator.getTime() + pseudoMraiValue,
-								asn, customers.get(i)));
-					}
-				}
-				sendUpdatesToPeer(customers.get(i));
+				readyForPeer(pseudoMraiValue, newPath, p, customers.get(i), simulateTimers);
 			}
-			IA overWritePath = new IA(newPath);
-			if(!isBasic) //if this a full bw node, add costs
-				addBottleneckBandwidth(overWritePath, p, nh); //add bw path attribute.  this is to sending update to peer we received advert from.
-			addPathToPendingUpdatesForPeer(overWritePath, nh);
-			if(simulateTimers) {
-				if(!mraiRunning.get(nh)) {
-					mraiRunning.put(nh, true);
-					Simulator.addEvent(new Event(Simulator.getTime() + pseudoMraiValue,
-							asn, nh));
-				}
-			}
-			sendUpdatesToPeer(nh);
+			readyForPeer(pseudoMraiValue, newPath, p, nh, simulateTimers);
 		}
 		else { // customer path, so announce to all
 			for(int i=0; i<customers.size(); i++) {
-				//add bw path attributes if this is a bw node
-				IA overWritePath = new IA(newPath);	
-				if(!isBasic)
-					addBottleneckBandwidth(overWritePath, p, customers.get(i));
-				addPathToPendingUpdatesForPeer(overWritePath, customers.get(i));
-				if(simulateTimers) {
-					if(!mraiRunning.get(customers.get(i))) {
-						mraiRunning.put(customers.get(i), true);
-						Simulator.addEvent(new Event(Simulator.getTime() + pseudoMraiValue,
-								asn, customers.get(i)));
-					}
-				}
-				sendUpdatesToPeer(customers.get(i));
+				readyForPeer(pseudoMraiValue, newPath, p, customers.get(i), simulateTimers);
 			}
 			for(int i=0; i<providers.size(); i++) {				
-				//add bw path attributes if this is a bw node
-				IA overWritePath = new IA(newPath);
-				if(!isBasic)
-					addBottleneckBandwidth(overWritePath, p, providers.get(i));
-				addPathToPendingUpdatesForPeer(overWritePath, providers.get(i));
-				if(simulateTimers) {
-					if(!mraiRunning.get(providers.get(i))) {
-						mraiRunning.put(providers.get(i), true);
-						Simulator.addEvent(new Event(Simulator.getTime() + pseudoMraiValue,
-								asn, providers.get(i)));
-					}
-				}
-				sendUpdatesToPeer(providers.get(i));
+				readyForPeer(pseudoMraiValue, newPath, p, providers.get(i), simulateTimers);
 			}
 			for(int i=0; i<peers.size(); i++) {
-				//add bw path attributes if this is a bw node
-				IA overWritePath = new IA(newPath);
-				if(!isBasic)
-					addBottleneckBandwidth(overWritePath, p, peers.get(i));
-				addPathToPendingUpdatesForPeer(overWritePath, peers.get(i));
-				if(simulateTimers) {
-					if(!mraiRunning.get(peers.get(i))) {
-						mraiRunning.put(peers.get(i), true);
-						Simulator.addEvent(new Event(Simulator.getTime() + pseudoMraiValue,
-								asn, peers.get(i)));
-					}
-				}
-				sendUpdatesToPeer(peers.get(i));
+				readyForPeer(pseudoMraiValue, newPath, p, peers.get(i), simulateTimers);
 			}
 		}
 	}
@@ -1079,44 +1036,7 @@ public class Bandwidth_AS extends AS {
 		 */
 		public boolean isBetter(IA p1, IA p2, boolean dampenBookKeep) {
 			
-		
-			
-			// this is where we can apply the policy
-			// for now, we just follow customer > peer > provider
-			// and in case of a tie, shortest path length
-			// and then break tie by lowest Bandwidth_AS number for next hop
-	
-		/*	if(p2 == null || p2.getPath() == null) 
-				return true;
-			if(p1 == null || p1.getPath() == null)
-				return false;
-	
-			int p1nh = p1.getFirstHop();
-			int p2nh = p2.getFirstHop();
-			
-			int p1nhType = neighborMap.get(p1nh);
-			int p2nhType = neighborMap.get(p2nh);
-	
-			if( p1nhType < p2nhType ) { //
-				return true;
-			}
-			else if(p1nhType > p2nhType) {
-				return false;
-			}
-			else { // both are similar, so look at path length
-				if(p1.getPath().size() < p2.getPath().size()) {
-					return true;
-				}
-				else if( p1.getPath().size() > p2.getPath().size() ) {
-					return false;
-				}
-				// else .. break tie using Bandwidth_AS number
-				else if (p1.getFirstHop() < p2.getFirstHop())
-				{
-					return true;
-				}
-			}
-			return false;*/
+
 			if(p2 == null || p2.getPath() == null) 
 				return true;
 			if(p1 == null || p1.getPath() == null)

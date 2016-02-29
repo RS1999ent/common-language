@@ -902,7 +902,7 @@ public class Simulator {
 				return true;
 
 			}
-			else { //got a thread, make sure slept is false
+			else { 
 				// the message is printed first and then processed!
 				if(e.eventType == Event.MSG_EVENT) {
 					debug(e.toString());
@@ -1636,18 +1636,14 @@ public class Simulator {
 		}
 		
 		//go through and have all wiser nodes announce themselves, only announce some constant at a time, let the sim go.
-		int batchSize = BATCH_PERCENT;//(int) (asTypeDef.size() * BATCH_PERCENT); unused now, always 1, very necessary for it to be this way
-		int counter= 0;
 		int globalCounter = 0;
 		for(int i = 0; i < announcedASes.size(); i++)
-		{
-			counter++; 
+		{ 
 			globalCounter++;
 			int announcedAS = announcedASes.get(i);
 			asMap.get(announcedAS).announceSelf(); //announce an AS off our announced list			
 //			if(counter == batchSize)
-//			{	
-				counter = 0;			    
+//			{			    
 				System.out.printf("\r%d", globalCounter);
 				//			    System.out.println("iteration START");
 				instrumented = false;
@@ -1718,46 +1714,9 @@ public class Simulator {
 			}
 		} while(!cleared);
 		
-//		System.out.println("HERE");
-//		do {
-//			cleared = true;
-//			for(int announcedAS : announcedASes)
-//			{
-//				for(int monitorAS: monitorASes)
-//				{
-//					AS sanityAS = asMap.get(monitorAS);
-//					if(sanityAS.bestPath.get(announcedAS) != null){
-//						try{
-//							sanityAS.bestPath.get(announcedAS).getPath().size();
-//						}
-//						catch (Exception e)
-//						{	
-//							sanityAS.bestPath.remove(announcedAS);
-//							sanityAS.ribIn.remove(announcedAS);
-//							System.out.println("rerunning for: " + monitorAS + " " + announcedAS);
-//							asMap.get(announcedAS).announceSelf();
-//							run();
-//							cleared = false;
-//						}
-//					}
-//				}
-//			}
-//		} while(!cleared);
-
-		//		System.out.println("Number of announced ASes: " + announcedASes.size());
-		//run for any missing ASes
-		instrumented = false;
-//		run();
-		//		monitorASes.clear(); //REMOVE LATER, ADDING ALL MONITOR ASES
-//		for(Integer key : asMap.keySet())
-//		{
-//			asMap.get(key).clearBookKeeping();
-//			//		monitorASes.add(key); //ADDING ALL MONITOR ASES, REMOVE LATER
-//		}		
 
 	}
 	
-	private static final int BATCH_PERCENT = 1; //PERCENT OF ASES TO ANNOUNCE AT A TIME needs to always be 1 now
 	private static final int RIB_METRIC = 0;
 	private static final int FIB_METRIC = 1;
 	/**
@@ -2287,7 +2246,6 @@ public class Simulator {
 			switch (monitoredAS.type) {
 			case AS.WISER:
 				wiserTotal++;
-				incomingCost += getIncomingCosts(as);
 				break;
 			case AS.BANDWIDTH_AS:
 				bwTotal++;
@@ -3238,7 +3196,6 @@ public class Simulator {
 	
 	private static void fillASNumPaths(HashMap<Integer, ArrayList<Integer>> predecessorList, int asn)
 	{
-		HashSet<Integer> stubs = computeStubs();
 		AS theAS = asMap.get(asn);
 		if(theAS.type == AS.REPLACEMENT_AS)
 		{

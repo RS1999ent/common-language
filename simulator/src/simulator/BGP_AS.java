@@ -237,6 +237,23 @@ public class BGP_AS extends AS {
 //		}
 		
 	}
+
+	void readyForPeer(int pseudoMraiValue, IA newPath, IA oldPath, int forAS, boolean simulateTimers, PoPTuple tupleChosen)
+	{
+		IA overWritePath = new IA(newPath);
+		fillAdvertisementPoP(overWritePath, forAS, tupleChosen);
+		addPathToPendingUpdatesForPeer(overWritePath, forAS);
+		if(simulateTimers) {
+			if(!mraiRunning.get(forAS)) {
+				mraiRunning.put(forAS, true);
+				Simulator.addEvent(new Event(Simulator.getTime() + pseudoMraiValue,
+						asn, forAS));
+			}
+		}
+		sendUpdatesToPeer(forAS);
+	}					
+
+	
 	
 	/**
 	 * This function adds a path to the set of path
@@ -286,81 +303,20 @@ public class BGP_AS extends AS {
 //		passThrough.attachPassthrough(newPath, tupleChosen); //attach passthrough info before sending to neighbors (put into another method)
 		if(nhType == PROVIDER || nhType == PEER) { // announce it only to customers .. and to nextHop in the path 
 			for(int i=0; i<customers.size(); i++) {
-				IA overwrite = new IA(newPath);
-				Integer customer = customers.get(i);
-		//		if(tupleChosen != null){
-				fillAdvertisementPoP(overwrite, customers.get(i), tupleChosen);
-	//			}
-				addPathToPendingUpdatesForPeer(overwrite, customers.get(i));
-				if(simulateTimers) {
-					if(!mraiRunning.get(customers.get(i))) {
-						mraiRunning.put(customers.get(i), true);
-						Simulator.addEvent(new Event(Simulator.getTime() + pseudoMraiValue,
-								asn, customers.get(i)));
-					}
-				}
-				sendUpdatesToPeer(customers.get(i));
+				readyForPeer(pseudoMraiValue, newPath, p, customers.get(i), simulateTimers, tupleChosen);
 			}
 			
-			IA overwrite = new IA(newPath);
-		//		if(tupleChosen != null){
-			fillAdvertisementPoP(overwrite, nh, tupleChosen);
-	//			}
-			addPathToPendingUpdatesForPeer(overwrite, nh);
-			if(simulateTimers) {
-				if(!mraiRunning.get(nh)) {
-					mraiRunning.put(nh, true);
-					Simulator.addEvent(new Event(Simulator.getTime() + pseudoMraiValue,
-							asn, nh));
-				}
-			}
-			sendUpdatesToPeer(nh);
+			readyForPeer(pseudoMraiValue, newPath, p, nh, simulateTimers, tupleChosen);	
 		}
 		else { // customer path, so announce to all
 			for(int i=0; i<customers.size(); i++) {
-				IA overwrite = new IA(newPath);
-//				if(tupleChosen != null){
-				fillAdvertisementPoP(overwrite, customers.get(i), tupleChosen);
-//				}
-				addPathToPendingUpdatesForPeer(overwrite, customers.get(i));
-				if(simulateTimers) {
-					if(!mraiRunning.get(customers.get(i))) {
-						mraiRunning.put(customers.get(i), true);
-						Simulator.addEvent(new Event(Simulator.getTime() + pseudoMraiValue,
-								asn, customers.get(i)));
-					}
-				}
-				sendUpdatesToPeer(customers.get(i));
+				readyForPeer(pseudoMraiValue, newPath, p, customers.get(i), simulateTimers, tupleChosen);
 			}
 			for(int i=0; i<providers.size(); i++) {
-				IA overwrite = new IA(newPath);
-//				if(tupleChosen != null){
-				fillAdvertisementPoP(overwrite, providers.get(i), tupleChosen);
-//				}
-				addPathToPendingUpdatesForPeer(overwrite, providers.get(i));
-				if(simulateTimers) {
-					if(!mraiRunning.get(providers.get(i))) {
-						mraiRunning.put(providers.get(i), true);
-						Simulator.addEvent(new Event(Simulator.getTime() + pseudoMraiValue,
-								asn, providers.get(i)));
-					}
-				}
-				sendUpdatesToPeer(providers.get(i));
+				readyForPeer(pseudoMraiValue, newPath, p, providers.get(i), simulateTimers, tupleChosen);
 			}
 			for(int i=0; i<peers.size(); i++) {
-				IA overwrite = new IA(newPath);
-//				if(tupleChosen != null){
-				fillAdvertisementPoP(overwrite, peers.get(i), tupleChosen);
-//				}
-				addPathToPendingUpdatesForPeer(overwrite, peers.get(i));
-				if(simulateTimers) {
-					if(!mraiRunning.get(peers.get(i))) {
-						mraiRunning.put(peers.get(i), true);
-						Simulator.addEvent(new Event(Simulator.getTime() + pseudoMraiValue,
-								asn, peers.get(i)));
-					}
-				}
-				sendUpdatesToPeer(peers.get(i));
+				readyForPeer(pseudoMraiValue, newPath, p, peers.get(i), simulateTimers, tupleChosen);
 			}
 		}
 	}

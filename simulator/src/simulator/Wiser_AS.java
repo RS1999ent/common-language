@@ -236,6 +236,23 @@ public class Wiser_AS extends AS {
 
 	}
 	
+	
+	void readyForPeer(int pseudoMraiValue, IA newPath, IA oldPath, int forAS, boolean simulateTimers)
+	{
+		IA overWritePath = new IA(newPath);
+		if(!isBasic) //this is a problem, if basic because we attach passthrough in the next method.  experimetns dont' use basic nodes anymore though
+			addWiserPathAttribute(overWritePath, oldPath, forAS) ;
+		addPathToPendingUpdatesForPeer(overWritePath, forAS);
+		if(simulateTimers) {
+			if(!mraiRunning.get(forAS)) {
+				mraiRunning.put(forAS, true);
+				Simulator.addEvent(new Event(Simulator.getTime() + pseudoMraiValue,
+						asn, forAS));
+			}
+		}
+		sendUpdatesToPeer(forAS);
+	}
+	
 	/**
 	 * This function adds a path to the set of path
 	 * updates. Uses outbound filtering to decide which
@@ -290,79 +307,20 @@ public class Wiser_AS extends AS {
 	//	passThrough.attachPassthrough(newPath); //attach passthrough before sending to neighbors, done in addwiserpathattribute
 		if(nhType == PROVIDER || nhType == PEER) { // announce it only to customers .. and to nextHop in the path 
 			for(int i=0; i<customers.size(); i++) {
-				//add wiser path attributes if this is a full wiser node
-				//copy newpath because we are adding multiple stuff to it
-				IA overWritePath = new IA(newPath);
-				if(!isBasic) //this is a problem, if basic because we attach passthrough in the next method.  experimetns dont' use basic nodes anymore though
-					addWiserPathAttribute(overWritePath, p, customers.get(i)) ;
-				addPathToPendingUpdatesForPeer(overWritePath, customers.get(i));
-				if(simulateTimers) {
-					if(!mraiRunning.get(customers.get(i))) {
-						mraiRunning.put(customers.get(i), true);
-						Simulator.addEvent(new Event(Simulator.getTime() + pseudoMraiValue,
-								asn, customers.get(i)));
-					}
-				}
-				sendUpdatesToPeer(customers.get(i));
+				readyForPeer(pseudoMraiValue, newPath, p, customers.get(i), simulateTimers);
 			}
-			IA overWritePath = new IA(newPath);
-			if(!isBasic) //if this a full wiser node, add costs
-				addWiserPathAttribute(overWritePath, p, nh); //add wiser path attribute.  this is to sending update to peer we received advert from.
-			addPathToPendingUpdatesForPeer(overWritePath, nh);
-			if(simulateTimers) {
-				if(!mraiRunning.get(nh)) {
-					mraiRunning.put(nh, true);
-					Simulator.addEvent(new Event(Simulator.getTime() + pseudoMraiValue,
-							asn, nh));
-				}
-			}
-			sendUpdatesToPeer(nh);
+			
+			readyForPeer(pseudoMraiValue, newPath, p, nh, simulateTimers); //send update to peer we received advert from
 		}
 		else { // customer path, so announce to all
 			for(int i=0; i<customers.size(); i++) {
-				//add wiser path attributes if this is a wiser node
-				IA overWritePath = new IA(newPath);	
-				if(!isBasic)
-					addWiserPathAttribute(overWritePath, p, customers.get(i));
-				addPathToPendingUpdatesForPeer(overWritePath, customers.get(i));
-				if(simulateTimers) {
-					if(!mraiRunning.get(customers.get(i))) {
-						mraiRunning.put(customers.get(i), true);
-						Simulator.addEvent(new Event(Simulator.getTime() + pseudoMraiValue,
-								asn, customers.get(i)));
-					}
-				}
-				sendUpdatesToPeer(customers.get(i));
+				readyForPeer(pseudoMraiValue, newPath, p, customers.get(i), simulateTimers);
 			}
 			for(int i=0; i<providers.size(); i++) {				
-				//add wiser path attributes if this is a wiser node
-				IA overWritePath = new IA(newPath);
-				if(!isBasic)
-					addWiserPathAttribute(overWritePath, p, providers.get(i));
-				addPathToPendingUpdatesForPeer(overWritePath, providers.get(i));
-				if(simulateTimers) {
-					if(!mraiRunning.get(providers.get(i))) {
-						mraiRunning.put(providers.get(i), true);
-						Simulator.addEvent(new Event(Simulator.getTime() + pseudoMraiValue,
-								asn, providers.get(i)));
-					}
-				}
-				sendUpdatesToPeer(providers.get(i));
+				readyForPeer(pseudoMraiValue, newPath, p, providers.get(i), simulateTimers);
 			}
 			for(int i=0; i<peers.size(); i++) {
-				//add wiser path attributes if this is a wiser node
-				IA overWritePath = new IA(newPath);
-				if(!isBasic)
-					addWiserPathAttribute(overWritePath, p, peers.get(i));
-				addPathToPendingUpdatesForPeer(overWritePath, peers.get(i));
-				if(simulateTimers) {
-					if(!mraiRunning.get(peers.get(i))) {
-						mraiRunning.put(peers.get(i), true);
-						Simulator.addEvent(new Event(Simulator.getTime() + pseudoMraiValue,
-								asn, peers.get(i)));
-					}
-				}
-				sendUpdatesToPeer(peers.get(i));
+				readyForPeer(pseudoMraiValue, newPath, p, peers.get(i), simulateTimers);
 			}
 		}
 	}
