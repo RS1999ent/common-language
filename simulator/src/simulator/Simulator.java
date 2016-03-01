@@ -2279,45 +2279,6 @@ public class Simulator {
 			computeBWStats(monitorASes, announcedASes, forX, false);
 			computeReplacementStats(monitorASes, announcedASes, forX);
 			
-		/*	//if x is 0, then use the all stat for the 0th adoption point (status quo)
-			if(forX != 0.0){
-				System.out.println("WISER_RIB_GRAPH " + forX + " " + String.valueOf(((float) partRibCostSum)/wiserTotal) + " END");
-				System.out.println("WISER_FIB_GRAPH " + forX + " " + String.valueOf(((float) bestpathTruecost)/wiserTotal) + " END");
-			
-				System.out.println("BW_RIB_GRAPH " + forX + " " + String.valueOf(((float) partRibBwSum)/bwTotal) + " END");
-				System.out.println("BW_FIB_GRAPH " + forX + " " + String.valueOf(((float) bestpathBWSum)/bwTotal) + " END");
-
-			}
-			else{
-				System.out.println("WISER_RIB_GRAPH " + forX + " " + String.valueOf(((float) totalRibCostSum)/total) + " END" );
-				System.out.println("WISER_FIB_GRAPH " + forX + " " + String.valueOf(((float) totalFibCostSum)/total) + " END" );
-				System.out.println("BW_RIB_GRAPH " + forX + " " + String.valueOf(((float) totalRibBwSum)/total) + " END" );
-				System.out.println("BW_FIB_GRAPH " + forX + " " + String.valueOf(((float) totalFibBwSum)/total) + " END" );
-
-			}
-			
-			System.out.println("REPLACEMENT_RIB_GRAPH " + forX + " " + String.valueOf(((float) totalRIBPaths)/replacementTotal) + " END");
-			System.out.println("REPLACEMENT_FIB_GRAPH " + forX + " " + String.valueOf(((float) totalBestPaths)/replacementTotal) + " END");
-			System.out.println("REPLACEMENT_STUB_RIB_GRAPH " + forX + " " + String.valueOf(((float) totalStubRIBPaths)/replacementStubTotal) + " END");
-			System.out.println("REPLACEMENT_STUB_FIB_GRAPH " + forX + " " + String.valueOf(((float) totalStubBestPaths)/replacementStubTotal) + " END");
-			
-			System.out.println("ALLWISER_RIB_GRAPH " + forX + " " + String.valueOf(((float) totalRibCostSum)/total) + " END" );
-			System.out.println("ALLWISER_FIB_GRAPH " + forX + " " + String.valueOf(((float) totalFibCostSum)/total) + " END" );
-			System.out.println("ALLBW_RIB_GRAPH " + forX + " " + String.valueOf(((float) totalRibBwSum)/total) + " END" );
-			System.out.println("ALLBW_FIB_GRAPH " + forX + " " + String.valueOf(((float) totalFibBwSum)/total) + " END" );
-			
-			System.out.println("GULF_BWREPLACEMENT_TRUECOST_RIB " + forX + " " + String.valueOf(((float) (totalRibCostSum - partRibCostSum)) / (total - wiserTotal)  ) + " END");
-			System.out.println("GULF_BWREPLACEMENT_TRUECOST_FIB " + forX + " " + String.valueOf(((float) (totalFibCostSum - bestpathTruecost)) / (total - wiserTotal)  ) + " END");
-			
-			System.out.println("GULF_WISERREPLACEMENT_TRUECOST_RIB " + forX + " " + String.valueOf(((float) (totalRibBwSum - partRibBwSum)) / (total - bwTotal)  ) + " END");
-			System.out.println("GULF_WISERREPLACEMENT_TRUECOST_FIB " + forX + " " + String.valueOf(((float) (totalFibBwSum - bestpathBWSum)) / (total - bwTotal)  ) + " END");
-			
-			System.out.println("incomingCosts " + forX + " " + String.valueOf(((float) incomingCost)/wiserTotal) + " END");
-			System.out.println("WISER_FIB_COST_IN_ADVERT " + forX + " " + String.valueOf(((float) receivedFIBWiserCost) / wiserTotal) );
-			System.out.println("bestpath_receivedcost:truecost_ratio: " + forX + " " + String.valueOf(((float) receivedFIBWiserCost) / receivedFIBTrueCost) + " END");
-			System.out.println("bwratio_received:true " + forX + " " + String.valueOf(((float) receivedFIBBW) / receivedFIBTrueBW) + " END");
-			*/
-			//reset state for default bgp run
 			try {
 				asMap.clear();
 				readTopology(topoFile, false, true);
