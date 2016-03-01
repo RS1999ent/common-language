@@ -1949,6 +1949,312 @@ public class Simulator {
 		System.out.println("BW_FIB_BGP_GRAPH " + forX + " " + String.valueOf(((float) bestpathBWSum)/bwTotal) + " END");
 				
 	}
+	
+	/**
+	 * Checks to see if the as we are monitoring has a nonnull best path to all annoucned destinations
+	 * if it doesnt, returns true (meaning that it has a null best path to some announced destinations
+	 * @param monitorASes - list of ases we are monitoring from 
+	 * @param announcedAS - the as that we are comparing to
+	 * @param monitoredAS - the as that we are on
+	 * @return - true if there is null best path to some dest, false otherwise
+	 */
+	static boolean sanityCheck(ArrayList<Integer> monitorASes, int announcedAS, AS monitoredAS)
+	{
+		ArrayList<Integer> removedASes = new ArrayList<Integer>();
+		boolean skip = false;
+		for (int sanity : monitorASes) {
+			AS sanityAS = asMap.get(sanity);
+			if (sanityAS.bestPath.get(announcedAS) != null) {
+				try {
+					monitoredAS.bestPath.get(announcedAS).getPath()
+					.size();
+				} catch (Exception e) {
+					if (!removedASes.contains(announcedAS)) {
+						System.out.println("removed: " + announcedAS);
+						removedASes.add(announcedAS);
+					}
+					skip = true;
+				}
+			}
+		}
+		return skip;
+	}
+	
+	/**
+	 * Computes and prints out sum statistics
+	 * Specifically: 
+	 * The average best path cost at participating ASes
+	 * The average best path cost at all ASes
+	 * The average rib costs at participating ases
+	 * The average rib costs at all ases
+	 * @param monitorASes - list of ASes to compute statistics over.  Should be ALL ases because we compute both particiapting and all
+	 * @param announcedASes - the ases that annnounced
+	 * @param forX - x coordinate for graph generation
+	 */
+	static void computeSumStats(ArrayList<Integer> monitorASes, ArrayList<Integer> announcedASes, float forX, boolean bgpStats) {
+		int wiserTotal = 0;
+		int total = monitorASes.size();
+		int fibPartMonitor = 0;
+		int fibAllMonitor = 0;
+		int ribPartMonitor = 0;
+		int ribAllMonitor = 0;
+		for (int as : monitorASes) {
+			// for each monitored AS, compare their lowest outgoing wiser cost
+			// with what was received
+			AS monitoredAS = asMap.get(as); // the AS we are measuring from (all
+											// transits eventually)
+			switch (monitoredAS.type) {
+			case AS.WISER:
+				wiserTotal++;
+				break;
+			}
+			for (int announcedAS : announcedASes) {
+				// make sure that the we aren't comparing the AS who announced
+				// this to itself
+				if (as == announcedAS) {
+					continue;
+				}
+				// sanity check, if any monitor as to this as causes an
+				// exception, do not add to costs
+				boolean skip = sanityCheck(monitorASes, announcedAS, monitoredAS);
+				if (skip) {
+					continue;
+				}
+				if (monitoredAS.bestPath.get(announcedAS) != null) {
+					IA bestPath = monitoredAS.bestPath.get(announcedAS);
+					// try{
+
+					if (monitoredAS.type == AS.WISER) {
+						fibPartMonitor += monitoredAS.bestPath.get(
+								announcedAS).getTrueCost();
+					}//
+					fibAllMonitor += monitoredAS.bestPath.get(announcedAS)
+							.getTrueCost();
+				} //
+					//
+				// System.out.println("[DEBUG] lowest cost: " + lowestCost);
+				// see if monitored AS has that path in the RIB_in, //if it
+				// doesn't have a path, that means policy
+				// disconnection, don't include it in our percentage.
+				if (monitoredAS.ribIn.get(announcedAS) != null) { //
+					for (IA path : monitoredAS.ribIn.get(announcedAS).values()) { //
+						ribAllMonitor += path.getTrueCost();
+						if (monitoredAS.type == AS.WISER) {
+							ribPartMonitor += path.getTrueCost();
+						}
+					}// endfor
+
+				}
+			}
+		}
+		
+		if(!bgpStats){
+			System.out.println("WISER_RIB_GRAPH " + forX + " " + String.valueOf(((float) ribPartMonitor)/wiserTotal) + " END" );
+			System.out.println("WISER_FIB_GRAPH " + forX + " " + String.valueOf(((float) fibPartMonitor)/wiserTotal) + " END" );
+
+			System.out.println("ALLWISER_RIB_GRAPH " + forX + " " + String.valueOf(((float) ribAllMonitor)/total) + " END" );
+			System.out.println("ALLWISER_FIB_GRAPH " + forX + " " + String.valueOf(((float) fibAllMonitor)/total) + " END" );
+		}
+		else
+		{
+			System.out.println("WISER_RIB_BGP_GRAPH " + forX + " " + String.valueOf(((float) ribPartMonitor)/wiserTotal) + " END" );
+			System.out.println("WISER_FIB_BGP_GRAPH " + forX + " " + String.valueOf(((float) fibPartMonitor)/wiserTotal) + " END" );
+
+			System.out.println("ALLWISER_RIB_BGP_GRAPH " + forX + " " + String.valueOf(((float) ribAllMonitor)/total) + " END" );
+			System.out.println("ALLWISER_FIB_BGP_GRAPH " + forX + " " + String.valueOf(((float) fibAllMonitor)/total) + " END" );
+		}
+	}
+	
+	/**
+	 * Computes and prints out bw statistics
+	 * Specifically;
+	 * The average bottleneck bandwidth for best path at All ases
+	 * The average bottleneck badnwidth for best path at participating ases
+	 * The average bottleneck bandwidth for received path at all ases
+	 * The average bottleneck bandwidth for received path at particiapting ases
+	 * @param monitorASes - list of ASes to compute statistics over.  Should be ALL ases because we compute both particiapting and all
+	 * @param announcedASes - list of ases that announced
+	 * @param forX - for graph xcoordinate
+	 */
+	static void computeBWStats(ArrayList<Integer> monitorASes, ArrayList<Integer> announcedASes, float forX, boolean bgpStats) {
+		int bwTotal = 0;
+		int total = monitorASes.size();
+		int fibPartMonitor = 0;
+		int fibAllMonitor = 0;
+		int ribPartMonitor = 0;
+		int ribAllMonitor = 0;
+		for (int as : monitorASes) {
+			// for each monitored AS, compare their lowest outgoing wiser cost
+			// with what was received
+			AS monitoredAS = asMap.get(as); // the AS we are measuring from (all
+											// transits eventually)
+			switch (monitoredAS.type) {
+			case AS.BANDWIDTH_AS:
+				bwTotal++;
+				break;
+			}
+			for (int announcedAS : announcedASes) {
+				// make sure that the we aren't comparing the AS who announced
+				// this to itself
+				if (as == announcedAS) {
+					continue;
+				}
+				// sanity check, if any monitor as to this as causes an
+				// exception, do not add to costs
+				boolean skip = sanityCheck(monitorASes, announcedAS, monitoredAS);
+				if (skip) {
+					continue;
+				}
+				if (monitoredAS.bestPath.get(announcedAS) != null) {
+					// try{
+
+					if (monitoredAS.type == AS.BANDWIDTH_AS) {
+						fibPartMonitor += monitoredAS.bestPath.get(announcedAS).bookKeepingInfo
+								.get(IA.BNBW_KEY);						
+					}//
+					fibAllMonitor += monitoredAS.bestPath.get(announcedAS).bookKeepingInfo
+								.get(IA.BNBW_KEY); 
+				} //
+					//
+				// System.out.println("[DEBUG] lowest cost: " + lowestCost);
+				// see if monitored AS has that path in the RIB_in, //if it
+				// doesn't have a path, that means policy
+				// disconnection, don't include it in our percentage.
+				if (monitoredAS.ribIn.get(announcedAS) != null) { //
+					for (IA path : monitoredAS.ribIn.get(announcedAS).values()) { //
+						ribAllMonitor += path.bookKeepingInfo.get(IA.BNBW_KEY);
+						if (monitoredAS.type == AS.BANDWIDTH_AS) {
+							ribPartMonitor += path.bookKeepingInfo.get(IA.BNBW_KEY);
+						}
+					}// endfor
+				}
+			}
+		}
+		
+		if(!bgpStats){
+		System.out.println("BW_RIB_GRAPH " + forX + " " + String.valueOf(((float) ribPartMonitor)/bwTotal) + " END" );
+		System.out.println("BW_FIB_GRAPH " + forX + " " + String.valueOf(((float) fibPartMonitor)/bwTotal) + " END" );
+				
+		System.out.println("ALLBW_RIB_GRAPH " + forX + " " + String.valueOf(((float) ribAllMonitor)/total) + " END" );
+		System.out.println("ALLBW_FIB_GRAPH " + forX + " " + String.valueOf(((float) fibAllMonitor)/total) + " END" );
+		}
+		else
+		{
+			System.out.println("BW_RIB_BGP_GRAPH " + forX + " " + String.valueOf(((float) ribPartMonitor)/bwTotal) + " END" );
+			System.out.println("BW_FIB_BPG_GRAPH " + forX + " " + String.valueOf(((float) fibPartMonitor)/bwTotal) + " END" );
+
+			System.out.println("ALLBW_RIB_BPG_GRAPH " + forX + " " + String.valueOf(((float) ribAllMonitor)/total) + " END" );
+			System.out.println("ALLBW_FIB_BGP_GRAPH " + forX + " " + String.valueOf(((float) fibAllMonitor)/total) + " END" );
+		}
+	}
+	
+	/**
+	 * Computes and prints out replacement statistics
+	 * Specifically;
+	 * The average number of paths to destination at all participating ases from bgp selected best path(DOESN'T WORK), participating scion ASes within an island don't update inadvert paths
+	 * so number of paths will be undercounted
+	 * The average number of paths to destinations from all stub participating ases
+	 * The average number of paths to destinations from all participating ases based on all received paths (doesn't work, see previous comment)
+	 * The average number of paths to destinations from all participating stub ases based on all received paths
+	 * Key Assumptions:
+	 * The number of paths to a destination that travels through multiple indirect scion islands will be <the number of paths through a scion island * the number of paths in advertisement>
+	 * Only the number of paths to a destination in ONE advertisement will be propagated inside an island.  This undercounts the metric we are measuring
+	 * Stub ases that are apart of a scion island may undercount paths (see DOESNT WORK comment above).  However, given a default path prop count of 10, this is 
+	 * likely to be very minor when this becomes a factor.
+	 * @param monitorASes - list of ASes to compute statistics over.  Should be ALL ases because we compute both particiapting and all
+	 * @param announcedASes - list of ases that announced
+	 * @param forX - for graph xcoordinate
+	 */
+	static void computeReplacementStats(ArrayList<Integer> monitorASes, ArrayList<Integer> announcedASes, float forX) {
+		int replacementTotal = 0;
+		int stubReplacementTotal = 0;
+		int fibAllParticipating = 0;
+		int fibStubParticipating = 0;
+		int ribAllParticipating = 0;
+		int ribStubParticipating = 0;
+		for (int as : monitorASes) {
+			// for each monitored AS, compare their lowest outgoing wiser cost
+			// with what was received
+			AS monitoredAS = asMap.get(as); // the AS we are measuring from (all
+											// transits eventually)
+			boolean isStub = (monitoredAS.customers.size() == 0);
+			switch (monitoredAS.type) {
+			case AS.REPLACEMENT_AS:
+				replacementTotal++;
+				if (isStub) {
+					stubReplacementTotal++;
+				}
+				break;
+			}
+			for (int announcedAS : announcedASes) {
+				// make sure that the we aren't comparing the AS who announced
+				// this to itself
+				if (as == announcedAS) {
+					continue;
+				}
+				// sanity check, if any monitor as to this as causes an
+				// exception, do not add to costs
+				boolean skip = sanityCheck(monitorASes, announcedAS, monitoredAS);
+				if (skip) {
+					continue;
+				}
+				if (monitoredAS.bestPath.get(announcedAS) != null) {
+					// try{
+					IA bestPath = monitoredAS.bestPath.get(announcedAS);
+					if (monitoredAS.type == AS.REPLACEMENT_AS) {
+						String[] replacementProps = AS.getProtoProps(bestPath,
+								bestPath.popCosts.keySet().iterator().next(),
+								new Protocol(AS.REPLACEMENT_AS));
+						if (replacementProps == null) {
+							fibAllParticipating += 1;
+							if (isStub) {
+								fibStubParticipating += 1;
+							}
+						} else {
+							fibAllParticipating += Long.valueOf(replacementProps[0]);
+							if (isStub) {
+								fibStubParticipating += Long
+										.valueOf(replacementProps[0]);
+							}
+						}
+					}
+				} //
+				//
+				// System.out.println("[DEBUG] lowest cost: " + lowestCost);
+				// see if monitored AS has that path in the RIB_in, //if it
+				// doesn't have a path, that means policy
+				// disconnection, don't include it in our percentage.
+				if (monitoredAS.ribIn.get(announcedAS) != null) { //
+					for (IA path : monitoredAS.ribIn.get(announcedAS).values()) { //
+						if (monitoredAS.type == AS.REPLACEMENT_AS) {
+							String[] replacementProps = AS.getProtoProps(path,
+									path.popCosts.keySet().iterator().next(),
+									new Protocol(AS.REPLACEMENT_AS));
+							if (replacementProps == null) {
+								ribAllParticipating += 1;
+								if (isStub) {
+									ribStubParticipating += 1;
+								}
+							} else {
+								ribAllParticipating += Long
+										.valueOf(replacementProps[0]);
+								if (isStub) {
+									ribStubParticipating += Long
+											.valueOf(replacementProps[0]);
+								}
+							}
+						}
+					}// endfor
+				}
+			}
+		}
+		
+		System.out.println("REPLACEMENT_RIB_GRAPH " + forX + " " + String.valueOf(((float) ribAllParticipating)/replacementTotal) + " END");
+		System.out.println("REPLACEMENT_FIB_GRAPH " + forX + " " + String.valueOf(((float) fibAllParticipating)/replacementTotal) + " END");
+		System.out.println("REPLACEMENT_STUB_RIB_GRAPH " + forX + " " + String.valueOf(((float) ribStubParticipating)/stubReplacementTotal) + " END");
+		System.out.println("REPLACEMENT_STUB_FIB_GRAPH " + forX + " " + String.valueOf(((float) fibStubParticipating)/stubReplacementTotal) + " END");
+	}
+	
 
 		public static void iaBasicSimulationAllTests(int monitorFrom, boolean bwTest, float forX, int metric, int primaryType){
 			
@@ -1969,204 +2275,11 @@ public class Simulator {
 			runSimulation(monitorASes, announcedASes, ALL); //monitor from all as we do some local bookkeeping to keep track of updated.
 			//this is so we can do all experiments at once
 			
-			int incomingCost = 0;
-			float receivedFIBBW = 0;
-			float receivedFIBTrueBW = 0;
-			float receivedFIBWiserCost = 0;
-			float receivedFIBTrueCost = 0;
-			int partRibCostSum = 0;
-			float partRibBwSum = 0;
-			float totalFibCostSum = 0;
-			float totalFibBwSum = 0;
-			float totalRibCostSum = 0;
-			float totalRibBwSum = 0;
-			float totalRIBSize = 0;
-			float total = monitorASes.size();
-			float wiserTotal = 0;
-			float bwTotal = 0;
-			float replacementTotal = 0;
-			float replacementStubTotal = 0;
-			float totalBestPaths = 0;
-			float totalStubBestPaths = 0;
-			float totalRIBPaths = 0;
-			float totalStubRIBPaths = 0;
-			float totalBestPathNodes = 0;
-			float bestpathTruecost = 0;
-			float bestpathBWSum = 0;
-			ArrayList<Integer> removedASes = new ArrayList<Integer>();
-			//for transit ASes only, see the sum of received paths
-		for (int as : monitorASes) {
-			// for each monitored AS, compare their lowest outgoing wiser cost
-			// with what was received
-			AS monitoredAS = asMap.get(as); // the AS we are measuring from (all
-											// transits eventually)
-			boolean isStub = (monitoredAS.customers.size() == 0);
-			switch (monitoredAS.type) {
-			case AS.WISER:
-				wiserTotal++;
-				break;
-			case AS.BANDWIDTH_AS:
-				bwTotal++;
-				break;
-			case AS.REPLACEMENT_AS:
-				replacementTotal++;
-				if (isStub) {
-					replacementStubTotal++;
-				}
-				break;
-			}
-			for (int announcedAS : announcedASes) {
-				// make sure that the we aren't comparing the AS who announced
-				// this to itself
-				if (as == announcedAS) {
-					continue;
-				}
-				AS compareAS = asMap.get(announcedAS); // the AS that announced
-				// sanity check, if any monitor as to this as causes an
-				// exception, do not add to costs
-				boolean skip = false;
-				for (int sanity : monitorASes) {
-					AS sanityAS = asMap.get(sanity);
-					if (sanityAS.bestPath.get(announcedAS) != null) {
-						try {
-							monitoredAS.bestPath.get(announcedAS).getPath()
-									.size();
-						} catch (Exception e) {
-							if (!removedASes.contains(announcedAS)) {
-								System.out.println("removed: " + announcedAS);
-								removedASes.add(announcedAS);
-							}
-							skip = true;
-						}
-					}
-				}
-				if (skip) {
-					continue;
-				}
-				if (monitoredAS.bestPath.get(announcedAS) != null) {
-					IA bestPath = monitoredAS.bestPath.get(announcedAS);
-					// try{
-
-					if (monitoredAS.type == AS.REPLACEMENT_AS) {
-						String[] replacementProps = AS.getProtoProps(bestPath,
-								bestPath.popCosts.keySet().iterator().next(),
-								new Protocol(AS.REPLACEMENT_AS));
-						if (replacementProps == null) {
-							totalBestPaths += 1;
-							if (isStub) {
-								totalStubBestPaths += 1;
-							}
-						} else {
-							totalBestPaths += Long.valueOf(replacementProps[0]);
-							if (isStub) {
-								totalStubBestPaths += Long
-										.valueOf(replacementProps[0]);
-							}
-						}
-					}
-					totalBestPathNodes += monitoredAS.bestPath.get(announcedAS)
-							.getPath().size();
-					if (monitoredAS.type == AS.WISER) {
-						bestpathTruecost += monitoredAS.bestPath.get(
-								announcedAS).getTrueCost();
-						String wiserProps[] = AS.getWiserProps(bestPath,
-								bestPath.popCosts.keySet().iterator().next());
-						if (wiserProps != null) {
-							float wiserVal = Float.valueOf(wiserProps[0]);
-							float normalization = Float.valueOf(wiserProps[1]);
-							// System.out.println("normalization: " +
-							// normalization);
-							receivedFIBWiserCost += ((float) wiserVal)
-									/ normalization;
-							receivedFIBTrueCost += ((float) bestPath
-									.getTrueCost()) / normalization;
-						}
-					}//
-					if (monitoredAS.type == AS.BANDWIDTH_AS) {
-						bestpathBWSum += monitoredAS.bestPath.get(announcedAS).bookKeepingInfo
-								.get(IA.BNBW_KEY);
-						String bwProps[] = AS.getBandwidthProps(bestPath,
-								bestPath.popCosts.keySet().iterator().next());
-						if (bwProps != null) {
-							float bw = Float.valueOf(bwProps[0]);
-							receivedFIBBW += bw;
-							receivedFIBTrueBW += monitoredAS.bestPath
-									.get(announcedAS).bookKeepingInfo
-									.get(IA.BNBW_KEY);
-						}
-
-					}
-					totalFibCostSum += monitoredAS.bestPath.get(announcedAS)
-							.getTrueCost();
-					totalFibBwSum += monitoredAS.bestPath.get(announcedAS).bookKeepingInfo
-							.get(IA.BNBW_KEY);
-
-					// }
-					// catch(Exception e)
-					// {
-					// System.out.println("exception for <monitor, anounced>: "
-					// + monitoredAS.asn + " " + announcedAS);
-					// System.exit(1);
-					// }
-				} //
-					//
-				// System.out.println("[DEBUG] lowest cost: " + lowestCost);
-				// see if monitored AS has that path in the RIB_in, //if it
-				// doesn't have a path, that means policy
-				// disconnection, don't include it in our percentage.
-				if (monitoredAS.ribIn.get(announcedAS) != null) { //
-					totalRIBSize += monitoredAS.ribIn.get(announcedAS).size(); //
-					for (IA path : monitoredAS.ribIn.get(announcedAS).values()) { //
-						totalRibCostSum += path.getTrueCost();
-						totalRibBwSum += path.bookKeepingInfo.get(IA.BNBW_KEY);
-						if (monitoredAS.type == AS.REPLACEMENT_AS) {
-							String[] replacementProps = AS.getProtoProps(path,
-									path.popCosts.keySet().iterator().next(),
-									new Protocol(AS.REPLACEMENT_AS));
-							if (replacementProps == null) {
-								totalRIBPaths += 1;
-								if (isStub) {
-									totalStubRIBPaths += 1;
-								}
-							} else {
-								totalRIBPaths += Long
-										.valueOf(replacementProps[0]);
-								if (isStub) {
-									totalStubRIBPaths += Long
-											.valueOf(replacementProps[0]);
-								}
-							}
-						}
-						if (monitoredAS.type == AS.WISER) {
-							partRibCostSum += path.getTrueCost();
-						}
-						if (monitoredAS.type == AS.BANDWIDTH_AS) {
-							partRibBwSum += path.bookKeepingInfo
-									.get(IA.BNBW_KEY);
-						}
-
-						// debug if statement
-						if (monitoredAS.neighborMap.containsKey(compareAS.asn)) {
-							// System.out.println("[DEBUG] AS " +
-							// monitoredAS.asn + " neighbor of: " +
-							// compareAS.asn);
-							// System.out.println("[DEBUG] received lowest cost: "
-							// + wiserProps);
-							// System.out.println("[DEBUG] rib of AS is : " +
-							// monitoredAS.ribIn.toString());
-						}
-
-					}// endfor
-
-				}
-				// else
-				// {
-				// total--;
-				// }
-			}
-		}
+			computeSumStats(monitorASes, announcedASes, forX, false);
+			computeBWStats(monitorASes, announcedASes, forX, false);
+			computeReplacementStats(monitorASes, announcedASes, forX);
 			
-			//if x is 0, then use the all stat for the 0th adoption point (status quo)
+		/*	//if x is 0, then use the all stat for the 0th adoption point (status quo)
 			if(forX != 0.0){
 				System.out.println("WISER_RIB_GRAPH " + forX + " " + String.valueOf(((float) partRibCostSum)/wiserTotal) + " END");
 				System.out.println("WISER_FIB_GRAPH " + forX + " " + String.valueOf(((float) bestpathTruecost)/wiserTotal) + " END");
@@ -2203,7 +2316,7 @@ public class Simulator {
 			System.out.println("WISER_FIB_COST_IN_ADVERT " + forX + " " + String.valueOf(((float) receivedFIBWiserCost) / wiserTotal) );
 			System.out.println("bestpath_receivedcost:truecost_ratio: " + forX + " " + String.valueOf(((float) receivedFIBWiserCost) / receivedFIBTrueCost) + " END");
 			System.out.println("bwratio_received:true " + forX + " " + String.valueOf(((float) receivedFIBBW) / receivedFIBTrueBW) + " END");
-			
+			*/
 			//reset state for default bgp run
 			try {
 				asMap.clear();
@@ -2212,7 +2325,8 @@ public class Simulator {
 				monitorASes.clear();
 				announcedASes.clear();
 				runSimulation(monitorASes, announcedASes, ALL); //monitor from all as we do some local bookkeeping to keep track of updated.	
-				doBGPStatistics(forX, monitorASes, announcedASes);
+				computeSumStats(monitorASes, announcedASes, forX, true);
+				computeBWStats(monitorASes, announcedASes, forX, true);
 			} catch (Exception e) {
 				// TODO Auto-generated catch block
 				e.printStackTrace();
