@@ -3020,6 +3020,10 @@ public class Simulator {
 		return connectedSet;
 	}
 
+	public static HashMap<Integer, AS> getASMap(){
+		return asMap;
+	}
+	
 	/**
 	 * This function is used to simulate the withdrawal of a path by an AS
 	 * 
@@ -3051,5 +3055,6 @@ public class Simulator {
 		SnapshotMessage msg = new SnapshotMessage(startAS);
 		addEvent(new Event(simTime, startAS, msg));
 	}
+	
 
 } // end class Simulator

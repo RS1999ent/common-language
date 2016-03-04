@@ -4,5 +4,7 @@
 	<classpathentry kind="con" path="org.eclipse.jdt.launching.JRE_CONTAINER"/>
 	<classpathentry kind="lib" path="C:/Users/spart/.m2/repository/net/sourceforge/argparse4j/argparse4j/0.6.0/argparse4j-0.6.0.jar"/>
 	<classpathentry kind="var" path="M2_REPO"/>
+	<classpathentry kind="con" path="org.eclipse.jdt.junit.JUNIT_CONTAINER/4"/>
+	<classpathentry kind="lib" path="C:/cygwin64/home/David/repos/commonlanguage/deps/snakeyaml-1.17.jar"/>
 	<classpathentry kind="output" path=""/>
 </classpath>
