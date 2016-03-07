@@ -79,8 +79,10 @@ public class ExperimentUnitTests {
 				HashMap<Integer, AS> asMap = Simulator.getASMap();
 				for (AS aAS : asMap.values())
 				{
-
-					verified = veriInfo.verifyAS(aAS, VerificationInformation.TRUE_COST);
+					if(!veriInfo.verifyAS(aAS, VerificationInformation.TRUE_COST))
+					{
+						verified = false;
+					}
 				}
 				assert(verified == true);
 			} catch (Exception e) {
