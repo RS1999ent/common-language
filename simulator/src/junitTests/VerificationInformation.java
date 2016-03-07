@@ -82,7 +82,7 @@ public class VerificationInformation {
 
 	public boolean verifyAS(AS aAS, int veri)
 	{
-		return false;
+		return verifyInfoBases(aAS, aAS.asn, veri);
 		
 	}
 	
@@ -148,18 +148,21 @@ public class VerificationInformation {
 			ArrayList<PathAndMetric> pathsMetrics = asMap.get(asNum).rib.get(dst);
 			if (pathsMetrics == null)
 			{
+				System.out.println("AS: " + asNum + " no ribentry for dst: " + dst);
 				return false;
 			}
 			for(IA advert : ribIn.get(dst).values())
 			{
 				if(!verifyAdvert(advert,  pathsMetrics,  matchedPaths, verifyWhat))
 				{
+					System.out.println("AS: " + asNum + " RIB: failed to verify path (see printouts above)");
 					return false;
 				}
 				
 			}//endfor
 			if(matchedPaths.intValue() != pathsMetrics.size())
 			{
+				System.out.println("AS: " + asNum + " unmatched number of RIB entries for dst: " + dst);
 				return false;
 			}
 		}//endfor
@@ -169,11 +172,13 @@ public class VerificationInformation {
 			ArrayList<PathAndMetric> pathsMetrics = asMap.get(asNum).rib.get(dst);
 			if (pathsMetrics == null)
 			{
+				System.out.println("AS: " + asNum + " no fibentry for dst: " + dst);
 				return false;
 			}
 			IA advert = fib.get(dst);
 			if(!verifyAdvert(advert,  pathsMetrics,  fibPaths, verifyWhat))
 			{
+				System.out.println("AS: " + asNum + " FIB: failed to verify path (see printouts above)");
 				return false;
 			}
 	
@@ -181,6 +186,7 @@ public class VerificationInformation {
 		}//endfor
 		if(fibPaths.intValue() != asMap.get(asNum).fib.size())
 		{
+			System.out.println("AS: " + asNum + " unmatched number of FIB entries");
 			return false;
 		}
 		
