@@ -46,15 +46,15 @@ public abstract class AS {
 	static final int SIBLING = 2;
 	
 	//protocol constants
-	static final int BGP = 500;
-	static final int WISER = 501;
-	static final int TRANSIT = 502;
-	static final int SBGP_TRANSIT = 503;
-	static final int SBGP = 504;
-	static final int BANDWIDTH_AS = 505;
-	static final int BANDWIDTH_TRANSIT = 506;
-	static final int REPLACEMENT_AS = 507;
-	static final int REPLACEMENT_TRANSIT = 506;
+	public static final int BGP = 500;
+	public static final int WISER = 501;
+	public static final int TRANSIT = 502;
+	public static final int SBGP_TRANSIT = 503;
+	public static final int SBGP = 504;
+	public static final int BANDWIDTH_AS = 505;
+	public static final int BANDWIDTH_TRANSIT = 506;
+	public static final int REPLACEMENT_AS = 507;
+	//public static final int REPLACEMENT_TRANSIT = 506;
 	
 	//what to index on in the link costs
 	static final int COST_METRIC = 1;
@@ -158,14 +158,14 @@ public abstract class AS {
 	// we also need to store all the paths received from neighbors for each
 	// destination. this would be our rib-in. the rib-in is implemented as
 	// a pair of nested hash tables: hashed on <prefix, neighbor>
-	HashMap<Integer, HashMap<Integer,IA>> ribIn = new HashMap<Integer, HashMap<Integer, IA>>();
+	public HashMap<Integer, HashMap<Integer,IA>> ribIn = new HashMap<Integer, HashMap<Integer, IA>>();
 
 	
 	public int asn;
 	
 	public Integer protocol;
 	
-	HashMap<Integer,IA> bestPath = new HashMap<Integer, IA>();
+	public HashMap<Integer,IA> bestPath = new HashMap<Integer, IA>();
 
 	/**
 	 * This function determines if the first path is better than the second

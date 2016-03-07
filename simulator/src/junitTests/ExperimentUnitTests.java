@@ -32,7 +32,7 @@ public class ExperimentUnitTests {
 		}
 	}
 	
-	Tuple sumSim[] = {new Tuple("topo", "astypes", "veri")};
+	Tuple sumSim[] = {new Tuple("topo", "astypes", "verificationFiles/testVeri.yml")};
 	
 	/**
 	 * @throws java.lang.Exception
