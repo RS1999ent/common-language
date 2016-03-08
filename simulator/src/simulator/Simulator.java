@@ -1125,6 +1125,7 @@ public class Simulator {
 			break;
 
 		case 4:
+			iaUnitTestSimulation(monitorFrom, useBandwidth, xVal, metric, primaryType);
 			break;
 
 		case 5:
@@ -1621,9 +1622,10 @@ public class Simulator {
 		
 	//	System.out.println("total stubs: " + computeStubs().size());
 		//announce from all stubs
-		for(Integer key : computeStubs())
+		for(int key : computeStubs())
 		{
-			announcedASes.add(key);
+			if (key == 6) //ADDED DELETE DELTE DELTE
+				announcedASes.add(key);
 		}
 		
 		//go through and have all wiser nodes announce themselves, only announce some constant at a time, let the sim go.
@@ -2295,8 +2297,31 @@ public class Simulator {
 			
 			
 		}
-		
-	
+
+		public static void iaUnitTestSimulation(int monitorFrom, boolean bwTest, float forX, int metric, int primaryType)
+		{
+			//ases that will be used for observation
+			ArrayList<Integer> monitorASes = new ArrayList<Integer>();
+			//	tier1ASes = computeTier1();
+
+
+			// We first announce all the tier-1 ASes and save 
+			// the paths from each of our failure-provider to the tier1
+			simTime = 0;
+			upstreamASes.clear();
+			r = new Random(seedVal);
+			ArrayList<Integer> announcedASes = new ArrayList<Integer>();
+
+			//			runSimulation(monitorASes, announcedASes, monitorFrom);
+			runSimulation(monitorASes, announcedASes, ALL); //monitor from all as we do some local bookkeeping to keep track of updated.
+			//this is so we can do all experiments at once
+
+		//	computeSumStats(monitorASes, announcedASes, forX, false);
+		//	computeBWStats(monitorASes, announcedASes, forX, false);
+		//	computeReplacementStats(monitorASes, announcedASes, forX);
+		}
+
+
 	/**
 	 * This function returns the path length of the shortest path to the destination that doesn't go
 	 * through the link upstream-downstream.

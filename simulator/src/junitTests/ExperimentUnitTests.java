@@ -34,7 +34,7 @@ public class ExperimentUnitTests {
 		}
 	}
 	
-	Tuple sumSim[] = {new Tuple("topo", "astypes", "verificationFiles/testVeri.yml")};
+	Tuple sumSim[] = {new Tuple("verificationFiles/10ASBrite", "verificationFiles/astypes_sum_pt5.txt", "verificationFiles/sumVeri.yml")};
 	
 	/**
 	 * @throws java.lang.Exception
@@ -69,7 +69,7 @@ public class ExperimentUnitTests {
 		{
 			//Simulator simulator = new Simulator(); 
 			//			annotatedBrite.txt asTypes.txt ..\results\result.txt --seed 1 --sim 4 --monitorFrom 3 --useBandwidth 0 --forX .1 --metric 1
-			String arg = experiment.topoFile + " " + experiment.asTypes + " ../results/result.txt --seed 1 --sim 3 --monitorFrom 3 --useBandwidth 0 -- forX .1 --metric 1";
+			String arg = experiment.topoFile + " " + experiment.asTypes + " ../results/result.txt --seed 1 --sim 4 --monitorFrom 3 --useBandwidth 0 --forX .1 --metric 1";
 			String[] args = arg.split("\\s+");
 			//String[] args = {experiment.topoFile, experiment.asTypes, "../results/result.txt", "--seed", "1", "--sim", "3",    } 
 			try {
@@ -84,7 +84,8 @@ public class ExperimentUnitTests {
 						verified = false;
 					}
 				}
-				assert(verified == true);
+				if(!verified)
+					fail("mismatch between verified file and simulation results");
 			} catch (Exception e) {
 				// TODO Auto-generated catch block
 				e.printStackTrace();

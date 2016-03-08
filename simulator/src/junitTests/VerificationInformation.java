@@ -86,13 +86,34 @@ public class VerificationInformation {
 		
 	}
 	
-	private boolean verifyAdvert(IA advert, ArrayList<PathAndMetric> pathsMetrics, Integer matchedPaths, int verifyWhat)
+	public class IntegerWrapper
 	{
+		@Override
+		public String toString() {
+			return String.valueOf(wrapped);
+		}
+
+		public int wrapped;
+		public IntegerWrapper(int wrap)
+		{
+			wrapped = wrap;
+		}
+		
+		public int intValue()
+		{
+			return wrapped;
+		}
+	}
+	
+	private boolean verifyAdvert(IA advert, ArrayList<PathAndMetric> pathsMetrics, IntegerWrapper matchedPaths, int verifyWhat)
+	{
+		boolean comparisonSuccessful = false;
 		for(PathAndMetric aPath : pathsMetrics)
 		{
 			if(compLists(advert.getPath(), aPath.asPath))
 			{
-				matchedPaths++;
+				comparisonSuccessful = true;
+				matchedPaths.wrapped++;
 				switch (verifyWhat)
 				{
 				case TRUE_COST:
@@ -100,7 +121,7 @@ public class VerificationInformation {
 					float veriTrueCost = aPath.metric;
 					if(advertTrueCost != veriTrueCost)
 					{
-						System.out.println("Unmatched trueCosts for path: " + advert.getPath());
+						System.out.println("Unmatched trueCosts for path: " + advert.getPath() + ": advert - " + advertTrueCost + " vs " + veriTrueCost );
 						return false;
 					}
 					break;
@@ -135,62 +156,69 @@ public class VerificationInformation {
 
 			}//endif 
 		} //endfor
-		return true;
+		if(!comparisonSuccessful)
+		{
+			System.out.println("No successful match with advert path and veripath: " + advert.getPath());
+		}
+		return comparisonSuccessful;
 	}
 
 	private boolean verifyInfoBases(AS theAS, int asNum, int verifyWhat)
 	{
 		HashMap<Integer, HashMap<Integer,IA>> ribIn = theAS.ribIn;
 		HashMap<Integer, IA> fib = theAS.bestPath;
+		boolean returnVal = true;
 		for (int dst :  ribIn.keySet())
 		{
-			Integer matchedPaths = 0;
+			IntegerWrapper matchedPaths = new IntegerWrapper(0);
 			ArrayList<PathAndMetric> pathsMetrics = asMap.get(asNum).rib.get(dst);
 			if (pathsMetrics == null)
 			{
 				System.out.println("AS: " + asNum + " no ribentry for dst: " + dst);
-				return false;
+				returnVal =  false;
 			}
 			for(IA advert : ribIn.get(dst).values())
 			{
 				if(!verifyAdvert(advert,  pathsMetrics,  matchedPaths, verifyWhat))
 				{
 					System.out.println("AS: " + asNum + " RIB: failed to verify path (see printouts above)");
-					return false;
+					returnVal =  false;
 				}
 				
 			}//endfor
 			if(matchedPaths.intValue() != pathsMetrics.size())
 			{
-				System.out.println("AS: " + asNum + " unmatched number of RIB entries for dst: " + dst);
-				return false;
+				System.out.println("AS: " + asNum + " unmatched number of RIB entries for dst: " + dst + ": " + matchedPaths + " vs " + pathsMetrics.size());
+				returnVal =  false;
 			}
 		}//endfor
-		Integer fibPaths = 0;
+		IntegerWrapper fibPaths = new IntegerWrapper(0);
 		for (int dst :  fib.keySet())
 		{			
-			ArrayList<PathAndMetric> pathsMetrics = asMap.get(asNum).rib.get(dst);
+			ArrayList<PathAndMetric> pathsMetrics = asMap.get(asNum).fib.get(dst);
 			if (pathsMetrics == null)
 			{
 				System.out.println("AS: " + asNum + " no fibentry for dst: " + dst);
-				return false;
+				returnVal =  false;
 			}
 			IA advert = fib.get(dst);
 			if(!verifyAdvert(advert,  pathsMetrics,  fibPaths, verifyWhat))
 			{
 				System.out.println("AS: " + asNum + " FIB: failed to verify path (see printouts above)");
-				return false;
+				returnVal =  false;
 			}
 	
 			
 		}//endfor
-		if(fibPaths.intValue() != asMap.get(asNum).fib.size())
-		{
-			System.out.println("AS: " + asNum + " unmatched number of FIB entries");
-			return false;
+		if(asMap.get(asNum) != null){
+			if(fibPaths.intValue() != asMap.get(asNum).fib.size())
+			{
+				System.out.println("AS: " + asNum + " unmatched number of FIB entries: " + fibPaths + " vs " + asMap.get(asNum).fib.size());
+				returnVal =  false;
+			}
 		}
 		
-		return true;
+		return returnVal;
 	}
 	
 	private boolean compLists(Collection<Integer> list1, Collection<Integer> list2)
