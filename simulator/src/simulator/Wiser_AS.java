@@ -1005,13 +1005,21 @@ public class Wiser_AS extends AS {
 					{
 						return true;
 					}	
+					else if(p2.getPath().size() < p1.getPath().size())
+					{
+						return false;
+					}
+					else
+					{
+						return p1.getPath().getFirst() < p2.getPath().getFirst();
+					}
 					//						else
 					//						{
 					//							if(p1.getPath().size() == p2.getPath().size())
 					//							{
 					//								return p1.getFirstHop() < p2.getFirstHop();
 					//							}
-					return false;
+					//return false;
 					//						}
 				}
 				return p1WiserCost/p1Normalization < p2WiserCost/p2Normalization;

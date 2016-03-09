@@ -1624,7 +1624,7 @@ public class Simulator {
 		//announce from all stubs
 		for(int key : computeStubs())
 		{
-			if (key == 6) //ADDED DELETE DELTE DELTE
+			if (key == 6 || key == 8) //ADDED DELETE DELTE DELTE
 				announcedASes.add(key);
 		}
 		

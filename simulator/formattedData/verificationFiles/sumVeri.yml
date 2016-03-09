@@ -1,11 +1,8 @@
 AS: 0
 rib:
   - dst : 6
-    path : [7, 2, 6]
-    metric : 605
-  - dst : 6
     path : [1, 2, 6]
-    metric : 1525
+    metric : 1625
   - dst : 6
     path : [3, 4, 1, 2, 6]
     metric : 2778
@@ -15,10 +12,28 @@ rib:
   - dst: 6
     path : [4, 1, 2, 6]
     metric : 1810
+  - dst: 8
+    path : [1, 7, 8]
+    metric: 1846
+  - dst: 8
+    path : [7, 8]
+    metric: 961
+  - dst: 8
+    path : [4, 1, 7, 8]
+    metric: 2031
+  - dst: 8
+    path : [2, 7, 8]
+    metric: 1528
+  - dst: 8
+    path : [3, 1, 7, 8]
+    metric: 2292     
 fib:
   - dst : 6
     path: [4, 1, 2, 6]
     metric: 1810
+  - dst: 8
+    path : [2, 7, 8]
+    metric: 1528
 ---
 AS: 1
 rib:
@@ -28,10 +43,22 @@ rib:
   - dst: 6
     path: [2,6]
     metric : 836
+  - dst: 8
+    path: [7, 8]
+    metric: 1057
+  - dst: 8
+    path: [2, 7, 8]
+    metric: 1418
+  - dst: 8
+    path: [0, 2, 7, 8]
+    metric: 2317      
 fib:
   - dst: 6
     path : [2, 6]
     metric : 836
+  - dst: 8
+    path: [7, 8]
+    metric: 1057
 ---
 AS: 2
 rib:
@@ -41,10 +68,22 @@ rib:
   - dst : 6
     path : [5, 6]
     metric : 842
+  - dst: 8
+    path: [1, 7, 8]
+    metric: 1586
+  - dst: 8
+    path: [3, 1, 7, 8]
+    metric: 2348
+  - dst: 8
+    path: [7, 8]
+    metric: 889     
 fib:
   - dst : 6
     path : [6]
     metric: 307
+  - dst: 8
+    path: [7, 8]
+    metric: 889
 ---
 AS: 3
 rib:
@@ -53,27 +92,57 @@ rib:
     metric: 881
   - dst: 6
     path: [1, 2, 6]
-    metric: 1550
+    metric: 1553
   - dst: 6
     path: [4, 1, 2, 6]
     metric: 2260
   - dst: 6
     path: [0, 4, 1, 2, 6]
     metric: 2328
+  - dst: 8
+    path: [2, 7, 8]
+    metric: 1463
+  - dst: 8
+    path: [0, 2, 7, 8]
+    metric: 2046
+  - dst: 8
+    path: [1, 7, 8]
+    metric: 1774
+  - dst: 8
+    path: [4, 1, 7, 8]
+    metric: 2481      
 fib:
   - dst: 6
     path: [4, 1, 2, 6]
     metric: 2260
+  - dst: 8
+    path: [1, 7, 8]
+    metric: 1774    
 ---
 AS: 4
 rib:
   - dst: 6
     path: [1, 2, 6]
     metric: 1511
+  - dst: 8
+    path: [0, 2, 7, 8]
+    metric: 1827
+  - dst: 8
+    path: [3, 1, 7, 8]
+    metric: 2523
+  - dst: 8
+    path: [8]
+    metric: 848
+  - dst: 8
+    path: [1, 7, 8]
+    metric: 1732      
 fib:
   - dst: 6
     path: [1, 2, 6]
     metric: 1511
+  - dst: 8
+    path: [1, 7, 8]
+    metric: 1732
 ---
 AS: 5
 rib:
@@ -82,15 +151,39 @@ rib:
     metric: 138
   - dst: 6
     path: [2, 6]
-    metric: 1013
+    metric: 1011
   - dst: 6
     path: [1, 2, 6]
     metric: 1735
+  - dst: 8
+    path: [1, 7, 8]
+    metric: 1956
+  - dst: 8
+    path: [2, 7, 8]
+    metric: 1593      
 fib:
   - dst : 6
     path : [6]
     metric: 138
+  - dst: 8
+    path: [1, 7, 8]
+    metric: 1956    
 ---
+AS: 6
+rib:
+  - dst: 8
+    path: [2, 7, 8]
+    metric: 1196
+  - dst: 8
+    path: [5, 1, 7, 8]
+    metric: 2094      
+fib:
+  - dst: 8
+    path: [2, 7, 8]
+    metric: 1196
+
+---
+
 AS: 7
 rib:
   - dst : 6
@@ -99,10 +192,23 @@ rib:
   - dst : 6
     path : [1, 2, 6]
     metric : 1117
+  - dst : 6
+    path : [0, 4, 1, 2, 6]
+    metric : 1995
+  - dst: 8
+    path: [0, 2, 7, 8]
+    metric: 1713
+  - dst: 8
+    path: [8]
+    metric: 776       
 fib:
   - dst : 6
-    path : [2, 6]
-    metric : 420
+    path : [0, 4, 1, 2, 6]
+    metric : 1995
+  - dst: 8
+    path: [8]
+    metric: 776 
+  
 ---
 AS: 8
 rib:
@@ -110,12 +216,12 @@ rib:
     path: [4, 1, 2, 6]
     metric : 2359
   - dst : 6
-    path: [7, 2, 6]
-    metric : 1196
+    path: [7, 0, 4, 1, 2, 6]
+    metric : 2771
 fib:
   - dst : 6
-    path: [4, 1, 2, 6]
-    metric : 2359
+    path: [7, 0, 4, 1, 2, 6]
+    metric : 2771
 ---
 AS: 9
 rib:
@@ -125,7 +231,16 @@ rib:
   - dst : 6
     path : [0, 4, 1, 2, 6]
     metric : 1933
+  - dst: 8
+    path: [0, 2, 7, 8]
+    metric: 1651
+  - dst: 8
+    path: [3, 1, 7, 8]
+    metric: 2102      
 fib:
   - dst : 6
     path : [0, 4, 1, 2, 6]
     metric : 1933
+  - dst: 8
+    path: [0, 2, 7, 8]
+    metric: 1651

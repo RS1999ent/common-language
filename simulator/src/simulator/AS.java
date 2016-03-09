@@ -584,6 +584,7 @@ public abstract class AS {
 		if(neighborMetric.containsKey(toAS))
 		{
 			//this for loop is only entered once (since we are assuming one pop between two different ASes)
+		//	System.out.println("Updating cost from AS: " + advert.getPath().getFirst() + " to AS: " + toAS + " path: " + advert.getPath() + " oldCost: " + advert.getTrueCost());
 			for(PoPTuple neighborTuple : neighborMetric.get(toAS).keySet())
 			{
 				advert.setTrueCost(advert.getTrueCost() + neighborMetric.get(toAS).get(neighborTuple).get(AS.COST_METRIC));
@@ -598,6 +599,7 @@ public abstract class AS {
 					advert.bookKeepingInfo.put(IA.BNBW_KEY, neighborBW );
 				}
 			}
+		//	System.out.println("Updating cost from AS: " + advert.getPath().getFirst() + " to AS: " + toAS + " path: " + advert.getPath() + " NewCost: " + advert.getTrueCost());
 		}
 		else
 		{
