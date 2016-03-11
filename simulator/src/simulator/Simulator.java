@@ -1624,7 +1624,7 @@ public class Simulator {
 		//announce from all stubs
 		for(int key : computeStubs())
 		{
-			if (key == 6 || key == 8) //ADDED DELETE DELTE DELTE
+			if(key == 6 || key == 8)
 				announcedASes.add(key);
 		}
 		
@@ -2314,6 +2314,10 @@ public class Simulator {
 
 			//			runSimulation(monitorASes, announcedASes, monitorFrom);
 			runSimulation(monitorASes, announcedASes, ALL); //monitor from all as we do some local bookkeeping to keep track of updated.
+//			for(AS aAS : asMap.values())
+//			{
+//				aAS.printRIBFIB();
+//			}
 			//this is so we can do all experiments at once
 
 		//	computeSumStats(monitorASes, announcedASes, forX, false);

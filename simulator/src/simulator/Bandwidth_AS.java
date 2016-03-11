@@ -1009,14 +1009,14 @@ public class Bandwidth_AS extends AS {
 						{
 							return true;
 						}	
-//						else
-//						{
-//							if(p1.getPath().size() == p2.getPath().size())
-//							{
-//								return p1.getFirstHop() < p2.getFirstHop();
-//							}
+						else if(p1.getPath().size() > p2.getPath().size())
+						{
 							return false;
-//						}
+						}
+						else
+						{
+							return p1.getPath().getFirst() < p2.getPath().getFirst();
+						}
 					}
 					boolean returnVal =p1BW/p1Normalization > p2BW/p2Normalization; 
 					return returnVal;

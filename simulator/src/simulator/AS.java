@@ -714,5 +714,25 @@ public abstract class AS {
 
 		return -1; //process as normal
 	}
+	
+	public void printRIBFIB()
+	{
+		System.out.println("AS: " + asn);
+		System.out.println("RIB");
+		for(int dst : ribIn.keySet())
+		{
+			
+			for(IA path : ribIn.get(dst).values())
+			{
+				System.out.println("dst: " + dst + " " + path.getPath() + " tcost " + path.getTrueCost());
+			}
+		}
+		System.out.println("FIB");
+		for(int dst: bestPath.keySet())
+		{
+			IA path = bestPath.get(dst);
+			System.out.println("dst: " + dst + " " + path.getPath() + " tcost " + path.getTrueCost() );
+		}
+	}
 
 }
