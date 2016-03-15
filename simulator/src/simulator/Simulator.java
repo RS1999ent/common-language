@@ -1624,7 +1624,7 @@ public class Simulator {
 		//announce from all stubs
 		for(int key : computeStubs())
 		{
-			if(key == 6 || key == 8)
+//			if(key == 6 || key == 8)
 				announcedASes.add(key);
 		}
 		

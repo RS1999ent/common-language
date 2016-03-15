@@ -21,7 +21,7 @@ import simulator.Simulator;
  *
  */
 
-public class ExperimentUnitTests {
+public class SumUnitTest {
 
 	public class Tuple{
 		public String topoFile;
@@ -57,12 +57,13 @@ public class ExperimentUnitTests {
 	 */
 	@After
 	public void tearDown() throws Exception {
+		
 	}
 
 	/**
 	 * Test method for {@link simulator.Simulator#iaBasicSimulationAllTests(int, boolean, float, int, int)}.
 	 */
-	/*@Test
+	@Test
 	public final void testSumExperiment() {
 
 		for(Tuple experiment : sumSim)
@@ -93,38 +94,7 @@ public class ExperimentUnitTests {
 
 		} //endfor
 
-	}*/
-	
-	@Test
-	public final void testBWExperiment(){
-		for(Tuple experiment : bwSim)
-		{
-			//Simulator simulator = new Simulator(); 
-			//			annotatedBrite.txt asTypes.txt ..\results\result.txt --seed 1 --sim 4 --monitorFrom 3 --useBandwidth 0 --forX .1 --metric 1
-			String arg = experiment.topoFile + " " + experiment.asTypes + " ../results/result.txt --seed 1 --sim 4 --monitorFrom 3 --useBandwidth 0 --forX .1 --metric 1";
-			String[] args = arg.split("\\s+");
-			//String[] args = {experiment.topoFile, experiment.asTypes, "../results/result.txt", "--seed", "1", "--sim", "3",    } 
-			try {
-				VerificationInformation veriInfo = new VerificationInformation(experiment.veriFile);
-				boolean verified = true;
-				Simulator.main(args);
-				HashMap<Integer, AS> asMap = Simulator.getASMap();
-				for (AS aAS : asMap.values())
-				{
-					if(!veriInfo.verifyAS(aAS, VerificationInformation.BNBW))
-					{
-						verified = false;
-					}
-				}
-				if(!verified)
-					fail("mismatch between verified file and simulation results");
-			} catch (Exception e) {
-				// TODO Auto-generated catch block
-				e.printStackTrace();
-			}
-
-		} //endfor		
-		
 	}
+
 
 }

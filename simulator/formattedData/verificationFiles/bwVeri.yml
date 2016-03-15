@@ -26,14 +26,32 @@ rib:
     metric: 113
   - dst : 8
     path: [3, 1, 7, 8]
-    metric: 281       
+    metric: 281
+  - dst: 9
+    path: [1, 2, 3, 9]
+    metric: 328
+  - dst: 9
+    path: [9]
+    metric: 123
+  - dst: 9
+    path: [3, 9]
+    metric: 328
+  - dst: 9
+    path: [2, 3, 9]
+    metric: 328
+  - dst: 9
+    path: [4, 1, 2, 3, 9]
+    metric: 299       
 fib:
   - dst : 6
     path: [3, 4, 1, 2, 6]
     metric: 307
   - dst : 8
     path: [2, 7, 8]
-    metric: 113    
+    metric: 113
+  - dst: 9
+    path: [2, 3, 9]
+    metric: 328    
 ---
 AS: 1
 rib:
@@ -54,7 +72,19 @@ rib:
     metric: 113
   - dst : 8
     path: [7, 8]
-    metric: 281       
+    metric: 281
+  - dst: 9
+    path: [3, 9]
+    metric: 328
+  - dst: 9
+    path: [2, 3, 9]
+    metric: 328
+  - dst: 9
+    path: [0, 2, 3, 9]
+    metric: 328
+  - dst: 9
+    path: [7, 0 , 2, 3, 9]
+    metric: 185       
 
 fib:
   - dst: 6
@@ -62,7 +92,10 @@ fib:
     metric: 307
   - dst : 8
     path: [7, 8]
-    metric: 281    
+    metric: 281
+  - dst: 9
+    path: [2, 3, 9]
+    metric: 328    
 ---
 AS: 2
 rib:
@@ -80,14 +113,20 @@ rib:
     metric: 113
   - dst : 8
     path: [3, 1, 7, 8]
-    metric: 281       
+    metric: 281
+  - dst: 9
+    path: [3, 9]
+    metric: 328     
 fib:
   - dst: 6
     path: [6]
     metric: 307
   - dst : 8
     path: [7, 8]
-    metric: 113    
+    metric: 113
+  - dst: 9
+    path: [3, 9]
+    metric: 328    
 
 ---
 AS: 3
@@ -112,14 +151,20 @@ rib:
     metric: 749
   - dst : 8
     path: [1, 7, 8]
-    metric: 281       
+    metric: 281
+  - dst: 9
+    path: [9]
+    metric: 328    
 fib:
   - dst: 6
     path: [4, 1, 2, 6]
     metric: 307
   - dst : 8
     path: [1, 7, 8]
-    metric: 281    
+    metric: 281
+  - dst: 9
+    path: [9]
+    metric: 328    
 ---
 AS: 4
 rib:
@@ -137,14 +182,26 @@ rib:
     metric: 848
   - dst : 8
     path: [1, 7, 8]
-    metric: 281       
+    metric: 281
+  - dst: 9
+    path: [3, 9]
+    metric: 328
+  - dst: 9
+    path: [0, 2, 3, 9]
+    metric: 299
+  - dst: 9
+    path: [1, 2, 3, 9]
+    metric: 328       
 fib:
   - dst: 6
     path: [1, 2, 6]
     metric: 307
   - dst : 8
     path: [8]
-    metric: 848    
+    metric: 848
+  - dst: 9
+    path: [1, 2, 3, 9]
+    metric: 328           
 ---
 AS: 5
 rib:
@@ -162,14 +219,23 @@ rib:
     metric: 281
   - dst : 8
     path: [2, 7, 8]
-    metric: 113       
+    metric: 113
+  - dst: 9
+    path: [2, 3, 9]
+    metric: 328
+  - dst: 9
+    path: [1, 2, 3, 9]
+    metric: 328       
 fib: 
   - dst: 6
     path: [6]
     metric: 138
   - dst : 8
     path: [1, 7, 8]
-    metric: 281    
+    metric: 281
+  - dst: 9
+    path: [2, 3, 9]
+    metric: 328    
 ---
 AS: 6
 rib:
@@ -179,10 +245,19 @@ rib:
   - dst: 8
     path: [2, 7, 8]
     metric: 113
+  - dst: 9
+    path: [2, 3, 9]
+    metric: 307
+  - dst: 9
+    path: [5, 2, 3, 9]
+    metric: 138       
 fib:
   - dst: 8
     path: [2, 7, 8]
-    metric: 113  
+    metric: 113
+  - dst: 9
+    path: [2, 3, 9]
+    metric: 307    
 ---
 AS: 7
 rib:
@@ -197,14 +272,26 @@ rib:
     metric: 281
   - dst : 8
     path: [8]
-    metric: 776     
+    metric: 776
+  - dst: 9
+    path: [2, 3, 9]
+    metric: 113
+  - dst: 9
+    path: [0, 2, 3, 9]
+    metric: 185
+  - dst: 9
+    path: [1, 2, 3, 9]
+    metric: 281
 fib:
   - dst: 6
     path: [0, 3, 4, 1, 2, 6]
     metric: 185
   - dst : 8
     path: [8]
-    metric: 776    
+    metric: 776
+  - dst: 9
+    path: [0, 2, 3, 9]
+    metric: 185    
 ---
 AS: 8
 rib:
@@ -214,10 +301,19 @@ rib:
   - dst: 6
     path: [7, 0 , 3, 4, 1, 2, 6]
     metric: 185
+  - dst: 9
+    path: [4, 1, 2, 3, 9]
+    metric: 328
+  - dst: 9
+    path: [7, 0 , 2, 3, 9]
+    metric: 185       
 fib:
   - dst: 6
     path: [4, 1, 2, 6]
     metric: 307
+  - dst: 9
+    path: [4, 1, 2, 3, 9]
+    metric: 328    
 ---
 AS: 9
 rib:
