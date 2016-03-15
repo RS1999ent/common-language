@@ -212,13 +212,17 @@ public class Replacement_AS extends AS {
 	/**
 	 * find the edge of an island so you can fill the replacement information
 	 * If the destination is part of the island, it will be returned. keep that in mind
-	 * @param advert - advertisement being sent out
+	 * @param path - the path being checked (expects unprepended path)
 	 * @return the asnum of the incomding edge (that is, downstream entrance to island), -1 if you the edge of the island (an island of 1)
 	 */
-	private int findIslandEdge(IA advert)
+	/**
+	 * @param path
+	 * @return
+	 */
+	private int findIslandEdge(LinkedList<Integer> path)
 	{
-		LinkedList<Integer> path = (LinkedList<Integer>) advert.getPath().clone();
-		path.removeFirst(); // remove our prepend
+		//LinkedList<Integer> path = (LinkedList<Integer>) advert.getPath().clone();
+		//path.removeFirst(); // remove our prepend
 		if(path.isEmpty())
 		{
 			return -1;
@@ -235,7 +239,7 @@ public class Replacement_AS extends AS {
 				break;
 			}
 		}
-		if(!islandBuddies.contains(beforeNode)){
+		if(!islandBuddies.contains(beforeNode)){ //means that it is this AS, this as wouldn't be in island buddies
 			return -1;
 		}
 		return beforeNode;
@@ -273,7 +277,9 @@ public class Replacement_AS extends AS {
 		//if the destination is NOT part of our island, then we have some transit paths to account for
 		if(!islandBuddies.contains(advertisedToAS))
 		{
-			int islandEntrance = findIslandEdge(advert); //find where this advertisement is entering the island
+			LinkedList<Integer> path = (LinkedList<Integer>) advert.getPath().clone();
+			path.removeFirst(); //remove our prepend
+			int islandEntrance = findIslandEdge(path); //find where this advertisement is entering the island
 			if(islandEntrance != -1){ //at that spot, get how many paths we have to it
 				transitPaths = numPathsToDest.get(islandEntrance);
 			}
@@ -722,6 +728,55 @@ public class Replacement_AS extends AS {
 		return (ribIn.get(dst).values());
 	}
 	
+	
+	/**
+	 * Updates number of paths associated with advertisement before
+	 * placing it in FIB.
+	 *  This is a method that requires 1 pop per AS
+	 * Therefore, should be done before putting it in bestpath datastructure
+	 * @param newBestPath - the path received that might need to be updated
+	 */
+	private IA postProcessBestpath(IA newBestPath)
+	{
+		if (customers.size() != 0)
+		{
+			return newBestPath;
+		}
+		
+		LinkedList<Integer> path = (LinkedList<Integer>) newBestPath.getPath().clone(); //cloning not likely necessary because
+		//it is no longer mutated in findislandedge
+		int islandEdge = findIslandEdge(path);
+		long transitPaths = 1;
+		if(islandEdge != -1)
+		{
+			transitPaths = numPathsToDest.get(islandEdge);
+		}
+		long pathsToDest = numPathsToDest.get(newBestPath.getDest());
+		boolean directMultiPath = pathsToDest > 1 ? true : false; //if we are directly connected and have multiple paths to destination set to true
+		long inAdvertNumPaths = 1; //number of paths in advertisement
+		PoPTuple firstTuple = neighborMetric.get(newBestPath.getFirstHop()).keySet().iterator().next(); //does not work with multipop!!!!
+		String[] inAdvertPathsToDest = AS.getProtoProps(newBestPath, firstTuple, new Protocol(AS.REPLACEMENT_AS));
+		if(inAdvertPathsToDest != null)
+		{
+			inAdvertNumPaths = Long.valueOf(inAdvertPathsToDest[0]);
+		}
+		if(!directMultiPath){ //untested changes
+			pathsToDest = transitPaths * inAdvertNumPaths;
+		}
+		String pathAttribute = String.valueOf(pathsToDest);
+		for(IAInfo bpInfo : newBestPath.popCosts.values())
+		{
+			try {
+				bpInfo.setProtocolPathAttribute(pathAttribute.getBytes("UTF-8"), new Protocol(AS.REPLACEMENT_AS), newBestPath.getPath());
+			} catch (UnsupportedEncodingException e) {
+				// TODO Auto-generated catch block
+				e.printStackTrace();
+			}
+		}
+	return newBestPath;
+		
+	}
+	
 	/**
 	 * This method is called when an update is received. The function looks
 	 * at the new path, and adds it to the RIB-In (replacing the old path
@@ -786,6 +841,7 @@ public class Replacement_AS extends AS {
 			// we need to install this as our best path and send an update
 			// to all our peers
 		    Simulator.debug("REPLACEMENT_AS" + asn + ": Added best path to dst AS" + dst + ": " + p.getPath());
+		    p = postProcessBestpath(p);
 			bestPath.put(dst, p);
 
 			addPathToUpdates(p, Simulator.otherTimers);
@@ -808,6 +864,7 @@ public class Replacement_AS extends AS {
 			if(newBestPath == null || newBestPath.getPath() == null) {
 				newBestPath = p; // this ensures that we forward 'this' withdrawal and not re-root it
 			}
+			p = postProcessBestpath(p);
 			bestPath.put(dst, newBestPath);
 			Simulator.changedPath(asn, dst, bp, newBestPath);
 			Simulator.debug("REPLACEMENT_AS" + asn + ": new Path = " + newBestPath.getPath());
