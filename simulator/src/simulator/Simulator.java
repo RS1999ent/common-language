@@ -2874,7 +2874,7 @@ public class Simulator {
 		}
 		
 
-		return count;
+		return paths.size();
 	}
 	
 	private static void fillASNumPaths(HashMap<Integer, ArrayList<Integer>> predecessorList, int asn)

@@ -254,7 +254,7 @@ public class Replacement_AS extends AS {
 	 * @param tupleChosen the pop tuple we chose for the downstream as
 	 * 
 	 */
-	public void fillAdvertisementPoP(IA advert, Integer advertisedToAS, PoPTuple tupleChosen)
+	public void fillAdvertisementPoP(IA advert, int advertisedToAS, PoPTuple tupleChosen)
 	{
 //		if(tupleChosen.pop1 == -1)
 //		{
@@ -841,7 +841,7 @@ public class Replacement_AS extends AS {
 			// we need to install this as our best path and send an update
 			// to all our peers
 		    Simulator.debug("REPLACEMENT_AS" + asn + ": Added best path to dst AS" + dst + ": " + p.getPath());
-		    p = postProcessBestpath(p);
+		//    p = postProcessBestpath(p);
 			bestPath.put(dst, p);
 
 			addPathToUpdates(p, Simulator.otherTimers);
@@ -864,7 +864,7 @@ public class Replacement_AS extends AS {
 			if(newBestPath == null || newBestPath.getPath() == null) {
 				newBestPath = p; // this ensures that we forward 'this' withdrawal and not re-root it
 			}
-			p = postProcessBestpath(p);
+	//		p = postProcessBestpath(p);
 			bestPath.put(dst, newBestPath);
 			Simulator.changedPath(asn, dst, bp, newBestPath);
 			Simulator.debug("REPLACEMENT_AS" + asn + ": new Path = " + newBestPath.getPath());

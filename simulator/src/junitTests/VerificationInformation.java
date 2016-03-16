@@ -74,6 +74,7 @@ public class VerificationInformation {
 		Yaml yaml = new Yaml(new Constructor(yamlObject.class));		
 		for (Object data : yaml.loadAll(input))
 		{
+			//System.out.println(data);
 			deparseYamlObject ((yamlObject) data);
 		}
 		System.out.println(asMap);
@@ -148,7 +149,7 @@ public class VerificationInformation {
 					}
 					if(numPaths != veriNumPaths)
 					{
-						System.out.println("Unmatched numpaths for path: " + advert.getPath());
+						System.out.println("Unmatched numpaths for path: " + advert.getPath() + "advert: " + numPaths + "veri: " + veriNumPaths);
 						return false;
 					}
 
