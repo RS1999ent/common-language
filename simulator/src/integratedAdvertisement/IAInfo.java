@@ -29,8 +29,16 @@ public class IAInfo {
 	 */
 	public IAInfo(IAInfo toCopy)
 	{
-		pathValues = (HashMap<String, Values>)toCopy.pathValues.clone();
-		nodeDescriptor = (HashMap<String, Values>)toCopy.nodeDescriptor.clone();
+	//	pathValues = (HashMap<String, Values>)toCopy.pathValues.clone();
+		for(String key : toCopy.pathValues.keySet())
+		{
+			pathValues.put(key, new Values(toCopy.pathValues.get(key)));
+		}
+	//	nodeDescriptor = (HashMap<String, Values>)toCopy.nodeDescriptor.clone();
+		for(String key : toCopy.nodeDescriptor.keySet())
+		{
+			nodeDescriptor.put(key, new Values(toCopy.nodeDescriptor.get(key)));	// 
+		}
 	}
 	
 	/**

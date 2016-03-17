@@ -1055,16 +1055,14 @@ public class Simulator {
 				.description("Simulator to simulate integrated advertisements and passthroughs");
 		parser.addArgument("ASRelationships").metavar("ASRel").type(String.class);
 		parser.addArgument("ASTypesFile").metavar("ASTypes").type(String.class);
-		parser.addArgument("--IntraDomainFile").metavar("IntraDomain").type(String.class);
+//		parser.addArgument("--IntraDomainFile").metavar("IntraDomain").type(String.class);
 		parser.addArgument("outFile").metavar("file to output results").type(String.class);
-		parser.addArgument("--failLinksFile").metavar("FailLinks").type(String.class);
-		parser.addArgument("--parentsFile").metavar("ParentsFile").type(String.class);
 		parser.addArgument("--seed").required(true).metavar("seed").type(Long.class);
 		parser.addArgument("--sim").required(true).metavar("sim").type(Integer.class);
 		parser.addArgument("--monitorFrom").required(true).metavar("monitoring").type(Integer.class);
-		parser.addArgument("--useBandwidth").required(true).metavar("useBandwidth").type(Integer.class);
+//		parser.addArgument("--useBandwidth").required(true).metavar("useBandwidth").type(Integer.class);
 		parser.addArgument("--forX").required(true).metavar("forX").type(Float.class);
-		parser.addArgument("--metric").required(true).metavar("metric to use").type(Integer.class);
+//		parser.addArgument("--metric").required(true).metavar("metric to use").type(Integer.class);
 		parser.addArgument("--maxPaths").metavar("max paths for replacement").type(Integer.class).setDefault(10);
 		Namespace arguments = null;
 		try{
@@ -1086,16 +1084,16 @@ public class Simulator {
 		topoFile = topologyFile; 
 		//file for AStypes
 		String typeFile = arguments.getString("ASTypesFile");
-		String intraFile = arguments.getString("IntraDomainFile");
-		String linkFile = arguments.getString("--failLinksFile");
-		String parentsFile = arguments.getString("--parentsFile");
+//		String intraFile = arguments.getString("IntraDomainFile");
+//		String linkFile = arguments.getString("--failLinksFile");
+//		String parentsFile = arguments.getString("--parentsFile");
 		int monitorFrom = arguments.getInt("monitorFrom");
-		boolean useBandwidth = (arguments.getInt("useBandwidth") == 1) ? true : false;
+//		boolean useBandwidth = (arguments.getInt("useBandwidth") == 1) ? true : false;
 		simMode = arguments.getInt("sim");
 		float xVal = arguments.getFloat("forX");
 		int metric = arguments.getInt("metric");			
 		int primaryType = readTypes(typeFile); //reading types must go before readtopology, otherwise allnodes will be bgp
-		readTopology(topologyFile, useBandwidth, false);
+		readTopology(topologyFile, false);
 		preProcessReplacement();
 		//	readIntraDomain(intraFile);
 		//readLinks(linkFile);
@@ -1121,11 +1119,11 @@ public class Simulator {
 			break;
 
 		case 3:
-			iaBasicSimulationAllTests(monitorFrom, useBandwidth, xVal, metric, primaryType);
+			iaBasicSimulationAllTests(monitorFrom, xVal, metric);
 			break;
 
 		case 4:
-			iaUnitTestSimulation(monitorFrom, useBandwidth, xVal, metric, primaryType);
+			iaUnitTestSimulation(monitorFrom, xVal, metric);
 			break;
 
 		case 5:
@@ -1660,7 +1658,7 @@ public class Simulator {
 					HashMap<Integer, AS> clonedASMap = (HashMap<Integer, AS>) asMap.clone(); //backup asmap to use later
 					asMap.clear();
 					try {
-						readTopology(topoFile, false, false); //reset the state
+						readTopology(topoFile, false); //reset the state
 						preProcessReplacement(); //preprocess paths again
 					} catch (Exception e) {
 						// TODO Auto-generated catch block
@@ -2258,7 +2256,7 @@ public class Simulator {
 	}
 	
 
-		public static void iaBasicSimulationAllTests(int monitorFrom, boolean bwTest, float forX, int metric, int primaryType){
+		public static void iaBasicSimulationAllTests(int monitorFrom, float forX, int metric){
 			
 			
 			//ases that will be used for observation
@@ -2283,7 +2281,7 @@ public class Simulator {
 			
 			try {
 				asMap.clear();
-				readTopology(topoFile, false, true);
+				readTopology(topoFile, true);
 				preProcessReplacement();
 				monitorASes.clear();
 				announcedASes.clear();
@@ -2298,7 +2296,7 @@ public class Simulator {
 			
 		}
 
-		public static void iaUnitTestSimulation(int monitorFrom, boolean bwTest, float forX, int metric, int primaryType)
+		public static void iaUnitTestSimulation(int monitorFrom, float forX, int metric)
 		{
 			//ases that will be used for observation
 			ArrayList<Integer> monitorASes = new ArrayList<Integer>();
@@ -2612,7 +2610,7 @@ public class Simulator {
 	 * @param useBandwidth
 	 * @throws Exception
 	 */
-	private static void readTopology(String topologyFile, boolean useBandwidth, boolean allBGP) throws Exception {
+	private static void readTopology(String topologyFile, boolean allBGP) throws Exception {
 		// remember to initialize seedVal before calling this function.
 		specialR.setSeed(seedVal);
 		BufferedReader br = new BufferedReader(new FileReader(topologyFile));

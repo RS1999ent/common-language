@@ -205,6 +205,7 @@ public class Replacement_AS extends AS {
 		}
 		temp = ribIn.get(dst);
 		temp.put(nextHop, p);
+//		System.out.println("AS: " + this.asn + " path: " + p.getPath() + " advertpopcosts: " + p.popCosts);
 		passThrough.addToDatabase(p); //add path and information to passthrough database
 	}
 	
@@ -262,14 +263,18 @@ public class Replacement_AS extends AS {
 //		}
 //		else{
 		updateBookKeepingOutward(advert, advertisedToAS);	
+		String[] inAdvertPathsToDest = null;
+		IA dummyAdvert = new IA(advert);
+		dummyAdvert.getPath().removeFirst();
 		if(tupleChosen != null){
+			inAdvertPathsToDest = AS.getProtoProps(dummyAdvert, tupleChosen.reverse(), new Protocol(AS.REPLACEMENT_AS)); //need to extract inad paths before we clear popcosts						
 			for(AS.PoPTuple poptuple : neighborMetric.get(advertisedToAS).keySet())
 			{
 				int intraDomainCost = getIntraDomainCost(tupleChosen.pop1, poptuple.pop1, advertisedToAS);
 				advert.truePoPCosts.put(poptuple, intraDomainCost);
 			}
 		}
-				
+		
 		advert.popCosts.clear();
 		//add how many paths there are into IA
 		IAInfo replacementInfo = new IAInfo();
@@ -290,7 +295,7 @@ public class Replacement_AS extends AS {
 																//scion island, then it will be more than 1, otherwise it will be 1
 		boolean directMultiPath = pathsToDest > 1 ? true : false; //if we are directly connected and have multiple paths to destination set to true
 		long inAdvertNumPaths = 1; //number of paths in advertisement
-		String[] inAdvertPathsToDest = AS.getProtoProps(advert, tupleChosen, new Protocol(AS.REPLACEMENT_AS));
+		
 		if(inAdvertPathsToDest != null)
 		{
 			inAdvertNumPaths = Long.valueOf(inAdvertPathsToDest[0]);
@@ -310,6 +315,7 @@ public class Replacement_AS extends AS {
 			pathsToDest = MAX_PATHS_TO_PROPAGATE;
 		}
 		String pathAttribute = String.valueOf(pathsToDest);
+//		System.out.println("From: " + this.asn + " to: " + advertisedToAS + "inadvcost " + pathAttribute );
 		try {
 			replacementInfo.setProtocolPathAttribute(pathAttribute.getBytes("UTF-8"), new Protocol(AS.REPLACEMENT_AS), advert.getPath());
 		} catch (UnsupportedEncodingException e) {
@@ -730,20 +736,21 @@ public class Replacement_AS extends AS {
 	
 	
 	/**
-	 * Updates number of paths associated with advertisement before
-	 * placing it in FIB.
+	 * Updates number of paths associated with advertisement for an edge case involving replacement
+	 * This case is where the source as is apart of an island so it might undercount the total paths to dest
+	 * because when it puts it in the fib, it won't have done the multiplcation to the island entrace to account
+	 * for all paths..
 	 *  This is a method that requires 1 pop per AS
-	 * Therefore, should be done before putting it in bestpath datastructure
-	 * @param newBestPath - the path received that might need to be updated
+	 * @param advert - the path received that might need to be updated
 	 */
-	private IA postProcessBestpath(IA newBestPath)
+	public IA postProcessBestpath(IA advert)
 	{
 		if (customers.size() != 0)
 		{
-			return newBestPath;
+			return advert;
 		}
 		
-		LinkedList<Integer> path = (LinkedList<Integer>) newBestPath.getPath().clone(); //cloning not likely necessary because
+		LinkedList<Integer> path = (LinkedList<Integer>) advert.getPath().clone(); //cloning not likely necessary because
 		//it is no longer mutated in findislandedge
 		int islandEdge = findIslandEdge(path);
 		long transitPaths = 1;
@@ -751,11 +758,11 @@ public class Replacement_AS extends AS {
 		{
 			transitPaths = numPathsToDest.get(islandEdge);
 		}
-		long pathsToDest = numPathsToDest.get(newBestPath.getDest());
+		long pathsToDest = numPathsToDest.get(advert.getDest());
 		boolean directMultiPath = pathsToDest > 1 ? true : false; //if we are directly connected and have multiple paths to destination set to true
 		long inAdvertNumPaths = 1; //number of paths in advertisement
-		PoPTuple firstTuple = neighborMetric.get(newBestPath.getFirstHop()).keySet().iterator().next(); //does not work with multipop!!!!
-		String[] inAdvertPathsToDest = AS.getProtoProps(newBestPath, firstTuple, new Protocol(AS.REPLACEMENT_AS));
+		PoPTuple firstTuple = neighborMetric.get(advert.getFirstHop()).keySet().iterator().next(); //does not work with multipop!!!!
+		String[] inAdvertPathsToDest = AS.getProtoProps(advert, firstTuple.reverse(), new Protocol(AS.REPLACEMENT_AS));
 		if(inAdvertPathsToDest != null)
 		{
 			inAdvertNumPaths = Long.valueOf(inAdvertPathsToDest[0]);
@@ -764,16 +771,16 @@ public class Replacement_AS extends AS {
 			pathsToDest = transitPaths * inAdvertNumPaths;
 		}
 		String pathAttribute = String.valueOf(pathsToDest);
-		for(IAInfo bpInfo : newBestPath.popCosts.values())
+		for(IAInfo bpInfo : advert.popCosts.values())
 		{
 			try {
-				bpInfo.setProtocolPathAttribute(pathAttribute.getBytes("UTF-8"), new Protocol(AS.REPLACEMENT_AS), newBestPath.getPath());
+				bpInfo.setProtocolPathAttribute(pathAttribute.getBytes("UTF-8"), new Protocol(AS.REPLACEMENT_AS), advert.getPath());
 			} catch (UnsupportedEncodingException e) {
 				// TODO Auto-generated catch block
 				e.printStackTrace();
 			}
 		}
-	return newBestPath;
+	return advert;
 		
 	}
 	
@@ -841,8 +848,8 @@ public class Replacement_AS extends AS {
 			// we need to install this as our best path and send an update
 			// to all our peers
 		    Simulator.debug("REPLACEMENT_AS" + asn + ": Added best path to dst AS" + dst + ": " + p.getPath());
-		//    p = postProcessBestpath(p);
-			bestPath.put(dst, p);
+		    IA postProcessedBP = postProcessBestpath(new IA(p));
+			bestPath.put(dst, postProcessedBP);
 
 			addPathToUpdates(p, Simulator.otherTimers);
 
@@ -864,8 +871,8 @@ public class Replacement_AS extends AS {
 			if(newBestPath == null || newBestPath.getPath() == null) {
 				newBestPath = p; // this ensures that we forward 'this' withdrawal and not re-root it
 			}
-	//		p = postProcessBestpath(p);
-			bestPath.put(dst, newBestPath);
+			IA postProcessedBP = postProcessBestpath(new IA(newBestPath));
+			bestPath.put(dst, postProcessedBP);
 			Simulator.changedPath(asn, dst, bp, newBestPath);
 			Simulator.debug("REPLACEMENT_AS" + asn + ": new Path = " + newBestPath.getPath());
 			

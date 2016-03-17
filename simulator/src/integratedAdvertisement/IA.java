@@ -107,7 +107,7 @@ public class IA {
 		//copy poptuples in
 		for(AS.PoPTuple tuple : toCopy.popCosts.keySet())
 		{
-			popCosts.put(new AS.PoPTuple(tuple.pop1,  tuple.pop2), toCopy.popCosts.get(tuple));
+			popCosts.put(new AS.PoPTuple(tuple.pop1,  tuple.pop2), new IAInfo(toCopy.popCosts.get(tuple)));
 		}
 		//copy truepoptuples in
 		for(AS.PoPTuple tuple : toCopy.truePoPCosts.keySet())

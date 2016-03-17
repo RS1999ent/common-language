@@ -1,0 +1,305 @@
+AS: 0
+rib:
+  - dst: 16
+    path: [1, 4, 5, 6, 8, 9, 11, 12, 13, 14, 16]
+    metric: 4
+  - dst: 16
+    path: [3, 4, 5, 6, 8, 9, 11, 12, 13, 14, 16]
+    metric: 4       
+fib:
+  - dst: 16
+    path: [1, 4, 5, 6, 8, 9, 11, 12, 13, 14, 16]
+    metric: 12  
+---
+AS: 1
+rib:
+  - dst: 0
+    path: [0]
+    metric: 1
+  - dst: 16
+    path: [4, 5, 6, 8, 9, 11, 12, 13, 14, 16]
+    metric: 4
+  - dst: 16
+    path: [2, 4, 5, 6, 8, 9, 11, 12, 13, 14, 16]
+    metric: 4
+fib:
+  - dst: 0
+    path: [0]
+    metric: 1
+  - dst: 16
+    path: [4, 5, 6, 8, 9, 11, 12, 13, 14, 16]
+    metric: 4          
+---
+AS: 2
+rib:
+  - dst: 0
+    path: [1, 0]
+    metric: 3
+  - dst: 0
+    path: [4, 1, 0]
+    metric: 3
+  - dst: 16
+    path: [4, 5, 6, 8, 9, 11, 12, 13, 14, 16]
+    metric: 4     
+fib:
+  - dst: 0
+    path: [1, 0]
+    metric: 3
+  - dst: 16
+    path: [4, 5, 6, 8, 9, 11, 12, 13, 14, 16]
+    metric: 4    
+---
+AS: 3
+rib:
+  - dst: 0
+    path: [0]
+    metric: 1
+  - dst: 0
+    path: [4, 1, 0]
+    metric: 3
+  - dst: 16
+    path: [4, 5, 6, 8, 9, 11, 12, 13, 14, 16]
+    metric: 4     
+fib:
+  - dst: 0
+    path: [0]
+    metric: 1
+  - dst: 16
+    path: [4, 5, 6, 8, 9, 11, 12, 13, 14, 16]
+    metric: 4    
+---
+AS: 4
+rib:
+  - dst: 0
+    path: [1, 0]
+    metric: 3
+  - dst: 0
+    path: [2, 1, 0]
+    metric: 4
+  - dst: 0
+    path: [3, 0]
+    metric: 3
+  - dst: 16
+    path: [5, 6, 8,  9, 11, 12, 13, 14, 16]
+    metric: 4     
+fib:
+  - dst: 0
+    path: [1, 0]
+    metric: 3
+  - dst: 16
+    path: [5, 6, 8,  9, 11, 12, 13, 14, 16]
+    metric: 4    
+  
+---
+AS: 5
+rib:
+  - dst: 0
+    path: [4, 1, 0]
+    metric: 3
+  - dst: 16
+    path: [6, 8, 9, 11, 12,13, 14,16]
+    metric: 4
+  - dst: 16
+    path: [7,  8, 9, 11, 12,13, 14,16]
+    metric: 4       
+fib:
+  - dst: 0
+    path: [4, 1, 0]
+    metric: 3
+  - dst: 16
+    path: [6, 8, 9, 11, 12,13, 14,16]
+    metric: 4    
+
+---
+AS: 6
+rib:
+  - dst: 0
+    path: [5, 4, 1, 0]
+    metric: 3
+  - dst: 16
+    path: [8, 9, 11, 12,13, 14, 16]
+    metric: 4    
+fib:
+  - dst: 0
+    path: [5, 4, 1, 0]
+    metric: 3
+  - dst: 16
+    path: [8, 9, 11, 12,13, 14, 16]
+    metric: 4        
+---
+AS: 7
+rib:
+  - dst: 0
+    path: [5, 4, 1, 0]
+    metric: 3
+  - dst: 16
+    path: [8, 9, 11, 12, 13, 14, 16]
+    metric: 4     
+fib:
+  - dst: 0
+    path: [5, 4, 1, 0]
+    metric: 3
+  - dst: 16
+    path: [8, 9, 11, 12, 13, 14, 16]
+    metric: 4    
+---
+AS: 8
+rib:
+  - dst: 0
+    path: [6, 5, 4, 1, 0]
+    metric: 3    
+  - dst: 0
+    path: [7, 5, 4, 1, 0]
+    metric: 3
+  - dst: 16
+    path: [9, 11, 12, 13, 14, 16]
+    metric: 2
+  - dst: 16
+    path: [10, 11, 12, 13, 14, 16]
+    metric: 2       
+fib:
+  - dst: 0
+    path: [6, 5, 4, 1, 0]
+    metric: 3
+  - dst: 16
+    path: [9, 11, 12, 13, 14, 16]
+    metric: 2    
+  
+---
+AS: 9
+rib:
+  - dst: 0
+    path: [8, 6, 5, 4, 1, 0]
+    metric: 3
+  - dst: 16
+    path: [11, 12, 13, 14, 16]
+    metric: 2     
+fib:
+  - dst: 0
+    path: [8, 6, 5, 4, 1, 0]
+    metric: 3
+  - dst: 16
+    path: [11, 12, 13, 14, 16]
+    metric: 2    
+---
+AS: 10
+rib:
+  - dst: 0
+    path: [8, 6, 5, 4, 1, 0]
+    metric: 3
+  - dst: 16
+    path: [11, 12, 13, 14, 16]
+    metric: 2
+  - dst: 16
+    path: [8, 9, 11, 12, 13, 14, 16]
+    metric: 2
+fib:
+  - dst: 0
+    path: [8, 6, 5, 4, 1, 0]
+    metric: 3
+  - dst: 16
+    path: [11, 12, 13, 14, 16]
+    metric: 2    
+---
+AS: 11
+rib:
+  - dst: 0
+    path: [9, 8 , 6, 5, 4, 1, 0]
+    metric: 3
+  - dst: 0
+    path: [10, 8, 6, 5, 4, 1, 0]
+    metric: 3
+  - dst: 16
+    path: [12, 13, 14, 16]
+    metric: 2     
+fib:
+  - dst: 0
+    path: [9, 8 , 6, 5, 4, 1, 0]
+    metric: 3
+  - dst: 16
+    path: [12, 13, 14, 16]
+    metric: 2    
+---
+AS: 12
+rib:
+  - dst: 0
+    path: [11, 9, 8, 6, 5, 4, 1, 0]
+    metric: 6
+  - dst: 16
+    path: [13, 14, 16]
+    metric: 2    
+fib:
+  - dst: 0
+    path: [11, 9, 8, 6, 5, 4, 1, 0]
+    metric: 6
+  - dst: 16
+    path: [13, 14, 16]
+    metric: 2    
+---
+AS: 13
+rib:
+  - dst: 0
+    path: [12, 11, 9, 8, 6, 5, 4, 1, 0]
+    metric: 6
+  - dst: 16
+    path: [14, 16]
+    metric: 2
+  - dst: 16
+    path: [15, 16]
+    metric: 2       
+fib:
+  - dst: 0
+    path: [12, 11, 9, 8, 6, 5, 4, 1, 0]
+    metric: 6
+  - dst: 16
+    path: [14, 16]
+    metric: 2    
+---
+AS: 14
+rib:
+  - dst: 0
+    path: [13, 12, 11, 9, 8, 6, 5, 4, 1, 0]
+    metric: 6
+  - dst: 16
+    path: [16]
+    metric: 1     
+fib:
+  - dst: 0
+    path: [13, 12, 11, 9, 8, 6, 5, 4, 1, 0]
+    metric: 6
+  - dst: 16
+    path: [16]
+    metric: 1         
+---
+AS: 15
+rib:
+  - dst: 0
+    path: [13, 12, 11, 9, 8, 6, 5, 4, 1, 0]
+    metric: 6
+  - dst: 16
+    path: [16]
+    metric: 1
+  - dst: 16
+    path: [13, 14, 16]
+    metric: 2
+fib:
+  - dst: 0
+    path: [13, 12, 11, 9, 8, 6, 5, 4, 1, 0]
+    metric: 6
+  - dst: 16
+    path: [16]
+    metric: 1       
+---
+AS: 16
+rib:
+  - dst: 0
+    path: [14, 13, 12, 11, 9, 8, 6, 5, 4, 1, 0]
+    metric: 6
+  - dst: 0
+    path: [15, 13, 12, 11, 9, 8, 6, 5, 4, 1, 0]
+    metric: 6
+fib:
+  - dst: 0
+    path: [14, 13, 12, 11, 9, 8, 6, 5, 4, 1, 0]
+    metric: 12  
+  
