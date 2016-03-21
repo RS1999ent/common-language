@@ -1091,7 +1091,7 @@ public class Simulator {
 //		boolean useBandwidth = (arguments.getInt("useBandwidth") == 1) ? true : false;
 		simMode = arguments.getInt("sim");
 		float xVal = arguments.getFloat("forX");
-		int metric = arguments.getInt("metric");			
+		int metric = 0;//arguments.getInt("metric");			
 		int primaryType = readTypes(typeFile); //reading types must go before readtopology, otherwise allnodes will be bgp
 		readTopology(topologyFile, false);
 		preProcessReplacement();
@@ -1119,7 +1119,7 @@ public class Simulator {
 			break;
 
 		case 3:
-			iaBasicSimulationAllTests(monitorFrom, xVal, metric);
+			iaBasicSimulationAllTests(monitorFrom, xVal);
 			break;
 
 		case 4:
@@ -2256,7 +2256,7 @@ public class Simulator {
 	}
 	
 
-		public static void iaBasicSimulationAllTests(int monitorFrom, float forX, int metric){
+		public static void iaBasicSimulationAllTests(int monitorFrom, float forX){
 			
 			
 			//ases that will be used for observation
